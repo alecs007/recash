@@ -108,7 +108,7 @@ export default function Homepage() {
       </section>
 
       <section className="py-12">
-        <div className="grid md:grid-cols-3 gap-20 md:gap-12">
+        <div className="grid md:grid-cols-3 gap-20 md:gap-12 px-3 md:px-0">
           {steps.map((step) => (
             <div key={step.number} className="group">
               <div className="flex items-center gap-3 mb-3">
@@ -157,8 +157,7 @@ export default function Homepage() {
               href="/post"
               className="inline-flex items-center justify-center gap-2 bg-[#123524] text-white font-bold py-4 px-10 rounded-full text-lg shadow-lg hover:bg-[#1a4d36] hover:scale-105 transition-all w-full sm:w-auto"
             >
-              <FaWineBottle className="w-5 h-5 text-lime-400" /> Postează
-              sticlele
+              <FaWineBottle className="w-5 h-5 text-lime-400" /> Postează sticle
             </Link>
 
             <Link
