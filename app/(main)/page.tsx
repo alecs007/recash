@@ -27,7 +27,7 @@ export default function Homepage() {
                 Reciclează.
                 <br />
                 <span className="text-lime-400 italic">
-                  <span className="text-[0.85em] sm:text-[0.9em]">Î</span>
+                  <span className="text-[0.9em] sm:text-[0.95em]">Î</span>
                   ncasează.
                 </span>{" "}
                 Repetă.
