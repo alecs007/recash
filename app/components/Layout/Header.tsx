@@ -33,6 +33,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
               height={138}
               className="h-8 w-auto object-contain"
               priority
+              draggable={false}
             />
           </Link>
 

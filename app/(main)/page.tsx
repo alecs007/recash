@@ -4,8 +4,32 @@ import { ArrowRight, Bike, Coins } from "lucide-react";
 import { FaWineBottle } from "react-icons/fa";
 
 export default function Homepage() {
+  const steps = [
+    {
+      number: "01",
+      title: "Postează anunțul",
+      subtext:
+        "Introduci numărul aproximativ de sticle, locația și procentajul oferit colectorului",
+      image: "/post-mascot.webp",
+    },
+    {
+      number: "02",
+      title: "Așteaptă colectorul",
+      subtext:
+        "Cineva din zonă îți preia cererea și te scapă de drumul la aparat",
+      image: "/colector-mascot.webp",
+    },
+    {
+      number: "03",
+      title: "Realizează schimbul",
+      subtext:
+        "Colectorul îți oferă suma convenită, iar tu îi predai sticlele gata de reciclat",
+      image: "/eco-mascot.webp",
+    },
+  ];
+
   return (
-    <div className="w-full pt-4 pb-12 space-y-12 lg:space-y-20">
+    <div className="w-full pt-4 md:pt-8 pb-12 space-y-12 lg:space-y-20">
       <section className="relative">
         <div className="bg-gradient-to-br from-[#123524] to-[#1a4d36] rounded-[2rem] lg:rounded-[3rem] px-8 lg:px-14 py-8 lg:py-10 relative overflow-hidden shadow-xl">
           <div className="absolute -top-16 -right-12 w-56 h-56 rounded-full bg-lime-400/30 blur-3xl" />
@@ -16,9 +40,9 @@ export default function Homepage() {
               <span className="inline-flex items-center gap-2 bg-lime-400/15 text-lime-400 px-3 py-1.5 rounded-full text-xs font-bold tracking-wider mb-6 backdrop-blur border border-lime-400/20">
                 <span className="flex items-center gap-1">
                   <span className="flex -space-x-px w-4.5 h-3">
-                    <div className="w-1.5 h-3 bg-[#002B7F] rounded-l-xs" />{" "}
+                    <div className="w-1.5 h-3 bg-[#002B7F] rounded-l-xs" />
                     <div className="w-1.5 h-3 bg-[#FCD116]" />
-                    <div className="w-1.5 h-3 bg-[#CE1126] rounded-r-xs" />{" "}
+                    <div className="w-1.5 h-3 bg-[#CE1126] rounded-r-xs" />
                   </span>
                 </span>
                 Pulsul României Verzi
@@ -74,6 +98,8 @@ export default function Homepage() {
                 alt="Recash Mascot"
                 fill
                 priority
+                sizes="100%"
+                draggable={false}
                 className="object-contain drop-shadow-2xl animate-in fade-in zoom-in duration-700"
               />
             </div>
@@ -81,55 +107,38 @@ export default function Homepage() {
         </div>
       </section>
 
-      <section>
-        <div className="text-center mb-8 lg:mb-12">
-          <h2 className="font-extrabold text-3xl lg:text-5xl text-slate-900 tracking-tight">
-            Cum funcționează?
-          </h2>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-6">
-          {[
-            {
-              title: "Postează sticlele",
-              desc: "Adaugi numărul de sticle, locația și alegi cât oferi colectorului. Minim 80% rămâne la tine.",
-              icon: FaWineBottle,
-              color: "bg-gradient-to-br from-lime-400 to-lime-500 text-black",
-            },
-            {
-              title: "Un colector preia",
-              desc: "Colectorii din zona ta văd postarea pe hartă și o rezervă. Ai timer de 30 min să confirmi.",
-              icon: Bike,
-              color:
-                "bg-gradient-to-br from-amber-400 to-orange-400 text-black",
-            },
-            {
-              title: "Scanezi QR & primești bani",
-              desc: "La preluare, scanezi un cod QR. Banii ajung instant în portofelul tău Recash.",
-              icon: Coins,
-              color: "bg-emerald-800 text-white",
-            },
-          ].map((s) => (
-            <div
-              key={s.title}
-              className="bg-white rounded-3xl p-6 shadow-md border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all"
-            >
-              <div
-                className={`inline-grid place-items-center w-14 h-14 rounded-2xl mb-4 shadow-sm ${s.color}`}
-              >
-                <s.icon className="w-7 h-7" strokeWidth={2.4} />
+      <section className="py-12">
+        <div className="grid md:grid-cols-3 gap-20 md:gap-12">
+          {steps.map((step) => (
+            <div key={step.number} className="group">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-2xl font-black text-lime-500">
+                  {step.number.replace(/^0/, "")}.
+                </span>
+                <h3 className="font-bold text-2xl text-slate-900 tracking-tight">
+                  {step.title}
+                </h3>
               </div>
-              <h3 className="font-bold text-xl text-slate-900 mb-2">
-                {s.title}
-              </h3>
-              <p className="text-sm text-slate-600 leading-relaxed">{s.desc}</p>
+
+              <p className="text-slate-700 text-base leading-snug mb-6 h-auto md:h-12">
+                {step.subtext}
+              </p>
+
+              <div className="relative aspect-square w-full rounded-[2rem] bg-slate-50 border border-slate-100 overflow-hidden transition-all duration-300 group-hover:border-slate-200">
+                <Image
+                  src={step.image}
+                  alt={step.title}
+                  fill
+                  className="object-contain p-5"
+                />
+              </div>
             </div>
           ))}
         </div>
       </section>
 
       <section className="bg-gradient-to-br from-lime-400 to-lime-500 rounded-[2rem] lg:rounded-[3rem] p-8 lg:p-14 text-center relative overflow-hidden">
-        <div className="relative">
+        <div className="relative z-10">
           <h2 className="font-extrabold text-3xl lg:text-5xl text-black tracking-tight">
             Gata să reciclezi azi?
           </h2>
