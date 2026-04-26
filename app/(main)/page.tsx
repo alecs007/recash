@@ -147,7 +147,7 @@ export default function Homepage() {
             </span>
           </h2>
 
-          <p className="text-slate-600 text-lg lg:text-2xl mt-4 max-w-4xl mx-auto leading-relaxed">
+          <p className="text-slate-700 text-lg lg:text-2xl mt-4 max-w-4xl mx-auto leading-relaxed">
             Uită de drumul la magazin printr-o simplă postare. Tu îți salvezi
             timpul, colectorul câștigă bani, mediul îți mulțumește.
           </p>
@@ -170,7 +170,7 @@ export default function Homepage() {
           </div>
         </div>
 
-        <div className="relative mt-12 w-full h-[150px] md:h-[250px] lg:h-[360px]">
+        <div className="relative mt-4 w-full h-[150px] md:h-[250px] lg:h-[360px]">
           <Image
             src="/bottles.webp"
             alt="Recash Bottles"
