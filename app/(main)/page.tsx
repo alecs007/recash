@@ -11,11 +11,11 @@ export default function Homepage() {
           <div className="absolute -top-16 -right-12 w-56 h-56 rounded-full bg-lime-400/30 blur-3xl" />
           <div className="absolute -bottom-16 -left-12 w-48 h-48 rounded-full bg-emerald-500/20 blur-3xl" />
 
-          <div className="relative flex flex-col lg:flex-row items-center justify-between gap-12">
+          <div className="relative flex flex-col lg:flex-row items-center justify-between">
             <div className="max-w-2xl">
               <span className="inline-flex items-center gap-2 bg-lime-400/15 text-lime-400 px-3 py-1.5 rounded-full text-xs font-bold tracking-wider mb-6 backdrop-blur border border-lime-400/20">
                 <span className="flex items-center gap-1">
-                  <span className="flex -space-x-px">
+                  <span className="flex -space-x-px w-4.5 h-3">
                     <div className="w-1.5 h-3 bg-[#002B7F] rounded-l-xs" />{" "}
                     <div className="w-1.5 h-3 bg-[#FCD116]" />
                     <div className="w-1.5 h-3 bg-[#CE1126] rounded-r-xs" />{" "}
@@ -26,7 +26,11 @@ export default function Homepage() {
               <h1 className="font-sans font-extrabold text-white text-5xl sm:text-6xl lg:text-7xl leading-[1.05] tracking-tight sm:text-nowrap">
                 Reciclează.
                 <br />
-                <span className="text-lime-400 italic">Câștigă.</span> Repetă.
+                <span className="text-lime-400 italic">
+                  <span className="text-[0.85em] sm:text-[0.9em]">Î</span>
+                  ncasează.
+                </span>{" "}
+                Repetă.
               </h1>
               <p className="text-white/80 text-lg mt-6 max-w-md">
                 Cea mai simplă cale de a face bani prin reciclare. Postezi
@@ -38,13 +42,13 @@ export default function Homepage() {
                   href="/post"
                   className="inline-flex items-center justify-center gap-2 bg-lime-400 text-black font-bold py-4 px-8 w-full sm:w-auto rounded-full text-lg shadow-lg hover:scale-105 transition-transform"
                 >
-                  <FaWineBottle className="w-5 h-5" /> Postează
+                  <FaWineBottle className="w-5 h-5" /> Postează sticle
                 </Link>
                 <Link
                   href="/map"
                   className="inline-flex items-center justify-center gap-2 bg-white/10 text-white border border-white/20 font-bold py-4 px-8 w-full sm:w-auto rounded-full text-lg backdrop-blur hover:bg-white/20 transition-colors"
                 >
-                  <Bike className="w-5 h-5" /> Colectează
+                  <Bike className="w-5 h-5" /> Colectează sticle
                 </Link>
               </div>
 
@@ -64,7 +68,7 @@ export default function Homepage() {
               </div>
             </div>
 
-            <div className="hidden lg:block relative w-full max-w-[500px] aspect-square mr-5">
+            <div className="hidden lg:block relative w-full max-w-[500px] aspect-square">
               <Image
                 src="/hero-mascot-2.avif"
                 alt="Recash Mascot"
