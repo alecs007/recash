@@ -8,7 +8,7 @@ import {
 
 export const Footer = () => {
   return (
-    <footer className="mt-20 bg-[#123524] rounded-t-[2rem] lg:rounded-t-[3rem] text-white/90 overflow-hidden">
+    <footer className="mt-12 bg-[#123524] rounded-t-[2rem] lg:rounded-t-[3rem] text-white/90 overflow-hidden">
       <div className="max-w-7xl mx-auto px-8 pt-16 pb-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
           <div className="md:col-span-1">

@@ -5,7 +5,7 @@ import { LuBike } from "react-icons/lu";
 
 export const CTA = () => {
   return (
-    <section className="relative bg-white rounded-[2rem] lg:rounded-[3rem] overflow-hidden ">
+    <section className="relative bg-white rounded-[2rem] lg:rounded-[3rem] overflow-hidden mt-12">
       <div className="relative z-10 max-w-6xl mx-auto text-center">
         <h2 className="font-sans font-extrabold text-slate-900 text-4xl lg:text-6xl leading-tight tracking-tight sm:text-nowrap">
           <span className="text-nowrap">Bani din reciclare,</span>
@@ -37,7 +37,7 @@ export const CTA = () => {
         </div>
       </div>
 
-      <div className="relative mt-4 w-full h-[150px] md:h-[250px] lg:h-[360px]">
+      <div className="relative mt-6 w-full h-[150px] md:h-[250px] lg:h-[360px]">
         <Image
           src="/images/bottles.webp"
           alt="Recash Bottles"
