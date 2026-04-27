@@ -52,7 +52,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2">
             <Image
-              src="/images/recash-logo-header.svg"
+              src="/images/recash-logo.webp"
               alt="Recash Logo"
               width={643}
               height={138}
