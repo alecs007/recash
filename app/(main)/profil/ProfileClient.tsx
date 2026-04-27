@@ -301,7 +301,7 @@ function StarRating({ score, count }: { score: number; count: number }) {
           </svg>
         ))}
       </div>
-      <span className="text-sm font-semibold text-slate-800">
+      <span className="text-sm font-semibold text-white">
         {score.toFixed(1)}
       </span>
       {count > 0 && (
@@ -371,6 +371,36 @@ function OverviewTab({ user }: { user: UserProfile }) {
 
   return (
     <div className="space-y-8">
+      {" "}
+      {/* Impact section */}
+      <div className="p-6">
+        {/* <h3 className="font-bold text-slate-900 text-lg mb-4 flex items-center gap-2">
+          <span className="text-2xl">🌍</span> Impactul tău ecologic
+        </h3> */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="text-center p-4">
+            <div className="text-6xl md:text-7xl font-black text-lime-600 mb-3">
+              {totalBottles.toLocaleString("ro-RO")}{" "}
+              <FaWineBottle className="inline-block w-14 h-14 md:w-16 md:h-16 -mt-2" />
+            </div>
+            <div className="text-xl text-slate-500 mt-1">
+              sticle reciclate în total
+            </div>
+          </div>
+          <div className="text-center p-4">
+            <div className="text-6xl md:text-7xl font-black text-emerald-600 mb-3">
+              {(totalBottles * 0.033).toFixed(1)} kg
+            </div>
+            <div className="text-xl text-slate-500 mt-1">plastic recuperat</div>
+          </div>
+          <div className="text-center p-4">
+            <div className="text-6xl md:text-7xl font-black text-teal-600 mb-3">
+              {(totalBottles * 0.12).toFixed(1)} kg
+            </div>
+            <div className="text-xl text-slate-500 mt-1">CO₂ redus</div>
+          </div>
+        </div>
+      </div>
       {/* Stats grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
@@ -397,38 +427,8 @@ function OverviewTab({ user }: { user: UserProfile }) {
           sub={`+ ${user.totalSaved.toFixed(2)} RON economisite`}
         />
       </div>
-
-      {/* Impact section */}
-      <div className="rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50 to-white p-6">
-        <h3 className="font-bold text-slate-900 text-lg mb-4 flex items-center gap-2">
-          <span className="text-2xl">🌍</span> Impactul tău ecologic
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="text-center p-4 bg-white rounded-xl border border-slate-100">
-            <div className="text-3xl font-black text-lime-600">
-              {totalBottles.toLocaleString("ro-RO")}
-            </div>
-            <div className="text-sm text-slate-500 mt-1">
-              sticle reciclate total
-            </div>
-          </div>
-          <div className="text-center p-4 bg-white rounded-xl border border-slate-100">
-            <div className="text-3xl font-black text-emerald-600">
-              {(totalBottles * 0.033).toFixed(1)} kg
-            </div>
-            <div className="text-sm text-slate-500 mt-1">plastic recuperat</div>
-          </div>
-          <div className="text-center p-4 bg-white rounded-xl border border-slate-100">
-            <div className="text-3xl font-black text-teal-600">
-              {(totalBottles * 0.12).toFixed(1)} kg
-            </div>
-            <div className="text-sm text-slate-500 mt-1">CO₂ redus</div>
-          </div>
-        </div>
-      </div>
-
       {/* Profile details */}
-      <div className="rounded-2xl border border-slate-100 bg-white p-6">
+      {/* <div className="rounded-2xl border border-slate-100 bg-white p-6">
         <h3 className="font-bold text-slate-900 text-lg mb-4">
           Detalii profil
         </h3>
@@ -461,8 +461,8 @@ function OverviewTab({ user }: { user: UserProfile }) {
               {ROLE_LABELS[user.role]}
             </span>
           </div>
-        </div>
-      </div>
+        </div> */}
+      {/* </div> */}
     </div>
   );
 }
