@@ -38,8 +38,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
   events: {
     async createUser({ user }) {
+      if (!user.id) return;
       await prisma.badge.create({
-        data: { userId: user.id, type: "FIRST_WEEK" },
+        data: {
+          userId: user.id!,
+          type: "FIRST_WEEK",
+        },
       });
     },
   },

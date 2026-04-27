@@ -1,7 +1,6 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 
-// Routes that require authentication
 const PROTECTED_ROUTES = [
   "/profil",
   "/post",
@@ -10,7 +9,6 @@ const PROTECTED_ROUTES = [
   "/setari",
 ];
 
-// API routes that require authentication
 const PROTECTED_API_ROUTES = [
   `/api/${process.env.NEXT_PUBLIC_API_VERSION}/posts`,
   `/api/${process.env.NEXT_PUBLIC_API_VERSION}/transactions`,
@@ -29,16 +27,13 @@ export default auth((req) => {
     nextUrl.pathname.startsWith(route),
   );
 
-  // Unauthenticated user hitting a protected page → redirect home
-  // The header will open the auth modal via state
   if (isProtectedPage && !isAuthenticated) {
     const url = nextUrl.clone();
     url.pathname = "/";
-    url.searchParams.set("auth", "1"); // signal to open modal
+    url.searchParams.set("auth", "1");
     return NextResponse.redirect(url);
   }
 
-  // Unauthenticated API call → 401
   if (isProtectedApi && !isAuthenticated) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
