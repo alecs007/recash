@@ -1,5 +1,4 @@
-import { auth } from "@/auth";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const PROTECTED_ROUTES = [
   "/profil",
@@ -8,7 +7,6 @@ const PROTECTED_ROUTES = [
   "/notificari",
   "/setari",
 ];
-
 const PROTECTED_API_ROUTES = [
   `/api/${process.env.NEXT_PUBLIC_API_VERSION}/posts`,
   `/api/${process.env.NEXT_PUBLIC_API_VERSION}/transactions`,
@@ -16,15 +14,20 @@ const PROTECTED_API_ROUTES = [
   `/api/${process.env.NEXT_PUBLIC_API_VERSION}/notifications`,
 ];
 
-export default auth((req) => {
-  const { nextUrl, auth: session } = req;
-  const isAuthenticated = !!session?.user;
+export function middleware(req: NextRequest) {
+  const { nextUrl } = req;
 
-  const isProtectedPage = PROTECTED_ROUTES.some((route) =>
-    nextUrl.pathname.startsWith(route),
+  const sessionToken =
+    req.cookies.get("authjs.session-token") ??
+    req.cookies.get("__Secure-authjs.session-token");
+
+  const isAuthenticated = !!sessionToken;
+
+  const isProtectedPage = PROTECTED_ROUTES.some((r) =>
+    nextUrl.pathname.startsWith(r),
   );
-  const isProtectedApi = PROTECTED_API_ROUTES.some((route) =>
-    nextUrl.pathname.startsWith(route),
+  const isProtectedApi = PROTECTED_API_ROUTES.some((r) =>
+    nextUrl.pathname.startsWith(r),
   );
 
   if (isProtectedPage && !isAuthenticated) {
@@ -39,7 +42,7 @@ export default auth((req) => {
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: [
