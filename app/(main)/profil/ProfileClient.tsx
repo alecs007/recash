@@ -448,7 +448,7 @@ function OverviewTab({ user }: { user: UserProfile }) {
           <div className="flex gap-3">
             <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
             <span className="text-slate-700 text-sm">
-              Membru din{" "}
+              Membru din
               {new Date(user.createdAt).toLocaleDateString("ro-RO", {
                 month: "long",
                 year: "numeric",
@@ -1038,14 +1038,14 @@ export function ProfileClient({ user }: { user: UserProfile }) {
 
       {/* ── Tabs ────────────────────────────────────────────────────────────── */}
       <div className="px-4 sm:px-6 lg:px-8">
-        <div className="flex gap-1 overflow-x-auto scrollbar-none border-b border-slate-100 mb-6 pb-0">
+        <div className="flex gap-1 overflow-x-auto scrollbar-none mb-6 pb-0">
           {TABS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setActiveTab(id)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold rounded-t-xl whitespace-nowrap transition-all border-b-2 ${
+              className={`flex items-center gap-2 px-4 py-3 border text-sm font-semibold rounded-xl whitespace-nowrap transition-all cursor-pointer ${
                 activeTab === id
-                  ? "text-[#123524] border-lime-500 bg-lime-50/50"
+                  ? "text-[#123524] border-lime-700/50 bg-lime-50/50"
                   : "text-slate-500 border-transparent hover:text-slate-800 hover:bg-slate-50"
               }`}
             >
