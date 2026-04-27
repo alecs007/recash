@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
+import { SessionProvider } from "./components/Providers/SessionProvider";
+import { AuthModalProvider } from "@/context/AuthModalContext";
+import { AuthModal } from "./components/Auth/AuthModal";
+import { Suspense } from "react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,7 +40,17 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Recash" />
         <link rel="manifest" href="/site.webmanifest" />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {" "}
+        <SessionProvider>
+          <Suspense>
+            <AuthModalProvider>
+              {children}
+              <AuthModal />
+            </AuthModalProvider>
+          </Suspense>
+        </SessionProvider>
+      </body>
     </html>
   );
 }
