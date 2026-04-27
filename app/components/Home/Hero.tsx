@@ -59,6 +59,7 @@ export const Hero = () => {
                     alt="Recycler 1"
                     fill
                     sizes="100%"
+                    priority
                     draggable={false}
                   />
                 </span>
@@ -68,6 +69,7 @@ export const Hero = () => {
                     alt="Recycler 2"
                     fill
                     sizes="100%"
+                    priority
                     draggable={false}
                   />
                 </span>
@@ -77,6 +79,7 @@ export const Hero = () => {
                     alt="Recycler 3"
                     fill
                     sizes="100%"
+                    priority
                     draggable={false}
                   />
                 </span>

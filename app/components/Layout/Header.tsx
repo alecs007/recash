@@ -48,7 +48,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <header className="sticky top-0 z-40 backdrop-blur-md bg-white/95 border-b border-slate-100">
+      <header className="sticky top-0 z-40 backdrop-blur-md bg-white">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2">
             <Image
@@ -161,16 +161,16 @@ export default function Header({ children }: { children: React.ReactNode }) {
               <div className="flex items-center gap-2">
                 <button
                   onClick={openAuthModal}
-                  className="hidden sm:flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors px-3 py-2 rounded-xl hover:bg-slate-100 cursor-pointer"
+                  className="hidden sm:flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors px-3 py-2 rounded-xl hover:bg-slate-50 cursor-pointer"
                 >
                   Intră în cont
                 </button>
                 <button
                   onClick={openAuthModal}
-                  className="inline-flex items-center gap-2 bg-[#123524]/5 text-[#123524] border border-[#123524]/20 font-bold py-2.5 px-5 rounded-full text-sm hover:bg-[#123524] hover:text-white hover:border-[#123524] transition-all duration-300 cursor-pointer group"
+                  className="inline-flex items-center gap-2 bg-slate-50 text-[#1a4d36] border border-[#1a4d36]/15 font-bold py-2.5 px-5 rounded-full text-sm hover:bg-[#1a4d36] hover:text-white hover:border-[#1a4d36] transition-all duration-300 cursor-pointer group"
                 >
-                  <Recycle className="w-5 h-5 text-[#123524] group-hover:text-lime-400 group-hover:rotate-360 duration-500 transition-all" />
-                  <span>Începe acum</span>
+                  <Recycle className="w-5 h-5 text-lime-600 group-hover:text-lime-400 group-hover:rotate-360 transition-all duration-500 ease-in-out" />
+                  <span className="tracking-tight">Începe acum</span>
                 </button>
               </div>
             )}
