@@ -167,7 +167,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                 </button>
                 <button
                   onClick={openAuthModal}
-                  className="inline-flex items-center gap-2 bg-slate-50 text-[#1a4d36] border border-[#1a4d36]/15 font-bold py-2.25 px-3.75 rounded-full text-sm hover:bg-[#1a4d36] hover:text-white hover:border-[#1a4d36] transition-all duration-300 cursor-pointer group"
+                  className="inline-flex items-center gap-1 bg-slate-50 text-[#1a4d36] border border-[#1a4d36]/15 font-bold py-2.25 px-3.75 rounded-full text-sm hover:bg-[#1a4d36] hover:text-white hover:border-[#1a4d36] transition-all duration-300 cursor-pointer group"
                 >
                   <Recycle className="w-5 h-5 text-lime-600 group-hover:text-lime-400 group-hover:rotate-360 transition-all duration-500 ease-in-out" />
                   <span className="tracking-tight">

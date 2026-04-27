@@ -48,6 +48,7 @@ export const Steps = () => {
                 src={step.image}
                 alt={step.title}
                 fill
+                sizes="100%"
                 className="object-contain p-5"
               />
             </div>

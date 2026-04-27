@@ -85,7 +85,7 @@ export function AuthModal() {
         </div>
 
         <p className="text-center text-xs text-slate-400 mt-6 leading-relaxed">
-          Prin conectare, accepți{" "}
+          Prin conectare, sunteți de acord cu{" "}
           <a href="/termeni" className="underline hover:text-slate-600">
             Termenii
           </a>{" "}
