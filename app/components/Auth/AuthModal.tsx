@@ -4,12 +4,14 @@ import Image from "next/image";
 import { useEffect, useRef } from "react";
 import { signIn } from "next-auth/react";
 import { useAuthModal } from "@/context/AuthModalContext";
+import { useLoading } from "@/context/LoadingContext";
 import { X } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { FaFacebook } from "react-icons/fa";
 
 export function AuthModal() {
   const { isOpen, close } = useAuthModal();
+  const { show } = useLoading();
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -29,6 +31,8 @@ export function AuthModal() {
   }, [isOpen]);
 
   const handleSignIn = (provider: "google" | "facebook") => {
+    close();
+    show("Ne conectăm contul tău...");
     signIn(provider, { callbackUrl: "/" });
   };
 

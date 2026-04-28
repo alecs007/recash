@@ -7,6 +7,7 @@ import { useSession, signOut } from "next-auth/react";
 import { Bell, User, LogOut, ChevronDown, Recycle } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useAuthModal } from "@/context/AuthModalContext";
+import { useLoading } from "@/context/LoadingContext";
 import { FaWineBottle } from "react-icons/fa";
 import { LuBike } from "react-icons/lu";
 
@@ -14,6 +15,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const { open: openAuthModal } = useAuthModal();
+  const { show } = useLoading();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -138,6 +140,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                         <button
                           onClick={() => {
                             setDropdownOpen(false);
+                            show("Ne deconectăm...");
                             signOut({ callbackUrl: "/" });
                           }}
                           className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors cursor-pointer"

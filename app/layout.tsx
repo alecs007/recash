@@ -3,6 +3,7 @@ import { Geist } from "next/font/google";
 import "./globals.css";
 import { auth } from "@/auth";
 import { SessionProvider } from "./components/Providers/SessionProvider";
+import { LoadingProvider } from "@/context/LoadingContext";
 import { AuthModalProvider } from "@/context/AuthModalContext";
 import { AuthModal } from "./components/Auth/AuthModal";
 import { Suspense } from "react";
@@ -47,8 +48,11 @@ export default async function RootLayout({
         <SessionProvider session={session}>
           <Suspense>
             <AuthModalProvider>
-              {children}
-              <AuthModal />
+              {" "}
+              <LoadingProvider>
+                {children}
+                <AuthModal />
+              </LoadingProvider>
             </AuthModalProvider>
           </Suspense>
         </SessionProvider>
