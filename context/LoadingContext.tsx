@@ -32,7 +32,7 @@ export function LoadingProvider({ children }: { children: ReactNode }) {
   return (
     <LoadingContext.Provider value={{ show, hide }}>
       {children}
-      <LoadingScreen visible={state.visible} message={state.message} />
+      <LoadingScreen visible={state.visible} />
     </LoadingContext.Provider>
   );
 }
@@ -53,12 +53,21 @@ function LoadingScreen({ visible }: { visible: boolean }) {
           : "opacity-0 pointer-events-none"
       }`}
     >
-      <div className="flex items-center gap-2">
+      <style>{`
+        @keyframes big-bounce {
+          0%, 100% { transform: translateY(0); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); }
+          50% { transform: translateY(-28px); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
+        }
+        .dot-bounce {
+          animation: big-bounce 0.7s infinite;
+        }
+      `}</style>
+      <div className="flex items-center gap-3">
         {[0, 1, 2].map((i) => (
           <div
             key={i}
+            className="dot-bounce w-4 h-4 rounded-full bg-[#1a4d36]"
             style={{ animationDelay: `${i * 0.15}s` }}
-            className="w-3 h-3 rounded-full bg-[#1a4d36] animate-bounce"
           />
         ))}
       </div>
