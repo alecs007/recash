@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
+import { auth } from "@/auth";
 import { SessionProvider } from "./components/Providers/SessionProvider";
 import { AuthModalProvider } from "@/context/AuthModalContext";
 import { AuthModal } from "./components/Auth/AuthModal";
@@ -16,11 +17,13 @@ export const metadata: Metadata = {
   description: "Recash - Reciclează. Încasează. Repetă.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
+  const session = await auth();
+
   return (
     <html lang="ro" className={`${geistSans.variable} h-full antialiased`}>
       <head>
@@ -41,8 +44,7 @@ export default function RootLayout({
         <link rel="manifest" href="/site.webmanifest" />
       </head>
       <body className="min-h-full flex flex-col">
-        {" "}
-        <SessionProvider>
+        <SessionProvider session={session}>
           <Suspense>
             <AuthModalProvider>
               {children}

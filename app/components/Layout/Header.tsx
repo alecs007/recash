@@ -35,9 +35,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
   if (isAuthPage) return <>{children}</>;
 
   const unreadCount = 3;
-
   const isAuthenticated = status === "authenticated" && !!session?.user;
-  const isLoading = status === "loading";
 
   const initials = session?.user?.name
     ?.split(" ")
@@ -63,12 +61,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
           </Link>
 
           <div className="flex items-center gap-3">
-            {isLoading ? (
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-slate-100 animate-pulse" />
-                <div className="w-10 h-10 rounded-full bg-slate-100 animate-pulse" />
-              </div>
-            ) : isAuthenticated ? (
+            {isAuthenticated ? (
               <>
                 <Link
                   href="/notificari"
@@ -89,10 +82,10 @@ export default function Header({ children }: { children: React.ReactNode }) {
                     className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
                     aria-label="Meniu profil"
                   >
-                    {session.user.image ? (
+                    {session!.user!.image ? (
                       <Image
-                        src={session.user.image}
-                        alt={session.user.name ?? "Profil"}
+                        src={session!.user!.image}
+                        alt={session!.user!.name ?? "Profil"}
                         width={36}
                         height={36}
                         className="w-9 h-9 rounded-full object-cover border-2 border-lime-400"
@@ -111,10 +104,10 @@ export default function Header({ children }: { children: React.ReactNode }) {
                     <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-lg border border-slate-100 py-2 animate-in fade-in zoom-in-95 duration-150">
                       <div className="px-4 py-2 border-b border-slate-100 mb-1">
                         <p className="font-semibold text-slate-900 text-sm truncate">
-                          {session.user.name}
+                          {session!.user!.name}
                         </p>
                         <p className="text-slate-400 text-xs truncate">
-                          {session.user.email}
+                          {session!.user!.email}
                         </p>
                       </div>
                       <Link
@@ -167,12 +160,12 @@ export default function Header({ children }: { children: React.ReactNode }) {
                 </button>
                 <button
                   onClick={openAuthModal}
-                  className="inline-flex items-center gap-1 bg-slate-50 text-[#1a4d36] border border-[#1a4d36]/15 font-bold py-2.25 px-3.75 rounded-full text-sm hover:bg-[#1a4d36] hover:text-white hover:border-[#1a4d36] transition-all duration-300 cursor-pointer group"
+                  className="inline-flex items-center gap-1.5 bg-[#1a4d36] text-white font-bold py-2.25 px-4 rounded-full text-sm hover:scale-105 transition-all duration-200 cursor-pointer shadow-sm group"
                 >
-                  <Recycle className="w-5 h-5 text-lime-600 group-hover:text-lime-400 group-hover:rotate-360 transition-all duration-500 ease-in-out" />
+                  <Recycle className="w-4 h-4 text-lime-400 group-hover:rotate-360 transition-transform duration-700 ease-in-out" />
                   <span className="tracking-tight">
                     Start reciclare
-                    <span className="text-lime-600 ml-0.5 inline-block rotate-3">
+                    <span className="text-lime-400 ml-0.75 inline-block rotate-3 text-[16px]">
                       !
                     </span>
                   </span>

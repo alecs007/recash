@@ -52,10 +52,10 @@ export function AuthModal() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-18 h-18 rounded-2xl mb-4">
             <Image
-              src="/images/recash-icon.avif"
+              src="/images/recash-icon.svg"
               alt="Recash Icon"
-              width={128}
-              height={128}
+              width={64}
+              height={64}
               priority
               className="w-18 h-18"
             />

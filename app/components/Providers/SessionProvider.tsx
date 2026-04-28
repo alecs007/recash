@@ -1,14 +1,19 @@
 "use client";
 
 import { SessionProvider as NextAuthSessionProvider } from "next-auth/react";
+import type { Session } from "next-auth";
 import type { ReactNode } from "react";
 
-export function SessionProvider({ children }: { children: ReactNode }) {
-  const apiVersion = process.env.NEXT_PUBLIC_API_VERSION;
-  const basePath = `/api/${apiVersion}/auth`;
+interface Props {
+  children: ReactNode;
+  session: Session | null;
+}
+
+export function SessionProvider({ children, session }: Props) {
+  const basePath = `/api/${process.env.NEXT_PUBLIC_API_VERSION}/auth`;
 
   return (
-    <NextAuthSessionProvider basePath={basePath}>
+    <NextAuthSessionProvider basePath={basePath} session={session}>
       {children}
     </NextAuthSessionProvider>
   );
