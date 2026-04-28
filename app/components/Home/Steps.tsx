@@ -7,21 +7,21 @@ export const Steps = () => {
       title: "Postează anunțul",
       subtext:
         "Introdu numărul aproximativ de sticle, locația și procentajul oferit colectorului.",
-      image: "/images/steps/post-mascot.webp",
+      image: "/images/steps/post-mascot.svg",
     },
     {
       number: "02",
       title: "Așteaptă colectorul",
       subtext:
         "Cineva din zonă îți va prelua cererea și te va scăpa de drumul la aparat.",
-      image: "/images/steps/colector-mascot.webp",
+      image: "/images/steps/colector-mascot.svg",
     },
     {
       number: "03",
       title: "Realizează schimbul",
       subtext:
         "Colectorul îți oferă suma convenită, iar tu îi predai sticlele gata de reciclat.",
-      image: "/images/steps/eco-mascot.webp",
+      image: "/images/steps/eco-mascot.svg",
     },
   ];
 
@@ -49,6 +49,8 @@ export const Steps = () => {
                 alt={step.title}
                 fill
                 sizes="100%"
+                draggable={false}
+                priority
                 className="object-contain p-5"
               />
             </div>

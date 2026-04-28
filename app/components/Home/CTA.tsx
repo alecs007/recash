@@ -39,7 +39,7 @@ export const CTA = () => {
 
       <div className="relative mt-6 w-full h-[150px] md:h-[250px] lg:h-[360px]">
         <Image
-          src="/images/bottles.webp"
+          src="/images/bottles.svg"
           alt="Recash Bottles"
           fill
           sizes="100%"

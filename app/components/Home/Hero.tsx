@@ -90,7 +90,7 @@ export const Hero = () => {
 
           <div className="hidden lg:block relative w-full max-w-[500px] aspect-square">
             <Image
-              src="/images/hero-mascot-2.avif"
+              src="/images/hero-mascot.svg"
               alt="Recash Mascot"
               fill
               priority
