@@ -160,7 +160,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                 </button>
                 <button
                   onClick={openAuthModal}
-                  className="inline-flex items-center gap-1.5 bg-[#1a4d36] text-white font-bold py-2.25 px-4 rounded-full text-sm hover:scale-105 transition-all duration-200 cursor-pointer shadow-sm group"
+                  className="inline-flex items-center gap-1 bg-[#1a4d36] text-white font-bold py-2 px-4 rounded-full text-sm hover:scale-105 transition-all duration-200 cursor-pointer shadow-sm group"
                 >
                   <Recycle className="w-4 h-4 text-lime-400 group-hover:rotate-360 transition-transform duration-700 ease-in-out" />
                   <span className="tracking-tight">
