@@ -151,7 +151,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                 </div>
               </>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <button
                   onClick={openAuthModal}
                   className="hidden sm:flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors px-3 py-2 rounded-xl hover:bg-slate-50 cursor-pointer"
@@ -160,12 +160,12 @@ export default function Header({ children }: { children: React.ReactNode }) {
                 </button>
                 <button
                   onClick={openAuthModal}
-                  className="inline-flex items-center gap-1 bg-[#1a4d36] text-white font-bold py-2 px-4 rounded-full text-sm hover:scale-105 transition-all duration-200 cursor-pointer shadow-sm group"
+                  className="inline-flex items-center gap-1 text-[#123524] border-2 border-[#123524]/20 font-bold py-2 px-3 rounded-full text-sm hover:scale-105 transition-all duration-200 cursor-pointer group"
                 >
-                  <Recycle className="w-4 h-4 text-lime-400 group-hover:rotate-360 transition-transform duration-700 ease-in-out" />
+                  <Recycle className="w-4 h-4 text-lime-700 group-hover:rotate-360 transition-transform duration-700 ease-in-out" />
                   <span className="tracking-tight">
                     Start reciclare
-                    <span className="text-lime-400 ml-0.75 inline-block rotate-3 text-[16px] translate-y-[1px]">
+                    <span className="text-lime-700 ml-0.75 inline-block rotate-3 text-[16px] translate-y-[1px]">
                       !
                     </span>
                   </span>
