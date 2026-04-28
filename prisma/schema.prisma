@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "mongodb"
-  url      = env("RECASH_MONGODB_URI")
+  url      = env("RECASH_DATABASE_URI")
 }
 
 
