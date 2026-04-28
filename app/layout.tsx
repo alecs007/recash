@@ -7,6 +7,7 @@ import { LoadingProvider } from "@/context/LoadingContext";
 import { AuthModalProvider } from "@/context/AuthModalContext";
 import { AuthModal } from "./components/Auth/AuthModal";
 import { Suspense } from "react";
+import SmoothScroll from "./components/UX/SmoothScroll";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -48,9 +49,8 @@ export default async function RootLayout({
         <SessionProvider session={session}>
           <Suspense>
             <AuthModalProvider>
-              {" "}
               <LoadingProvider>
-                {children}
+                <SmoothScroll>{children}</SmoothScroll>
                 <AuthModal />
               </LoadingProvider>
             </AuthModalProvider>

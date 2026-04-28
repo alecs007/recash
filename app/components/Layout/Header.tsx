@@ -164,9 +164,9 @@ export default function Header({ children }: { children: React.ReactNode }) {
                 </button>
                 <button
                   onClick={openAuthModal}
-                  className="inline-flex items-center justify-center gap-1 text-white bg-[#1a4d36] font-bold py-2.25 px-3.5 rounded-full text-sm hover:scale-105 transition-all duration-200 cursor-pointer group"
+                  className="flex items-center justify-center gap-1 text-white bg-[#1a4d36] font-bold py-2.25 px-3.5 rounded-full text-sm hover:scale-105 transition-all duration-200 cursor-pointer group"
                 >
-                  <FaRecycle className="w-4 h-4 text-lime-400 group-hover:rotate-360 transition-transform duration-700 ease-in-out" />
+                  <FaRecycle className="w-4 h-4 text-lime-400 group-hover:rotate-360 translate-y-px transition-transform duration-700 ease-in-out" />
                   <span className="tracking-tight">
                     Conectează-te
                     <span className="text-lime-400 ml-0.75 inline-block rotate-3 text-[16px] translate-y-[1px]">
