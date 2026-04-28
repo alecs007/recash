@@ -28,8 +28,6 @@ export function AuthModal() {
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
-
   const handleSignIn = (provider: "google" | "facebook") => {
     signIn(provider, { callbackUrl: "/" });
   };
@@ -38,9 +36,19 @@ export function AuthModal() {
     <div
       ref={overlayRef}
       onClick={(e) => e.target === overlayRef.current && close()}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-all duration-300 ease-out ${
+        isOpen
+          ? "opacity-100 pointer-events-auto"
+          : "opacity-0 pointer-events-none"
+      }`}
     >
-      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 animate-in zoom-in-95 duration-200">
+      <div
+        className={`relative bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 transition-all duration-300 ease-out ${
+          isOpen
+            ? "opacity-100 scale-100 translate-y-0"
+            : "opacity-0 scale-95 translate-y-4"
+        }`}
+      >
         <button
           onClick={close}
           className="absolute top-4 right-4 grid place-items-center w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
@@ -85,7 +93,7 @@ export function AuthModal() {
         </div>
 
         <p className="text-center text-xs text-slate-400 mt-6 leading-relaxed">
-          Prin conectare, sunteți de acord cu{" "}
+          Prin conectare, sunteți de acord cu{" "}
           <a href="/termeni" className="underline hover:text-slate-600">
             Termenii
           </a>{" "}

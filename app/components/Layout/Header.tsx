@@ -88,7 +88,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                         alt={session!.user!.name ?? "Profil"}
                         width={36}
                         height={36}
-                        className="w-9 h-9 rounded-full object-cover border-2 border-lime-400"
+                        className="w-9 h-9 rounded-full object-cover border border-lime-400"
                       />
                     ) : (
                       <div className="w-9 h-9 rounded-full bg-gradient-to-br from-lime-400 to-lime-500 flex items-center justify-center text-black font-bold text-sm border-2 border-lime-300">
