@@ -32,7 +32,7 @@ export function AuthModal() {
 
   const handleSignIn = (provider: "google" | "facebook") => {
     close();
-    show("Ne conectăm contul tău...");
+    show("Se conectează...");
     signIn(provider, { callbackUrl: "/" });
   };
 

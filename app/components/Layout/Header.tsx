@@ -140,7 +140,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                         <button
                           onClick={() => {
                             setDropdownOpen(false);
-                            show("Ne deconectăm...");
+                            show("Se deconectează...");
                             signOut({ callbackUrl: "/" });
                           }}
                           className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors cursor-pointer"

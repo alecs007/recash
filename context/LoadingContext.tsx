@@ -5,6 +5,8 @@ import {
   useContext,
   useState,
   useCallback,
+  useEffect,
+  useRef,
   type ReactNode,
 } from "react";
 
@@ -16,23 +18,22 @@ interface LoadingContextValue {
 const LoadingContext = createContext<LoadingContextValue | null>(null);
 
 export function LoadingProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<{ visible: boolean; message: string }>({
-    visible: false,
-    message: "Se încarcă...",
-  });
+  const [message, setMessage] = useState("Se încarcă...");
+  const [visible, setVisible] = useState(false);
 
-  const show = useCallback((message = "Se încarcă...") => {
-    setState({ visible: true, message });
+  const show = useCallback((msg = "Se încarcă...") => {
+    setMessage(msg);
+    setVisible(true);
   }, []);
 
   const hide = useCallback(() => {
-    setState((s) => ({ ...s, visible: false }));
+    setVisible(false);
   }, []);
 
   return (
     <LoadingContext.Provider value={{ show, hide }}>
       {children}
-      <LoadingScreen visible={state.visible} />
+      <LoadingScreen visible={visible} message={message} />
     </LoadingContext.Provider>
   );
 }
@@ -43,34 +44,93 @@ export function useLoading() {
   return ctx;
 }
 
-function LoadingScreen({ visible }: { visible: boolean }) {
+function LoadingScreen({
+  visible,
+  message,
+}: {
+  visible: boolean;
+  message: string;
+}) {
+  const [rendered, setRendered] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (visible) {
+      setRendered(true);
+    } else {
+      timerRef.current = setTimeout(() => setRendered(false), 400);
+    }
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [visible]);
+
+  if (!rendered) return null;
+
   return (
-    <div
-      style={{ position: "fixed", inset: 0, zIndex: 99999 }}
-      className={`flex items-center justify-center bg-white transition-opacity duration-300 ${
-        visible
-          ? "opacity-100 pointer-events-auto"
-          : "opacity-0 pointer-events-none"
-      }`}
-    >
+    <>
       <style>{`
-        @keyframes big-bounce {
-          0%, 100% { transform: translateY(0); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); }
-          50% { transform: translateY(-28px); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
+        @keyframes loading-spin {
+          to { transform: rotate(360deg); }
         }
-        .dot-bounce {
-          animation: big-bounce 0.7s infinite;
+        .loading-spinner {
+          animation: loading-spin 0.8s linear infinite;
         }
       `}</style>
-      <div className="flex items-center gap-3">
-        {[0, 1, 2].map((i) => (
-          <div
-            key={i}
-            className="dot-bounce w-4 h-4 rounded-full bg-[#1a4d36]"
-            style={{ animationDelay: `${i * 0.15}s` }}
+
+      <div
+        role="status"
+        aria-live="polite"
+        aria-busy={visible}
+        aria-label={message}
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 99999,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "16px",
+          background: "white",
+          transition: "opacity 0.4s ease, visibility 0.4s ease",
+          opacity: visible ? 1 : 0,
+          visibility: visible ? "visible" : "hidden",
+          pointerEvents: visible ? "auto" : "none",
+        }}
+      >
+        <svg
+          className="loading-spinner"
+          width="56"
+          height="56"
+          viewBox="0 0 56 56"
+          fill="none"
+          aria-hidden="true"
+        >
+          <circle cx="28" cy="28" r="22" stroke="#e5e7eb" strokeWidth="3.5" />
+          <circle
+            cx="28"
+            cy="28"
+            r="22"
+            stroke="#1a4d36"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            strokeDasharray="138"
+            strokeDashoffset="104"
           />
-        ))}
+        </svg>
+
+        <p
+          style={{
+            margin: 0,
+            fontSize: "14px",
+            color: "#6b7280",
+          }}
+        >
+          {message}
+        </p>
       </div>
-    </div>
+    </>
   );
 }
