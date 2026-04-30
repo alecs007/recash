@@ -16,22 +16,35 @@ export function NavigationProgress() {
     animRef.current?.stop();
     scaleX.set(0);
 
-    animRef.current = animate(scaleX, 0.8, {
-      duration: 12,
-      ease: [0.1, 0.3, 0.5, 0.85],
+    animRef.current = animate(scaleX, 0.15, {
+      duration: 0.4,
+      ease: [0.4, 0, 1, 1],
+      onComplete: () => {
+        animRef.current = animate(scaleX, 0.78, {
+          duration: 16,
+          ease: [0.05, 0.1, 0.15, 0.65],
+        });
+      },
     });
   };
 
   const finish = () => {
     animRef.current?.stop();
-    animRef.current = animate(scaleX, 1, {
-      duration: 0.28,
-      ease: [0.22, 1, 0.36, 1],
+
+    animRef.current = animate(scaleX, 0.9, {
+      duration: 0.4,
+      ease: [0.4, 0, 0.6, 1],
       onComplete: () => {
-        setTimeout(() => {
-          setVisible(false);
-          scaleX.set(0);
-        }, 220);
+        animRef.current = animate(scaleX, 1, {
+          duration: 0.3,
+          ease: [0.22, 1, 0.36, 1],
+          onComplete: () => {
+            setTimeout(() => {
+              setVisible(false);
+              scaleX.set(0);
+            }, 250);
+          },
+        });
       },
     });
   };
@@ -63,7 +76,7 @@ export function NavigationProgress() {
     <motion.div
       className="pointer-events-none fixed inset-x-0 top-0 z-[9999] h-[2px]"
       animate={{ opacity: visible ? 1 : 0 }}
-      transition={{ duration: 0.15 }}
+      transition={{ duration: 0.2 }}
     >
       <motion.div
         className="h-full w-full origin-left bg-lime-400"
