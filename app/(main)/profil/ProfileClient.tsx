@@ -371,19 +371,15 @@ function OverviewTab({ user }: { user: UserProfile }) {
 
   return (
     <div className="space-y-8">
-      {" "}
       {/* Impact section */}
       <div className="p-6">
-        {/* <h3 className="font-bold text-slate-900 text-lg mb-4 flex items-center gap-2">
-          <span className="text-2xl">🌍</span> Impactul tău ecologic
-        </h3> */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="text-center p-4">
             <div className="text-6xl md:text-7xl font-black text-lime-600 mb-3">
               {totalBottles.toLocaleString("ro-RO")}{" "}
               <FaWineBottle className="inline-block w-14 h-14 md:w-16 md:h-16 -mt-2" />
             </div>
-            <div className="text-xl text-slate-500 mt-1">
+            <div className="text-lg md:text-xl text-slate-500 mt-1">
               sticle reciclate în total
             </div>
           </div>
@@ -391,16 +387,21 @@ function OverviewTab({ user }: { user: UserProfile }) {
             <div className="text-6xl md:text-7xl font-black text-emerald-600 mb-3">
               {(totalBottles * 0.033).toFixed(1)} kg
             </div>
-            <div className="text-xl text-slate-500 mt-1">plastic recuperat</div>
+            <div className="text-lg md:text-xl text-slate-500 mt-1">
+              plastic recuperat
+            </div>
           </div>
           <div className="text-center p-4">
             <div className="text-6xl md:text-7xl font-black text-teal-600 mb-3">
               {(totalBottles * 0.12).toFixed(1)} kg
             </div>
-            <div className="text-xl text-slate-500 mt-1">CO₂ redus</div>
+            <div className="text-lg md:text-xl text-slate-500 mt-1">
+              CO₂ redus
+            </div>
           </div>
         </div>
       </div>
+
       {/* Stats grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
@@ -427,42 +428,6 @@ function OverviewTab({ user }: { user: UserProfile }) {
           sub={`+ ${user.totalSaved.toFixed(2)} RON economisite`}
         />
       </div>
-      {/* Profile details */}
-      {/* <div className="rounded-2xl border border-slate-100 bg-white p-6">
-        <h3 className="font-bold text-slate-900 text-lg mb-4">
-          Detalii profil
-        </h3>
-        <div className="space-y-3">
-          {user.bio && (
-            <div className="flex gap-3">
-              <FileText className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
-              <span className="text-slate-700 text-sm">{user.bio}</span>
-            </div>
-          )}
-          {user.phone && (
-            <div className="flex gap-3">
-              <Phone className="w-4 h-4 text-slate-400 shrink-0" />
-              <span className="text-slate-700 text-sm">{user.phone}</span>
-            </div>
-          )}
-          <div className="flex gap-3">
-            <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
-            <span className="text-slate-700 text-sm">
-              Membru din
-              {new Date(user.createdAt).toLocaleDateString("ro-RO", {
-                month: "long",
-                year: "numeric",
-              })}
-            </span>
-          </div>
-          <div className="flex gap-3">
-            <Shield className="w-4 h-4 text-slate-400 shrink-0" />
-            <span className="text-slate-700 text-sm">
-              {ROLE_LABELS[user.role]}
-            </span>
-          </div>
-        </div> */}
-      {/* </div> */}
     </div>
   );
 }
@@ -476,7 +441,7 @@ function PostsTab({ userId }: { userId: string }) {
     fetcher,
   );
 
-  if (isLoading) return <LoadingSkeleton />;
+  if (isLoading) return <PostsSkeleton />;
 
   const posts: Post[] = data?.posts ?? [];
 
@@ -595,7 +560,7 @@ function TransactionsTab({ userId }: { userId: string }) {
     fetcher,
   );
 
-  if (isLoading) return <LoadingSkeleton />;
+  if (isLoading) return <TransactionsSkeleton />;
 
   const transactions: Transaction[] = data?.transactions ?? [];
 
@@ -714,7 +679,7 @@ function BadgesTab() {
   const ALL_BADGE_TYPES = Object.keys(BADGE_CONFIG);
   const earnedTypes = new Set(badges.map((b) => b.type));
 
-  if (isLoading) return <LoadingSkeleton />;
+  if (isLoading) return <BadgesSkeleton />;
 
   return (
     <div className="space-y-6">
@@ -785,7 +750,7 @@ function NotificationsTab() {
     mutate();
   };
 
-  if (isLoading) return <LoadingSkeleton />;
+  if (isLoading) return <NotificationsSkeleton />;
 
   const notifications: Notification[] = data?.notifications ?? [];
 
@@ -863,17 +828,124 @@ function NotificationsTab() {
   );
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Skeletons ────────────────────────────────────────────────────────────────
 
-function LoadingSkeleton() {
+function PostsSkeleton() {
   return (
     <div className="space-y-3 animate-pulse">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="h-24 bg-slate-100 rounded-2xl" />
+      {[1, 2, 3, 4].map((i) => (
+        <div
+          key={i}
+          className="bg-white rounded-2xl border border-slate-100 p-4"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 space-y-2">
+              <div className="flex gap-2">
+                <div className="h-5 w-20 bg-slate-100 rounded-full" />
+                <div className="h-5 w-16 bg-slate-100 rounded-full" />
+              </div>
+              <div className="h-4 w-3/4 bg-slate-100 rounded-lg" />
+              <div className="flex items-center gap-1">
+                <div className="h-3 w-3 bg-slate-100 rounded-full" />
+                <div className="h-3 w-1/3 bg-slate-100 rounded-lg" />
+              </div>
+            </div>
+            <div className="flex flex-col items-end gap-1.5 shrink-0">
+              <div className="h-7 w-8 bg-slate-100 rounded-lg" />
+              <div className="h-3 w-10 bg-slate-100 rounded-lg" />
+              <div className="h-4 w-16 bg-slate-100 rounded-lg" />
+            </div>
+          </div>
+        </div>
       ))}
     </div>
   );
 }
+
+function TransactionsSkeleton() {
+  return (
+    <div className="space-y-3 animate-pulse">
+      {[1, 2, 3, 4].map((i) => (
+        <div
+          key={i}
+          className="bg-white rounded-2xl border border-slate-100 p-4"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-slate-100 shrink-0" />
+              <div className="space-y-2">
+                <div className="h-4 w-24 bg-slate-100 rounded-lg" />
+                <div className="flex items-center gap-1">
+                  <div className="h-3 w-3 bg-slate-100 rounded-full" />
+                  <div className="h-3 w-28 bg-slate-100 rounded-lg" />
+                </div>
+                <div className="h-3 w-20 bg-slate-100 rounded-lg" />
+              </div>
+            </div>
+            <div className="flex flex-col items-end gap-1.5 shrink-0">
+              <div className="h-6 w-20 bg-slate-100 rounded-lg" />
+              <div className="h-3 w-28 bg-slate-100 rounded-lg" />
+              <div className="flex gap-0.5 mt-0.5">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <div key={s} className="w-3 h-3 bg-slate-100 rounded-sm" />
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="mt-3 h-3 w-2/3 bg-slate-100 rounded-lg" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function BadgesSkeleton() {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 animate-pulse">
+      {Array.from({ length: 12 }).map((_, i) => (
+        <div
+          key={i}
+          className="rounded-2xl border border-slate-100 p-4 flex flex-col items-center gap-2.5"
+        >
+          <div className="w-10 h-10 bg-slate-100 rounded-full" />
+          <div className="h-4 w-20 bg-slate-100 rounded-lg" />
+          <div className="h-3 w-24 bg-slate-100 rounded-lg" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function NotificationsSkeleton() {
+  return (
+    <div className="space-y-2 animate-pulse">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div
+          key={i}
+          className={`rounded-2xl border p-4 flex gap-3 ${
+            i <= 2
+              ? "bg-lime-50/50 border-lime-100"
+              : "bg-white border-slate-100"
+          }`}
+        >
+          <div className="w-8 h-8 bg-slate-100 rounded-full shrink-0 mt-0.5" />
+          <div className="flex-1 space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <div className="h-4 w-1/3 bg-slate-100 rounded-lg" />
+              {i <= 2 && (
+                <div className="w-2 h-2 rounded-full bg-lime-200 shrink-0 mt-1" />
+              )}
+            </div>
+            <div className="h-3 w-3/4 bg-slate-100 rounded-lg" />
+            <div className="h-3 w-16 bg-slate-100 rounded-lg" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function EmptyState({
   emoji,
@@ -964,15 +1036,18 @@ export function ProfileClient({ user }: { user: UserProfile }) {
     year: "numeric",
   });
 
+  const totalBottles = user.totalBottlesGiven + user.totalBottlesCollected;
+
   return (
     <div className="w-full">
       {/* ── Profile Header ──────────────────────────────────────────────────── */}
-      <div className="bg-gradient-to-br from-[#0e2a1c] via-[#123524] to-[#1a4d36] rounded-[2rem] mx-4 sm:mx-6 lg:mx-8 mt-4 mb-6 px-6 sm:px-10 py-8 relative overflow-hidden shadow-xl">
+      <div className="bg-gradient-to-br from-[#123424] to-[#1a4d36] rounded-[2rem] mx-4 sm:mx-6 lg:mx-8 mt-4 mb-6 px-6 sm:px-10 py-8 relative overflow-hidden shadow">
         {/* Decorative blobs */}
         <div className="absolute -top-10 -right-10 w-56 h-56 rounded-full bg-lime-400/20 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-10 -left-10 w-48 h-48 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
 
-        <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-6">
+        {/* Always-inline row: avatar + info */}
+        <div className="relative flex flex-row items-center gap-4 sm:gap-6">
           {/* Avatar */}
           <div className="relative shrink-0">
             {user.image ? (
@@ -981,41 +1056,40 @@ export function ProfileClient({ user }: { user: UserProfile }) {
                 alt={user.name ?? "Profil"}
                 width={96}
                 height={96}
-                className="w-24 h-24 rounded-full object-cover border-4 border-lime-400/70 shadow-lg"
+                className="w-18 h-18 sm:w-28 sm:h-28 rounded-full object-cover border-3 border-lime-400/70 shadow-lg"
               />
             ) : (
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-lime-400 to-lime-500 flex items-center justify-center text-black font-black text-3xl border-4 border-lime-400/60 shadow-lg">
-                {initials ?? <User className="w-10 h-10" />}
+              <div className="w-14 h-14 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-lime-400 to-lime-500 flex items-center justify-center text-black font-black text-xl sm:text-3xl border-4 border-lime-400/60 shadow-lg">
+                {initials ?? <User className="w-7 h-7 sm:w-10 sm:h-10" />}
               </div>
             )}
             {user.role === "ADMIN" && (
-              <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-amber-400 flex items-center justify-center border-2 border-[#123524]">
-                <Shield className="w-3.5 h-3.5 text-black" />
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-amber-400 flex items-center justify-center border-2 border-[#123524]">
+                <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-black" />
               </div>
             )}
           </div>
 
           {/* Info */}
           <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-2 mb-1">
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
+              <h1 className="text-lg sm:text-3xl font-extrabold text-white tracking-tight truncate">
                 {user.name ?? "Utilizator"}
               </h1>
-              <span className="inline-flex items-center gap-1 bg-lime-400/15 text-lime-300 border border-lime-400/25 px-2.5 py-0.5 rounded-full text-xs font-bold">
-                <Recycle className="w-3 h-3" />
-                {ROLE_LABELS[user.role]}
-              </span>
             </div>
 
-            <p className="text-white/60 text-sm mb-3">{user.email}</p>
+            <p className="text-white/60 text-xs sm:text-sm mb-2 sm:mb-3 truncate">
+              {user.email}
+            </p>
 
             <StarRating score={user.reputationScore} count={user.ratingCount} />
 
-            <div className="flex flex-wrap gap-4 mt-4">
+            {/* Stats row — hidden on mobile, shown on sm+ */}
+            <div className="hidden sm:flex flex-wrap gap-4 mt-4">
               <div className="flex items-center gap-1.5 text-white/70 text-sm">
                 <FaWineBottle className="w-4 h-4 text-lime-400" />
                 <span className="font-bold text-white">
-                  {user.totalBottlesGiven + user.totalBottlesCollected}
+                  {totalBottles}
                 </span>{" "}
                 sticle reciclate
               </div>
@@ -1034,6 +1108,25 @@ export function ProfileClient({ user }: { user: UserProfile }) {
             </div>
           </div>
         </div>
+
+        {/* Stats row — mobile only, below the inline row */}
+        <div className="relative flex sm:hidden flex-wrap gap-3 mt-4 pt-4 border-t border-white/10">
+          <div className="flex items-center gap-1.5 text-white/70 text-xs">
+            <FaWineBottle className="w-3.5 h-3.5 text-lime-400" />
+            <span className="font-bold text-white">{totalBottles}</span> sticle
+          </div>
+          <div className="flex items-center gap-1.5 text-white/70 text-xs">
+            <Trophy className="w-3.5 h-3.5 text-lime-400" />
+            <span className="font-bold text-white">
+              {user._count.badges}
+            </span>{" "}
+            badge-uri
+          </div>
+          <div className="flex items-center gap-1.5 text-white/70 text-xs">
+            <Calendar className="w-3.5 h-3.5 text-lime-400" />
+            <span className="font-bold text-white">{memberSince}</span>
+          </div>
+        </div>
       </div>
 
       {/* ── Tabs ────────────────────────────────────────────────────────────── */}
@@ -1043,7 +1136,7 @@ export function ProfileClient({ user }: { user: UserProfile }) {
             <button
               key={id}
               onClick={() => setActiveTab(id)}
-              className={`flex items-center gap-2 px-4 py-3 border text-sm font-semibold rounded-xl whitespace-nowrap transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-4 py-3 border text-sm text-[#123524] font-semibold rounded-xl whitespace-nowrap transition-all cursor-pointer ${
                 activeTab === id
                   ? "text-[#123524] border-lime-700/50 bg-lime-50/50"
                   : "text-slate-500 border-transparent hover:text-slate-800 hover:bg-slate-50"

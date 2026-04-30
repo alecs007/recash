@@ -7,7 +7,7 @@ export const CTA = () => {
   return (
     <section className="relative bg-white rounded-[2rem] lg:rounded-[3rem] overflow-hidden mt-12">
       <div className="relative z-10 max-w-6xl mx-auto text-center">
-        <h2 className="font-sans font-extrabold text-slate-900 text-4xl lg:text-6xl leading-tight tracking-tight sm:text-nowrap">
+        <h2 className="font-sans font-extrabold text-slate-900 text-[2.5rem] lg:text-6xl leading-tight tracking-tight sm:text-nowrap">
           <span className="text-nowrap">Bani din reciclare,</span>
           <br className="sm:hidden" />
           <span className="text-nowrap">
@@ -15,7 +15,7 @@ export const CTA = () => {
           </span>
         </h2>
 
-        <p className="text-slate-700 text-lg lg:text-2xl mt-4 max-w-4xl mx-auto leading-relaxed">
+        <p className="text-slate-700 text-xl lg:text-2xl mt-4 max-w-4xl mx-auto leading-relaxed">
           Uită de drumul la magazin printr-o simplă postare. Tu îți salvezi
           timpul, colectorul câștigă bani, mediul îți mulțumește.
         </p>
