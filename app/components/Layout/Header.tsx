@@ -91,7 +91,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                         alt={session!.user!.name ?? "Profil"}
                         width={36}
                         height={36}
-                        className="w-9 h-9 rounded-full object-cover border-2 border-lime-400"
+                        className="w-9 h-9 rounded-full object-cover border border-lime-400"
                       />
                     ) : (
                       <div className="w-9 h-9 rounded-full bg-gradient-to-br from-lime-400 to-lime-500 flex items-center justify-center text-black font-bold text-sm border-2 border-lime-300">
@@ -164,7 +164,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                 </button>
                 <button
                   onClick={openAuthModal}
-                  className="flex items-center justify-center gap-1 text-white bg-[#1a4d36] font-bold py-2.5 px-4 rounded-full text-sm hover:scale-105 transition-all duration-200 cursor-pointer group"
+                  className="flex items-center justify-center gap-1 text-white bg-[#1a4d36] font-bold py-2.25 px-4 rounded-full text-sm hover:scale-105 transition-all duration-200 cursor-pointer group"
                 >
                   <FaRecycle className="w-4 h-4 text-lime-400 group-hover:rotate-360 translate-y-px transition-transform duration-700 ease-in-out" />
                   <span className="tracking-tight">

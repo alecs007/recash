@@ -1041,7 +1041,7 @@ export function ProfileClient({ user }: { user: UserProfile }) {
   return (
     <div className="w-full">
       {/* ── Profile Header ──────────────────────────────────────────────────── */}
-      <div className="bg-gradient-to-br from-[#123424] to-[#1a4d36] rounded-[2rem] mx-4 sm:mx-6 lg:mx-8 mt-4 mb-6 px-6 sm:px-10 py-8 relative overflow-hidden shadow">
+      <div className="bg-gradient-to-br from-[#123424] to-[#1a4d36] rounded-[2rem] mx-4 sm:mx-6 lg:mx-8 mt-4 mb-6 px-6 sm:px-10 py-6 sm:py-8 relative overflow-hidden shadow">
         {/* Decorative blobs */}
         <div className="absolute -top-10 -right-10 w-56 h-56 rounded-full bg-lime-400/20 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-10 -left-10 w-48 h-48 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />

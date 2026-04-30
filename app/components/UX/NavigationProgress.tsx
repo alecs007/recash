@@ -36,7 +36,6 @@ export function NavigationProgress() {
     });
   };
 
-  // Detect navigation intent: click on any internal <a>
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       const anchor = (e.target as Element).closest(
@@ -53,7 +52,6 @@ export function NavigationProgress() {
     return () => document.removeEventListener("click", onClick);
   }, [pathname]);
 
-  // Detect navigation completion via pathname change
   useEffect(() => {
     if (pathname !== prevPath.current) {
       prevPath.current = pathname;
@@ -63,7 +61,7 @@ export function NavigationProgress() {
 
   return (
     <motion.div
-      className="pointer-events-none fixed inset-x-0 top-0 z-[9999] h-[3px]"
+      className="pointer-events-none fixed inset-x-0 top-0 z-[9999] h-[2px]"
       animate={{ opacity: visible ? 1 : 0 }}
       transition={{ duration: 0.15 }}
     >
