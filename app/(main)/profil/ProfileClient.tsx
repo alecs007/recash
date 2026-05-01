@@ -932,8 +932,8 @@ export function ProfileClient({ user }: { user: UserProfile }) {
 
       <StatsGrid user={user} />
       <LatestPostsSection />
-      <LatestTransactionsSection userId={user.id} />
       <BadgesSection />
+      <LatestTransactionsSection userId={user.id} />
     </div>
   );
 }
