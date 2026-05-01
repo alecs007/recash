@@ -305,7 +305,7 @@ function StarRating({ score, count }: { score: number; count: number }) {
         {score.toFixed(1)}
       </span>
       {count > 0 && (
-        <span className="text-xs text-slate-400">({count} recenzii)</span>
+        <span className="text-xs text-slate-300">({count} recenzii)</span>
       )}
     </div>
   );
@@ -517,8 +517,9 @@ function PostsTab({ userId }: { userId: string }) {
                       <Image
                         src={post.collector.image}
                         alt={post.collector.name ?? ""}
-                        width={24}
-                        height={24}
+                        width={64}
+                        height={64}
+                        priority
                         className="object-cover"
                       />
                     ) : (

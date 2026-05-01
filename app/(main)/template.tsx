@@ -2,20 +2,27 @@
 
 import { motion } from "framer-motion";
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 
 export default function Template({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
-  }, []);
+  }, [pathname]);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 22 }}
+      key={pathname}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -6 }}
       transition={{
-        duration: 0.85,
-        ease: [0.22, 1, 0.36, 1],
+        duration: 0.5,
+        ease: "easeOut",
+      }}
+      style={{
+        width: "100%",
+        position: "relative",
       }}
     >
       {children}
