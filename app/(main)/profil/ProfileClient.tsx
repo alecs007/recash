@@ -860,15 +860,20 @@ export function ProfileClient({ user }: { user: UserProfile }) {
           {/* Avatar */}
           <div className="relative shrink-0">
             {user.image ? (
-              <Image
-                src={user.image}
-                alt={user.name ?? "Profil"}
-                width={96}
-                height={96}
-                className="w-18 h-18 sm:w-28 sm:h-28 rounded-full object-cover border-3 border-lime-400/70 shadow-lg"
-              />
+              <div className="relative w-18 h-18 sm:w-28 sm:h-28 shrink-0">
+                <div className="absolute inset-0 rounded-full bg-slate-200 animate-pulse" />
+
+                {user.image && (
+                  <Image
+                    src={user.image}
+                    alt="Profile"
+                    fill
+                    className="rounded-full object-cover border-3 border-lime-400/70 shadow-lg z-10"
+                  />
+                )}
+              </div>
             ) : (
-              <div className="w-14 h-14 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-lime-400 to-lime-500 flex items-center justify-center text-black font-black text-xl sm:text-3xl border-4 border-lime-400/60 shadow-lg">
+              <div className="w-18 h-18 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-lime-400 to-lime-500 flex items-center justify-center text-black font-black text-xl sm:text-3xl border-3 border-lime-400/60 shadow-lg">
                 {initials ?? <User className="w-7 h-7 sm:w-10 sm:h-10" />}
               </div>
             )}

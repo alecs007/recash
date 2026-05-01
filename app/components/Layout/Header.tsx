@@ -48,6 +48,18 @@ export default function Header({ children }: { children: React.ReactNode }) {
     .join("")
     .toUpperCase();
 
+  const handleMouseEnter = () => {
+    if (window.matchMedia("(pointer: fine)").matches) {
+      setDropdownOpen(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (window.matchMedia("(pointer: fine)").matches) {
+      setDropdownOpen(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <header className="sticky top-0 z-40 backdrop-blur-md bg-white">
@@ -80,7 +92,12 @@ export default function Header({ children }: { children: React.ReactNode }) {
                   )}
                 </Link>
 
-                <div ref={dropdownRef} className="relative">
+                <div
+                  ref={dropdownRef}
+                  className="relative"
+                  onMouseEnter={handleMouseEnter}
+                  onMouseLeave={handleMouseLeave}
+                >
                   <button
                     onClick={() => setDropdownOpen((v) => !v)}
                     className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
@@ -113,44 +130,47 @@ export default function Header({ children }: { children: React.ReactNode }) {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="absolute right-0 top-full mt-2 w-56 bg-white rounded-3xl border border-slate-200 p-2 origin-top-right z-50"
+                        // Keep it open when hovering the menu itself
+                        className="absolute right-0 top-full mt-0 pt-2 w-56 origin-top-right z-50"
                       >
-                        <Link
-                          href="/profil"
-                          onClick={() => setDropdownOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
-                        >
-                          <FaRegUser className="w-4 h-4 text-slate-600" />
-                          Profilul meu
-                        </Link>
-                        <Link
-                          href="/post"
-                          onClick={() => setDropdownOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
-                        >
-                          <FaWineBottle className="w-4 h-4 text-slate-600" />
-                          Postează sticle
-                        </Link>
-                        <Link
-                          href="/map"
-                          onClick={() => setDropdownOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
-                        >
-                          <LuBike className="w-4 h-4 text-slate-600" />
-                          Colectează sticle
-                        </Link>
-                        <div className="border-t border-slate-100 mt-1 pt-1">
-                          <button
-                            onClick={() => {
-                              setDropdownOpen(false);
-                              show("Se deconectează...");
-                              signOut({ callbackUrl: "/" });
-                            }}
-                            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm rounded-xl text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                        <div className="bg-white rounded-3xl border border-slate-200 p-2 shadow-xl">
+                          <Link
+                            href="/profil"
+                            onClick={() => setDropdownOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                           >
-                            <MdLogout className="w-4 h-4" />
-                            Deconectează-te
-                          </button>
+                            <FaRegUser className="w-4 h-4 text-slate-600" />
+                            Profilul meu
+                          </Link>
+                          <Link
+                            href="/post"
+                            onClick={() => setDropdownOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                          >
+                            <FaWineBottle className="w-4 h-4 text-slate-600" />
+                            Postează sticle
+                          </Link>
+                          <Link
+                            href="/map"
+                            onClick={() => setDropdownOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                          >
+                            <LuBike className="w-4 h-4 text-slate-600" />
+                            Colectează sticle
+                          </Link>
+                          <div className="border-t border-slate-100 mt-1 pt-1">
+                            <button
+                              onClick={() => {
+                                setDropdownOpen(false);
+                                show("Se deconectează...");
+                                signOut({ callbackUrl: "/" });
+                              }}
+                              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm rounded-xl text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                            >
+                              <MdLogout className="w-4 h-4" />
+                              Deconectează-te
+                            </button>
+                          </div>
                         </div>
                       </motion.div>
                     )}
