@@ -13,6 +13,14 @@ import { MdLogout } from "react-icons/md";
 import { LuBike } from "react-icons/lu";
 import { motion, AnimatePresence } from "framer-motion";
 
+const ProfileShimmer = () => (
+  <div className="flex items-center gap-3 pl-1 pr-2 py-1">
+    <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse"></div>
+    <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse"></div>
+    <div className="w-3.5 h-3.5 rounded-full bg-slate-200 animate-pulse" />
+  </div>
+);
+
 export default function Header({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: session, status } = useSession();
@@ -40,6 +48,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
 
   const unreadCount = 3;
   const isAuthenticated = status === "authenticated" && !!session?.user;
+  const isLoading = status === "loading";
 
   const initials = session?.user?.name
     ?.split(" ")
@@ -77,7 +86,9 @@ export default function Header({ children }: { children: React.ReactNode }) {
           </Link>
 
           <div className="flex items-center gap-3">
-            {isAuthenticated ? (
+            {isLoading ? (
+              <ProfileShimmer />
+            ) : isAuthenticated ? (
               <>
                 <Link
                   href="/notificari"
@@ -132,7 +143,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                         transition={{ duration: 0.2, ease: "easeOut" }}
                         className="absolute right-0 top-full mt-0 pt-2 w-56 origin-top-right z-50"
                       >
-                        <div className="bg-white rounded-3xl border border-slate-200 p-2">
+                        <div className="bg-white rounded-3xl border border-slate-200 p-2 shadow-xl">
                           <Link
                             href="/profil"
                             onClick={() => setDropdownOpen(false)}
