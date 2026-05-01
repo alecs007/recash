@@ -130,10 +130,9 @@ export default function Header({ children }: { children: React.ReactNode }) {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
-                        // Keep it open when hovering the menu itself
                         className="absolute right-0 top-full mt-0 pt-2 w-56 origin-top-right z-50"
                       >
-                        <div className="bg-white rounded-3xl border border-slate-200 p-2 shadow-xl">
+                        <div className="bg-white rounded-3xl border border-slate-200 p-2">
                           <Link
                             href="/profil"
                             onClick={() => setDropdownOpen(false)}
