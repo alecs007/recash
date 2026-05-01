@@ -149,6 +149,7 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
             alt="Nicio postare"
             width={64}
             height={64}
+            priority
             className="mx-auto h-24 w-24"
           />
           <p className="font-bold text-slate-900 text-lg mb-2">

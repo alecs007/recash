@@ -21,11 +21,21 @@ export async function GET(req: Request) {
   );
   const skip = (page - 1) * limit;
 
-  const where = {
-    OR: [{ posterId: session.user.id }, { collectorId: session.user.id }],
-  };
+  const side = searchParams.get("side") ?? "all";
 
-  const cacheKey = CacheKey.transactions(session.user.id, page, limit);
+  const where =
+    side === "poster"
+      ? { posterId: session.user.id }
+      : side === "collector"
+        ? { collectorId: session.user.id }
+        : {
+            OR: [
+              { posterId: session.user.id },
+              { collectorId: session.user.id },
+            ],
+          };
+
+  const cacheKey = CacheKey.transactions(session.user.id, page, limit, side);
 
   try {
     const result = await cached(cacheKey, TTL.transactions, async () => {

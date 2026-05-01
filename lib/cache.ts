@@ -41,8 +41,8 @@ export const CacheKey = {
   posts: (userId: string, page: number, limit: number, status: string) =>
     `profile:${userId}:posts:${page}:${limit}:${status}`,
 
-  transactions: (userId: string, page: number, limit: number) =>
-    `profile:${userId}:tx:${page}:${limit}`,
+  transactions: (userId: string, page: number, limit: number, side: string) =>
+    `profile:${userId}:tx:${page}:${limit}:${side}`,
 
   badges: (userId: string) => `profile:${userId}:badges`,
 
