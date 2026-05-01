@@ -16,8 +16,6 @@ export async function GET() {
         name: true,
         email: true,
         image: true,
-        role: true,
-        bio: true,
         phone: true,
         createdAt: true,
         totalBottlesGiven: true,
@@ -58,20 +56,57 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Neautentificat" }, { status: 401 });
     }
 
-    const body = await req.json();
-    const { bio, phone, name } = body;
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "Cerere invalidă" }, { status: 400 });
+    }
+
+    if (typeof body !== "object" || body === null || Array.isArray(body)) {
+      return NextResponse.json({ error: "Cerere invalidă" }, { status: 400 });
+    }
+
+    const { name, phone } = body as Record<string, unknown>;
+
+    if (name !== undefined) {
+      if (
+        typeof name !== "string" ||
+        name.trim().length === 0 ||
+        name.trim().length > 100
+      ) {
+        return NextResponse.json(
+          { error: "Nume invalid (max 100 caractere)" },
+          { status: 400 },
+        );
+      }
+    }
+
+    if (phone !== undefined) {
+      if (typeof phone !== "string" || phone.trim().length > 20) {
+        return NextResponse.json(
+          { error: "Telefon invalid (max 20 caractere)" },
+          { status: 400 },
+        );
+      }
+
+      if (phone.trim().length > 0 && !/^[\d\s\+\-\(\)]+$/.test(phone.trim())) {
+        return NextResponse.json(
+          { error: "Format telefon invalid" },
+          { status: 400 },
+        );
+      }
+    }
 
     const updated = await prisma.user.update({
       where: { id: session.user.id },
       data: {
-        ...(bio !== undefined && { bio }),
-        ...(phone !== undefined && { phone }),
-        ...(name !== undefined && { name }),
+        ...(name !== undefined && { name: (name as string).trim() }),
+        ...(phone !== undefined && { phone: (phone as string).trim() || null }),
       },
       select: {
         id: true,
         name: true,
-        bio: true,
         phone: true,
       },
     });

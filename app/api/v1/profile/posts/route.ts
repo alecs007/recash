@@ -1,9 +1,26 @@
+// app/api/v1/profile/posts/route.ts
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { PostStatus } from "@prisma/client";
 
-const ACTIVE_STATUSES: PostStatus[] = ["OPEN", "CLAIMED", "IN_PROGRESS"];
+const VALID_STATUSES = new Set<PostStatus>([
+  "OPEN",
+  "CLAIMED",
+  "IN_PROGRESS",
+  "COMPLETED",
+  "CANCELLED",
+  "EXPIRED",
+]);
+
+const STATUS_ORDER: Record<PostStatus, number> = {
+  OPEN: 0,
+  CLAIMED: 1,
+  IN_PROGRESS: 2,
+  COMPLETED: 3,
+  CANCELLED: 4,
+  EXPIRED: 5,
+};
 
 export async function GET(req: Request) {
   try {
@@ -13,71 +30,63 @@ export async function GET(req: Request) {
     }
 
     const { searchParams } = new URL(req.url);
-    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
+
+    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1") || 1);
     const limit = Math.min(
       50,
-      Math.max(1, parseInt(searchParams.get("limit") ?? "10")),
+      Math.max(1, parseInt(searchParams.get("limit") ?? "10") || 10),
     );
-    const status = searchParams.get("status");
+    const statusParam = searchParams.get("status") ?? "";
     const skip = (page - 1) * limit;
 
-    let statusFilter = {};
-    if (status === "active") {
-      statusFilter = { status: { in: ACTIVE_STATUSES } };
-    } else if (status) {
-      statusFilter = { status: status as PostStatus };
+    let statusFilter: object = {};
+    if (statusParam === "active") {
+      statusFilter = {
+        status: { in: ["OPEN", "CLAIMED", "IN_PROGRESS"] as PostStatus[] },
+      };
+    } else if (statusParam && VALID_STATUSES.has(statusParam as PostStatus)) {
+      statusFilter = { status: statusParam as PostStatus };
     }
+    // Any unknown value is ignored — returns all statuses
 
-    const where = {
-      authorId: session.user.id,
-      ...statusFilter,
+    const where = { authorId: session.user.id, ...statusFilter };
+
+    const postSelect = {
+      collector: { select: { id: true, name: true, image: true } },
+      transaction: {
+        select: {
+          actualValue: true,
+          collectorEarning: true,
+          posterEarning: true,
+          collectorRating: true,
+          posterRating: true,
+        },
+      },
     };
 
-    if (status === "active") {
-      const ORDER: Record<PostStatus, number> = {
-        OPEN: 0,
-        CLAIMED: 1,
-        IN_PROGRESS: 2,
-        COMPLETED: 3,
-        CANCELLED: 4,
-        EXPIRED: 5,
-      };
-
+    // For "active" we fetch all matching, sort by status priority, then paginate in-memory
+    // (active set is always small — at most a few dozen per user)
+    if (statusParam === "active") {
       const [allActive, total] = await Promise.all([
         prisma.post.findMany({
           where,
           orderBy: { createdAt: "desc" },
-          take: 200,
-          include: {
-            collector: { select: { id: true, name: true, image: true } },
-            transaction: {
-              select: {
-                actualValue: true,
-                collectorEarning: true,
-                posterEarning: true,
-                collectorRating: true,
-                posterRating: true,
-              },
-            },
-          },
+          take: 200, // safety cap
+          include: postSelect,
         }),
         prisma.post.count({ where }),
       ]);
 
       allActive.sort((a, b) => {
         const diff =
-          (ORDER[a.status as PostStatus] ?? 99) -
-          (ORDER[b.status as PostStatus] ?? 99);
-        if (diff !== 0) return diff;
-        return (
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
+          (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99);
+        return diff !== 0
+          ? diff
+          : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
 
-      const posts = allActive.slice(skip, skip + limit);
-
       return NextResponse.json({
-        posts,
+        posts: allActive.slice(skip, skip + limit),
         total,
         page,
         totalPages: Math.ceil(total / limit),
@@ -90,18 +99,7 @@ export async function GET(req: Request) {
         orderBy: { createdAt: "desc" },
         skip,
         take: limit,
-        include: {
-          collector: { select: { id: true, name: true, image: true } },
-          transaction: {
-            select: {
-              actualValue: true,
-              collectorEarning: true,
-              posterEarning: true,
-              collectorRating: true,
-              posterRating: true,
-            },
-          },
-        },
+        include: postSelect,
       }),
       prisma.post.count({ where }),
     ]);

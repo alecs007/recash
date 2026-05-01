@@ -143,9 +143,15 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
       {isLoading ? (
         <Skeleton />
       ) : transactions.length === 0 ? (
-        <div className="text-center py-16 space-y-3">
-          <div className="text-5xl">💸</div>
-          <p className="font-bold text-slate-900 text-lg">
+        <div className="text-center py-16">
+          <Image
+            src="/images/bottle-sad.svg"
+            alt="Nicio postare"
+            width={64}
+            height={64}
+            className="mx-auto h-24 w-24"
+          />
+          <p className="font-bold text-slate-900 text-lg mb-2">
             Nicio tranzacție găsită
           </p>
           <p className="text-slate-500 text-sm">

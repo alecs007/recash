@@ -1,44 +1,54 @@
+// middleware.ts
 import { NextRequest, NextResponse } from "next/server";
 
-const PROTECTED_ROUTES = [
+// ── Protected page routes ────────────────────────────────────────────────────
+// Any pathname that starts with one of these requires an active session.
+const PROTECTED_PAGE_PREFIXES = [
   "/profil",
   "/post",
   "/mesaje",
   "/notificari",
   "/setari",
 ];
-const PROTECTED_API_ROUTES = [
-  `/api/${process.env.NEXT_PUBLIC_API_VERSION}/posts`,
-  `/api/${process.env.NEXT_PUBLIC_API_VERSION}/transactions`,
-  `/api/${process.env.NEXT_PUBLIC_API_VERSION}/user`,
-  `/api/${process.env.NEXT_PUBLIC_API_VERSION}/notifications`,
+
+const API_VERSION = process.env.NEXT_PUBLIC_API_VERSION ?? "v1";
+const PROTECTED_API_PREFIXES = [
+  `/api/${API_VERSION}/profile`,
+  `/api/${API_VERSION}/posts`,
+  `/api/${API_VERSION}/transactions`,
+  `/api/${API_VERSION}/notifications`,
+];
+
+const SESSION_COOKIE_NAMES = [
+  "authjs.session-token",
+  "__Secure-authjs.session-token",
 ];
 
 export function middleware(req: NextRequest) {
-  const { nextUrl } = req;
+  const { pathname } = req.nextUrl;
 
-  const sessionToken =
-    req.cookies.get("authjs.session-token") ??
-    req.cookies.get("__Secure-authjs.session-token");
-
-  const isAuthenticated = !!sessionToken;
-
-  const isProtectedPage = PROTECTED_ROUTES.some((r) =>
-    nextUrl.pathname.startsWith(r),
-  );
-  const isProtectedApi = PROTECTED_API_ROUTES.some((r) =>
-    nextUrl.pathname.startsWith(r),
+  const isAuthenticated = SESSION_COOKIE_NAMES.some(
+    (name) => !!req.cookies.get(name),
   );
 
-  if (isProtectedPage && !isAuthenticated) {
-    const url = nextUrl.clone();
-    url.pathname = "/";
-    url.searchParams.set("auth", "1");
-    return NextResponse.redirect(url);
-  }
+  const isProtectedPage = PROTECTED_PAGE_PREFIXES.some((prefix) =>
+    pathname.startsWith(prefix),
+  );
+  const isProtectedApi = PROTECTED_API_PREFIXES.some((prefix) =>
+    pathname.startsWith(prefix),
+  );
 
-  if (isProtectedApi && !isAuthenticated) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isAuthenticated) {
+    if (isProtectedPage) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/";
+      url.searchParams.set("auth", "1");
+      return NextResponse.redirect(url);
+    }
+
+    if (isProtectedApi) {
+      return NextResponse.json({ error: "Neautentificat" }, { status: 401 });
+    }
   }
 
   return NextResponse.next();

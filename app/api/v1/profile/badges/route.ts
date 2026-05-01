@@ -12,13 +12,23 @@ export async function GET() {
     const badges = await prisma.badge.findMany({
       where: { userId: session.user.id },
       orderBy: { earnedAt: "desc" },
+      select: {
+        id: true,
+        type: true,
+        earnedAt: true,
+        seen: true,
+      },
     });
 
-    // Mark unseen badges as seen after fetch
-    await prisma.badge.updateMany({
-      where: { userId: session.user.id, seen: false },
-      data: { seen: true },
-    });
+    const hasUnseen = badges.some((b) => !b.seen);
+    if (hasUnseen) {
+      prisma.badge
+        .updateMany({
+          where: { userId: session.user.id, seen: false },
+          data: { seen: true },
+        })
+        .catch((err) => console.error("[badges seen update]", err));
+    }
 
     return NextResponse.json(badges);
   } catch (err) {

@@ -17,18 +17,13 @@ import {
   Plus,
 } from "lucide-react";
 import { FaWineBottle } from "react-icons/fa";
-
 import useSWR from "swr";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 type UserProfile = {
   id: string;
   name: string | null;
   email: string | null;
   image: string | null;
-  role: "POSTER" | "COLLECTOR" | "BOTH" | "ADMIN";
-  bio: string | null;
   phone: string | null;
   createdAt: Date;
   totalBottlesGiven: number;
@@ -76,6 +71,8 @@ type Badge = {
   seen: boolean;
 };
 
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
 const BADGE_COLORS: Record<string, string> = {
   FIRST_POST: "#2563EB",
   POST_VETERAN_10: "#2563EB",
@@ -96,9 +93,6 @@ const BADGE_COLORS: Record<string, string> = {
   CENTURION: "#1E293B",
   PERFECT_RATING: "#D97706",
 };
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 const BADGE_CONFIG: Record<
   string,
@@ -287,7 +281,7 @@ function StatsGrid({ user }: { user: UserProfile }) {
 
   const stats = [
     {
-      icon: "/images/icons/total-bottles.svg",
+      icon: "/images/icons/bottles-recycled.svg",
       label: "Sticle reciclate",
       value: totalBottles.toLocaleString("ro-RO"),
       unit: "buc",
@@ -301,13 +295,13 @@ function StatsGrid({ user }: { user: UserProfile }) {
     {
       icon: "/images/icons/plastic.svg",
       label: "Plastic recuperat",
-      value: `${totalBottles > 0 && "~"} ${(totalBottles * 0.033).toFixed(1)}`,
+      value: `${totalBottles > 0 ? "~" : ""} ${(totalBottles * 0.033).toFixed(1)}`,
       unit: "kg",
     },
     {
       icon: "/images/icons/co2-footprint.svg",
       label: "Amprentă CO₂",
-      value: `${totalBottles > 0 && "~"} ${(totalBottles * 0.12).toFixed(1)}`,
+      value: `${totalBottles > 0 ? "~" : ""} ${(totalBottles * 0.12).toFixed(1)}`,
       unit: "kg CO₂ redus",
     },
   ];
@@ -316,18 +310,14 @@ function StatsGrid({ user }: { user: UserProfile }) {
     <div className="mx-4 sm:mx-6 lg:mx-8 mb-8">
       <div className="bg-white rounded-2xl overflow-hidden">
         <div className="grid grid-cols-1 md:grid-cols-4">
-          {stats.map(({ icon: Icon, label, value, unit }, idx) => (
+          {stats.map(({ icon, label, value, unit }, idx) => (
             <div
               key={idx}
-              className={`
-                flex items-center justify-between p-4 transition-colors group
-                border-b border-slate-100 last:border-b-0
-                md:border-b-0 md:border-r md:last:border-r-0
-              `}
+              className="flex items-center justify-between p-4 transition-colors border-b border-slate-100 last:border-b-0 md:border-b-0 md:border-r md:last:border-r-0"
             >
               <div className="flex items-center gap-3">
                 <Image
-                  src={Icon}
+                  src={icon}
                   alt={label}
                   width={24}
                   height={24}
@@ -464,20 +454,20 @@ function PostCard({ post }: { post: Post }) {
 // ─── Latest Posts Section ─────────────────────────────────────────────────────
 
 function LatestPostsSection() {
-  const { data: activeData, isLoading: loadingActive } = useSWR(
-    "/api/v1/profile/posts?status=active&limit=3&page=1",
+  const { data: allData, isLoading: loadingPosts } = useSWR(
+    "/api/v1/profile/posts?limit=3&page=1",
     fetcher,
   );
 
-  const activePosts: Post[] = activeData?.posts ?? [];
-  const totalActive: number = activeData?.total ?? 0;
-  const hasMore = totalActive > 3;
+  const posts: Post[] = allData?.posts ?? [];
+  const totalPosts: number = allData?.total ?? 0;
+  const hasMore = totalPosts > 3;
 
   return (
     <div className="mx-4 sm:mx-6 lg:mx-8 mb-8">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-extrabold text-slate-900 tracking-tight">
-          Postările mele active
+          Postările mele
         </h2>
         <div className="flex items-center gap-2">
           {hasMore && (
@@ -485,7 +475,7 @@ function LatestPostsSection() {
               href="/profil/postari"
               className="flex items-center gap-1 text-sm font-semibold text-lime-700 hover:text-lime-800 transition-colors"
             >
-              Toate ({totalActive})
+              Toate ({totalPosts})
               <ChevronRight className="w-4 h-4" />
             </Link>
           )}
@@ -499,14 +489,19 @@ function LatestPostsSection() {
         </div>
       </div>
 
-      {loadingActive ? (
+      {loadingPosts ? (
         <PostsSkeleton count={2} />
-      ) : activePosts.length === 0 ? (
+      ) : posts.length === 0 ? (
         <div className="bg-white rounded-2xl border border-dashed border-slate-200 p-8 text-center">
-          <div className="text-4xl mb-3">📦</div>
-          <p className="font-bold text-slate-700 mb-1">Nicio postare activă</p>
-          <p className="text-sm text-slate-500 mb-4">
-            Postează sticlele tale pentru a câștiga bani.
+          <Image
+            src="/images/bottle-sad.svg"
+            alt="Nicio postare"
+            width={64}
+            height={64}
+            className="mx-auto h-24 w-24"
+          />
+          <p className="text-sm text-slate-900 mb-4">
+            Încă nu ai creat nicio postare.
           </p>
           <Link
             href="/post"
@@ -517,7 +512,7 @@ function LatestPostsSection() {
         </div>
       ) : (
         <div className="space-y-3">
-          {activePosts.map((post) => (
+          {posts.map((post) => (
             <PostCard key={post.id} post={post} />
           ))}
           {!hasMore && (
@@ -642,6 +637,8 @@ function LatestTransactionsSection({ userId }: { userId: string }) {
   );
 }
 
+// ─── Badge Shield ─────────────────────────────────────────────────────────────
+
 function ShieldBadge({
   type,
   cfg,
@@ -657,12 +654,9 @@ function ShieldBadge({
 
   return (
     <div
-      className={`
-        flex flex-col items-center gap-3 p-4 rounded-2xl bg-white border transition-colors
-        ${earned ? "border-slate-200 hover:border-lime-400" : "border-slate-100 opacity-40 grayscale pointer-events-none"}
-      `}
+      className={`flex flex-col items-center gap-3 p-4 rounded-2xl bg-white border transition-colors
+        ${earned ? "border-slate-200 hover:border-lime-400" : "border-slate-100 opacity-40 grayscale pointer-events-none"}`}
     >
-      {/* Hex */}
       <div className="relative w-[56px] h-[63px] flex-shrink-0">
         <div
           className="absolute inset-0"
@@ -688,16 +682,12 @@ function ShieldBadge({
           {cfg.emoji}
         </span>
       </div>
-
-      {/* Text */}
       <div className="flex flex-col items-center gap-1 text-center w-full">
         <p className="text-[11px] font-bold text-slate-800 leading-tight">
           {cfg.label}
         </p>
         <p className="text-[9px] text-slate-400 leading-snug">{cfg.desc}</p>
       </div>
-
-      {/* Date */}
       <div className="w-full pt-2 border-t border-slate-100 text-center">
         <span className="text-[9px] font-semibold text-slate-400">
           {earnedAt
@@ -720,7 +710,6 @@ function BadgesSection() {
     "/api/v1/profile/badges",
     fetcher,
   );
-
   const earnedBadges = badges.filter((b) => BADGE_CONFIG[b.type]);
 
   if (isLoading) {
@@ -742,22 +731,20 @@ function BadgesSection() {
         hrefLabel="Vezi toate"
       />
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-        {earnedBadges.map((badge) => {
-          const cfg = BADGE_CONFIG[badge.type];
-          return (
-            <ShieldBadge
-              key={badge.id}
-              type={badge.type}
-              cfg={cfg}
-              earned
-              earnedAt={badge.earnedAt}
-            />
-          );
-        })}
+        {earnedBadges.map((badge) => (
+          <ShieldBadge
+            key={badge.id}
+            type={badge.type}
+            cfg={BADGE_CONFIG[badge.type]}
+            earned
+            earnedAt={badge.earnedAt}
+          />
+        ))}
       </div>
     </div>
   );
 }
+
 // ─── Skeletons ────────────────────────────────────────────────────────────────
 
 function PostsSkeleton({ count = 3 }: { count?: number }) {
@@ -811,13 +798,13 @@ function TransactionsSkeleton({ count = 3 }: { count?: number }) {
               <div className="h-3 w-28 bg-slate-100 rounded-lg" />
             </div>
           </div>
-          {/* italic description line */}
           <div className="mt-3 h-3 w-3/4 bg-slate-100 rounded-lg" />
         </div>
       ))}
     </div>
   );
 }
+
 function BadgesSkeleton({ count = 4 }: { count?: number }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 animate-pulse">
@@ -845,6 +832,7 @@ function BadgesSkeleton({ count = 4 }: { count?: number }) {
     </div>
   );
 }
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function ProfileClient({ user }: { user: UserProfile }) {
@@ -885,11 +873,6 @@ export function ProfileClient({ user }: { user: UserProfile }) {
                 {initials ?? <User className="w-7 h-7 sm:w-10 sm:h-10" />}
               </div>
             )}
-            {user.role === "ADMIN" && (
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-amber-400 flex items-center justify-center border-2 border-[#123524]">
-                <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-black" />
-              </div>
-            )}
           </div>
 
           {/* Info */}
@@ -916,7 +899,7 @@ export function ProfileClient({ user }: { user: UserProfile }) {
                 <span className="font-bold text-white">{memberSince}</span>
               </div>
               <div className="flex items-center text-white/70 text-sm">
-                <FaWineBottle className="w-4 h-4 text-lime-400 mr-1.5 " />
+                <FaWineBottle className="w-4 h-4 text-lime-400 mr-1.5" />
                 <span className="font-bold text-white mr-1">
                   {totalBottles}
                 </span>{" "}
@@ -943,16 +926,9 @@ export function ProfileClient({ user }: { user: UserProfile }) {
         </div>
       </div>
 
-      {/* ── Stats Grid ───────────────────────────────────────────────── */}
       <StatsGrid user={user} />
-
-      {/* ── Active Posts ─────────────────────────────────────────────── */}
-      {/* <LatestPostsSection /> */}
-
-      {/* ── Transactions ─────────────────────────────────────────────── */}
+      <LatestPostsSection />
       <LatestTransactionsSection userId={user.id} />
-
-      {/* ── Badges ───────────────────────────────────────────────────── */}
       <BadgesSection />
     </div>
   );
