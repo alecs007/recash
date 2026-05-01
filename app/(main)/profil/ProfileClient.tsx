@@ -6,7 +6,6 @@ import {
   User,
   Trophy,
   Calendar,
-  Shield,
   ChevronRight,
   MapPin,
   CheckCircle,
@@ -295,13 +294,13 @@ function StatsGrid({ user }: { user: UserProfile }) {
     {
       icon: "/images/icons/plastic.svg",
       label: "Plastic recuperat",
-      value: `${totalBottles > 0 ? "~" : ""} ${(totalBottles * 0.033).toFixed(1)}`,
+      value: `${totalBottles > 0 ? "~" : ""}${(totalBottles * 0.033).toFixed(1)}`,
       unit: "kg",
     },
     {
       icon: "/images/icons/co2-footprint.svg",
       label: "Amprentă CO₂",
-      value: `${totalBottles > 0 ? "~" : ""} ${(totalBottles * 0.12).toFixed(1)}`,
+      value: `${totalBottles > 0 ? "~" : ""}${(totalBottles * 0.12).toFixed(1)}`,
       unit: "kg CO₂ redus",
     },
   ];

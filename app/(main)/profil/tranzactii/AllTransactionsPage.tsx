@@ -94,7 +94,7 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
   const [page, setPage] = useState(1);
   const [roleFilter, setRoleFilter] = useState("all");
 
-  const apiUrl = `/api/v1/profile/transactions?page=${page}&limit=10&role=${roleFilter}`;
+  const apiUrl = `/api/v1/profile/transactions?page=${page}&limit=10&side=${roleFilter}`;
   const { data, isLoading } = useSWR(apiUrl, fetcher);
 
   const transactions: Transaction[] = data?.transactions ?? [];
@@ -224,9 +224,6 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
                             />
                           </svg>
                         ))}
-                        <span className="text-xs text-slate-400 ml-1">
-                          primit
-                        </span>
                       </div>
                     )}
                   </div>

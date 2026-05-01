@@ -11,6 +11,7 @@ import { FaWineBottle, FaRegUser, FaRegBell, FaRecycle } from "react-icons/fa";
 import { IoChevronDown } from "react-icons/io5";
 import { MdLogout } from "react-icons/md";
 import { LuBike } from "react-icons/lu";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Header({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -99,59 +100,61 @@ export default function Header({ children }: { children: React.ReactNode }) {
                       </div>
                     )}
                     <IoChevronDown
-                      className={`w-3.5 h-3.5 text-slate-500 transition-transform ${dropdownOpen ? "rotate-180" : ""}`}
+                      className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-300 ${
+                        dropdownOpen ? "rotate-180" : ""
+                      }`}
                     />
                   </button>
 
-                  {dropdownOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-3xl border border-slate-200 p-2 animate-in fade-in zoom-in-95 duration-150">
-                      {/* <div className="px-4 py-2 border-b border-slate-100 mb-1">
-                        <p className="font-semibold text-slate-900 text-sm truncate">
-                          {session!.user!.name}
-                        </p>
-                        <p className="text-slate-400 text-xs truncate">
-                          {session!.user!.email}
-                        </p>
-                      </div> */}
-                      <Link
-                        href="/profil"
-                        onClick={() => setDropdownOpen(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                  <AnimatePresence>
+                    {dropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        className="absolute right-0 top-full mt-2 w-56 bg-white rounded-3xl border border-slate-200 p-2 origin-top-right z-50"
                       >
-                        <FaRegUser className="w-4 h-4 text-slate-600" />
-                        Profilul meu
-                      </Link>
-                      <Link
-                        href="/post"
-                        onClick={() => setDropdownOpen(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
-                      >
-                        <FaWineBottle className="w-4 h-4 text-slate-600" />
-                        Postează sticle
-                      </Link>
-                      <Link
-                        href="/map"
-                        onClick={() => setDropdownOpen(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
-                      >
-                        <LuBike className="w-4 h-4 text-slate-600" />
-                        Colectează sticle
-                      </Link>
-                      <div className="border-t border-slate-100 mt-1 pt-1">
-                        <button
-                          onClick={() => {
-                            setDropdownOpen(false);
-                            show("Se deconectează...");
-                            signOut({ callbackUrl: "/" });
-                          }}
-                          className="flex items-center gap-3 w-full px-4 py-2.5 text-sm rounded-xl text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                        <Link
+                          href="/profil"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                         >
-                          <MdLogout className="w-4 h-4" />
-                          Deconectează-te
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                          <FaRegUser className="w-4 h-4 text-slate-600" />
+                          Profilul meu
+                        </Link>
+                        <Link
+                          href="/post"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                        >
+                          <FaWineBottle className="w-4 h-4 text-slate-600" />
+                          Postează sticle
+                        </Link>
+                        <Link
+                          href="/map"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                        >
+                          <LuBike className="w-4 h-4 text-slate-600" />
+                          Colectează sticle
+                        </Link>
+                        <div className="border-t border-slate-100 mt-1 pt-1">
+                          <button
+                            onClick={() => {
+                              setDropdownOpen(false);
+                              show("Se deconectează...");
+                              signOut({ callbackUrl: "/" });
+                            }}
+                            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm rounded-xl text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                          >
+                            <MdLogout className="w-4 h-4" />
+                            Deconectează-te
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </>
             ) : (

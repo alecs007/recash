@@ -26,11 +26,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
 
+  session: { strategy: "jwt" },
   callbacks: {
-    session({ session, user }) {
-      if (session.user) {
-        session.user.id = user.id;
-        session.user.role = user.role as UserRole;
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.role = user.role;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (token) {
+        session.user.id = token.id as string;
+        session.user.role = token.role as UserRole;
       }
       return session;
     },
@@ -52,6 +60,5 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error: "/",
   },
 
-  session: { strategy: "database" },
   trustHost: true,
 });

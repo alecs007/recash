@@ -8,52 +8,42 @@ datasource db {
 }
 
 
+
 enum UserRole {
-  POSTER      // Only posts bottles
-  COLLECTOR   // Only collects bottles
-  BOTH        // Default — can do both
+  POSTER
+  COLLECTOR
+  BOTH
   ADMIN
 }
 
 enum PostStatus {
-  OPEN        // Waiting for a collector
-  CLAIMED     // A collector accepted
-  IN_PROGRESS // Collector is on their way
-  COMPLETED   // Exchange done
-  CANCELLED   // Poster or collector cancelled
-  EXPIRED     // Auto-expired after deadline
+  OPEN
+  CLAIMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  EXPIRED
 }
 
 enum BadgeType {
-  // Posting badges
   FIRST_POST
   POST_VETERAN_10
   POST_VETERAN_50
   POST_VETERAN_100
-
-  // Collection badges
   FIRST_COLLECTION
   COLLECTOR_STARTER_10
   COLLECTOR_PRO_50
   COLLECTOR_ELITE_100
-
-  // Volume badges (bottles total)
-  ECO_STARTER     // 50 bottles total
-  ECO_WARRIOR     // 250 bottles total
-  ECO_CHAMPION    // 1000 bottles total
-  ECO_LEGEND      // 5000 bottles total
-
-  // Speed badges
-  SPEED_DEMON     // Claimed & completed in < 30min
-
-  // Loyalty badges
+  ECO_STARTER
+  ECO_WARRIOR
+  ECO_CHAMPION
+  ECO_LEGEND
+  SPEED_DEMON
   FIRST_WEEK
   MONTHLY_ACTIVE
   VETERAN_1_YEAR
-
-  // Transaction badges
-  CENTURION       // 100 transactions
-  PERFECT_RATING  // 10 transactions with 5/5 avg
+  CENTURION
+  PERFECT_RATING
 }
 
 enum NotificationType {
@@ -67,9 +57,7 @@ enum NotificationType {
   SYSTEM
 }
 
-// ─────────────────────────────────────────────
-// NextAuth required models
-// ─────────────────────────────────────────────
+// ─── NextAuth models ──────────────────────────────────────────────────────────
 
 model Account {
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
@@ -88,6 +76,8 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  // Needed when looking up all accounts for a user (e.g. during sign-out / account linking)
+  @@index([userId])
 }
 
 model Session {
@@ -95,7 +85,11 @@ model Session {
   sessionToken String   @unique
   userId       String   @db.ObjectId
   expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Needed when cleaning up expired sessions per user
+  @@index([userId])
 }
 
 model VerificationToken {
@@ -107,9 +101,7 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// ─────────────────────────────────────────────
-// Core models
-// ─────────────────────────────────────────────
+// ─── Core models ──────────────────────────────────────────────────────────────
 
 model User {
   id            String    @id @default(auto()) @map("_id") @db.ObjectId
@@ -123,24 +115,25 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  // Aggregate stats (denormalized for fast reads)
-  totalBottlesGiven     Int   @default(0) // bottles given to collectors
-  totalBottlesCollected Int   @default(0) // bottles collected from posters
+  totalBottlesGiven     Int   @default(0)
+  totalBottlesCollected Int   @default(0)
   totalTransactions     Int   @default(0)
-  totalEarned           Float @default(0) // as collector (RON)
-  totalSaved            Float @default(0) // as poster: value they received
-  reputationScore       Float @default(5.0) // avg of all ratings received
+  totalEarned           Float @default(0)
+  totalSaved            Float @default(0)
+  reputationScore       Float @default(5.0)
   ratingCount           Int   @default(0)
 
-  // Relations
-  accounts     Account[]
-  sessions     Session[]
-  badges       Badge[]
-  posts        Post[]         @relation("PostAuthor")
-  claimedPosts Post[]         @relation("PostCollector")
-  posterTransactions    Transaction[] @relation("PosterTransactions")
-  collectorTransactions Transaction[] @relation("CollectorTransactions")
+  accounts              Account[]
+  sessions              Session[]
+  badges                Badge[]
+  posts                 Post[]         @relation("PostAuthor")
+  claimedPosts          Post[]         @relation("PostCollector")
+  posterTransactions    Transaction[]  @relation("PosterTransactions")
+  collectorTransactions Transaction[]  @relation("CollectorTransactions")
   notifications         Notification[]
+
+  // reputationScore is queried for leaderboards / public profiles
+  @@index([reputationScore(sort: Desc)])
 }
 
 model Post {
@@ -149,58 +142,89 @@ model Post {
   collectorId String?    @db.ObjectId
   status      PostStatus @default(OPEN)
 
-  // Content
   description           String
   bottleCount           Int
-  estimatedValue        Float   // poster's estimate of total machine value (RON)
-  collectorSharePercent Int     // % that goes to collector, e.g. 70 → collector gets 70%
-  images                String[] // URLs of bottle photos
+  estimatedValue        Float
+  collectorSharePercent Int
+  images                String[]
 
-  // Location (exact coordinates)
   latitude     Float
   longitude    Float
-  locationName String? // human-readable name e.g. "Str. Avram Iancu, Oradea"
+  locationName String?
   address      String?
 
-  // Timestamps
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   claimedAt   DateTime?
   completedAt DateTime?
-  expiresAt   DateTime? // optional deadline set by poster
+  expiresAt   DateTime?
 
-  // Relations
-  author      User         @relation("PostAuthor", fields: [authorId], references: [id])
+  author      User         @relation("PostAuthor",    fields: [authorId],    references: [id])
   collector   User?        @relation("PostCollector", fields: [collectorId], references: [id])
   transaction Transaction?
+
+  // ── Indexes ────────────────────────────────────────────────────────────────
+
+  // Profile "my posts" page — filter by author, sort by date
+  @@index([authorId, createdAt(sort: Desc)])
+
+  // Profile "my posts" filtered by status (e.g. active = OPEN/CLAIMED/IN_PROGRESS)
+  @@index([authorId, status])
+
+  // Public feed — open posts sorted by newest; also supports status-only filters
+  @@index([status, createdAt(sort: Desc)])
+
+  // Collector view — posts claimed by a specific collector
+  @@index([collectorId, status])
+
+  // Expiry background job — finds posts where expiresAt has passed
+  @@index([expiresAt])
+
+  // Geo queries — finding posts near a location (lat/lng range scan)
+  @@index([latitude, longitude])
 }
 
 model Transaction {
   id          String @id @default(auto()) @map("_id") @db.ObjectId
-  postId      String @unique @db.ObjectId
+  postId      String @unique @db.ObjectId   // unique → implicit index
   posterId    String @db.ObjectId
   collectorId String @db.ObjectId
 
-  // Financial breakdown
   bottleCount      Int
-  actualValue      Float // actual value from recycling machine (RON)
-  collectorEarning Float // what collector earns
-  posterEarning    Float // what poster gets back
+  actualValue      Float
+  collectorEarning Float
+  posterEarning    Float
 
-  // Ratings (set after completion)
-  collectorRating Int?    // 1–5, given by poster
-  posterRating    Int?    // 1–5, given by collector
-  collectorReview String?
-  posterReview    String?
-  posterRatedAt   DateTime?
-  collectorRatedAt DateTime?
+  collectorRating   Int?
+  posterRating      Int?
+  collectorReview   String?
+  posterReview      String?
+  posterRatedAt     DateTime?
+  collectorRatedAt  DateTime?
 
   completedAt DateTime @default(now())
   createdAt   DateTime @default(now())
 
-  post      Post @relation(fields: [postId], references: [id])
-  poster    User @relation("PosterTransactions", fields: [posterId], references: [id])
+  post      Post @relation(fields: [postId],      references: [id])
+  poster    User @relation("PosterTransactions",    fields: [posterId],    references: [id])
   collector User @relation("CollectorTransactions", fields: [collectorId], references: [id])
+
+  // ── Indexes ────────────────────────────────────────────────────────────────
+
+  // Profile transactions — poster side, sorted by date (the most common query)
+  @@index([posterId, completedAt(sort: Desc)])
+
+  // Profile transactions — collector side, sorted by date
+  @@index([collectorId, completedAt(sort: Desc)])
+
+  // The OR query (posterId OR collectorId) hits both indexes above via index union.
+  // No additional compound needed.
+
+  // Pending ratings — find transactions where the poster hasn't rated yet
+  @@index([posterId, posterRating])
+
+  // Pending ratings — find transactions where the collector hasn't rated yet
+  @@index([collectorId, collectorRating])
 }
 
 model Badge {
@@ -208,11 +232,15 @@ model Badge {
   userId   String    @db.ObjectId
   type     BadgeType
   earnedAt DateTime  @default(now())
-  seen     Boolean   @default(false) // for "new badge" notification
+  seen     Boolean   @default(false)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, type]) // can't earn same badge twice
+  @@unique([userId, type])   // unique → also serves as index for userId lookups
+  // Sort by date for the profile badges feed
+  @@index([userId, earnedAt(sort: Desc)])
+  // Efficiently find unseen badges for the "new badge" notification dot
+  @@index([userId, seen])
 }
 
 model Notification {
@@ -222,9 +250,21 @@ model Notification {
   title     String
   message   String
   read      Boolean          @default(false)
-  link      String?          // optional deep-link e.g. /profil/tranzactii/xyz
-  metadata  Json?            // flexible extra data (postId, badgeType, etc.)
+  link      String?
+  metadata  Json?
   createdAt DateTime         @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // ── Indexes ────────────────────────────────────────────────────────────────
+
+  // Main notifications feed — by user, newest first
+  @@index([userId, createdAt(sort: Desc)])
+
+  // Unread count query and "mark all read" update
+  @@index([userId, read])
+
+  // Combined: unread notifications for a user sorted by date
+  // (covers the ?unread=true query efficiently)
+  @@index([userId, read, createdAt(sort: Desc)])
 }

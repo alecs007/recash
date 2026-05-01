@@ -1,8 +1,9 @@
-// app/api/v1/profile/posts/route.ts
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { PostStatus } from "@prisma/client";
+import { cached, CacheKey, TTL } from "@/lib/cache";
+import { rateLimit, RL } from "@/lib/rate-limit";
 
 const VALID_STATUSES = new Set<PostStatus>([
   "OPEN",
@@ -22,93 +23,105 @@ const STATUS_ORDER: Record<PostStatus, number> = {
   EXPIRED: 5,
 };
 
+const POST_INCLUDE = {
+  collector: { select: { id: true, name: true, image: true } },
+  transaction: {
+    select: {
+      actualValue: true,
+      collectorEarning: true,
+      posterEarning: true,
+      collectorRating: true,
+      posterRating: true,
+    },
+  },
+} as const;
+
 export async function GET(req: Request) {
-  try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Neautentificat" }, { status: 401 });
-    }
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Neautentificat" }, { status: 401 });
+  }
 
-    const { searchParams } = new URL(req.url);
+  const rl = await rateLimit(session.user.id, RL.read);
+  if (!rl.ok) return rl.response;
 
-    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1") || 1);
-    const limit = Math.min(
-      50,
-      Math.max(1, parseInt(searchParams.get("limit") ?? "10") || 10),
-    );
-    const statusParam = searchParams.get("status") ?? "";
-    const skip = (page - 1) * limit;
+  const { searchParams } = new URL(req.url);
+  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1") || 1);
+  const limit = Math.min(
+    50,
+    Math.max(1, parseInt(searchParams.get("limit") ?? "10") || 10),
+  );
+  const statusParam = searchParams.get("status") ?? "";
+  const skip = (page - 1) * limit;
 
-    let statusFilter: object = {};
-    if (statusParam === "active") {
-      statusFilter = {
-        status: { in: ["OPEN", "CLAIMED", "IN_PROGRESS"] as PostStatus[] },
-      };
-    } else if (statusParam && VALID_STATUSES.has(statusParam as PostStatus)) {
-      statusFilter = { status: statusParam as PostStatus };
-    }
-    // Any unknown value is ignored — returns all statuses
-
-    const where = { authorId: session.user.id, ...statusFilter };
-
-    const postSelect = {
-      collector: { select: { id: true, name: true, image: true } },
-      transaction: {
-        select: {
-          actualValue: true,
-          collectorEarning: true,
-          posterEarning: true,
-          collectorRating: true,
-          posterRating: true,
-        },
-      },
+  let statusFilter: object = {};
+  if (statusParam === "active") {
+    statusFilter = {
+      status: { in: ["OPEN", "CLAIMED", "IN_PROGRESS"] as PostStatus[] },
     };
+  } else if (statusParam && VALID_STATUSES.has(statusParam as PostStatus)) {
+    statusFilter = { status: statusParam as PostStatus };
+  }
 
-    // For "active" we fetch all matching, sort by status priority, then paginate in-memory
-    // (active set is always small — at most a few dozen per user)
+  const where = { authorId: session.user.id, ...statusFilter };
+  const cacheKey = CacheKey.posts(
+    session.user.id,
+    page,
+    limit,
+    statusParam || "all",
+  );
+
+  try {
     if (statusParam === "active") {
-      const [allActive, total] = await Promise.all([
-        prisma.post.findMany({
-          where,
-          orderBy: { createdAt: "desc" },
-          take: 200, // safety cap
-          include: postSelect,
-        }),
-        prisma.post.count({ where }),
-      ]);
+      const result = await cached(cacheKey, TTL.posts, async () => {
+        const [all, total] = await Promise.all([
+          prisma.post.findMany({
+            where,
+            orderBy: { createdAt: "desc" },
+            take: 200,
+            include: POST_INCLUDE,
+          }),
+          prisma.post.count({ where }),
+        ]);
 
-      allActive.sort((a, b) => {
-        const diff =
-          (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99);
-        return diff !== 0
-          ? diff
-          : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        all.sort((a, b) => {
+          const diff =
+            (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99);
+          return diff !== 0
+            ? diff
+            : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+
+        return { sorted: all, total };
       });
 
       return NextResponse.json({
-        posts: allActive.slice(skip, skip + limit),
-        total,
+        posts: result.sorted.slice(skip, skip + limit),
+        total: result.total,
         page,
-        totalPages: Math.ceil(total / limit),
+        totalPages: Math.ceil(result.total / limit),
       });
     }
 
-    const [posts, total] = await Promise.all([
-      prisma.post.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        skip,
-        take: limit,
-        include: postSelect,
-      }),
-      prisma.post.count({ where }),
-    ]);
+    const result = await cached(cacheKey, TTL.posts, async () => {
+      const [posts, total] = await Promise.all([
+        prisma.post.findMany({
+          where,
+          orderBy: { createdAt: "desc" },
+          skip,
+          take: limit,
+          include: POST_INCLUDE,
+        }),
+        prisma.post.count({ where }),
+      ]);
+      return { posts, total };
+    });
 
     return NextResponse.json({
-      posts,
-      total,
+      posts: result.posts,
+      total: result.total,
       page,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil(result.total / limit),
     });
   } catch (err) {
     console.error("[GET /api/v1/profile/posts]", err);
