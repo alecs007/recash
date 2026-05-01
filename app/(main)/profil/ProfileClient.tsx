@@ -1,14 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
   User,
-  Star,
-  Recycle,
   Trophy,
-  ArrowUpRight,
   Calendar,
   Shield,
   ChevronRight,
@@ -19,12 +15,9 @@ import {
   AlertCircle,
   Loader2,
   Plus,
-  TrendingUp,
-  Leaf,
-  Wind,
 } from "lucide-react";
 import { FaWineBottle } from "react-icons/fa";
-import { LuBike } from "react-icons/lu";
+
 import useSWR from "swr";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -274,66 +267,64 @@ function StatsGrid({ user }: { user: UserProfile }) {
 
   const stats = [
     {
-      icon: FaWineBottle,
+      icon: "/images/icons/total-bottles.svg",
       label: "Sticle reciclate",
       value: totalBottles.toLocaleString("ro-RO"),
       unit: "buc",
     },
     {
-      icon: TrendingUp,
-      label: "Încasări",
+      icon: "/images/icons/total-earnings.svg",
+      label: "Încasări totale",
       value: totalEarning.toFixed(2),
       unit: "RON",
     },
     {
-      icon: Leaf,
+      icon: "/images/icons/plastic.svg",
       label: "Plastic recuperat",
       value: (totalBottles * 0.033).toFixed(1),
       unit: "kg",
     },
     {
-      icon: Wind,
+      icon: "/images/icons/co2-footprint.svg",
       label: "Amprentă CO₂",
       value: (totalBottles * 0.12).toFixed(1),
-      unit: "kg redus",
+      unit: "kg CO₂ redus",
     },
-    // {
-    //   icon: ArrowUpRight,
-    //   label: "Donații",
-    //   value: user.totalBottlesGiven.toLocaleString("ro-RO"),
-    //   unit: "postări",
-    // },
-    // {
-    //   icon: LuBike,
-    //   label: "Colectări",
-    //   value: user.totalBottlesCollected.toLocaleString("ro-RO"),
-    //   unit: "finalizate",
-    // },
   ];
 
   return (
     <div className="mx-4 sm:mx-6 lg:mx-8 mb-8">
       <div className="bg-white rounded-2xl overflow-hidden">
-        <div className="grid grid-cols-1 md:grid-cols-2 md:space-x-10 px-2">
+        <div className="grid grid-cols-1 md:grid-cols-4">
           {stats.map(({ icon: Icon, label, value, unit }, idx) => (
             <div
               key={idx}
-              className="flex items-center justify-between p-4 hover:bg-slate-50/50 transition-colors group border-b border-slate-100 md:border-b-0 md:border-r last:border-0"
+              className={`
+                flex items-center justify-between p-4 transition-colors group
+                border-b border-slate-100 last:border-b-0 
+                md:border-b-0 md:border-r md:last:border-r-0
+              `}
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center group-hover:bg-lime-100 transition-colors">
-                  <Icon className="w-4 h-4 text-slate-500 group-hover:text-lime-600" />
-                </div>
+                <Image
+                  src={Icon}
+                  alt={label}
+                  width={24}
+                  height={24}
+                  priority
+                  className="w-8 h-8 shrink-0"
+                />
+
                 <span className="text-sm font-medium text-slate-600">
                   {label}
                 </span>
               </div>
 
-              <div className="flex items-baseline gap-1">
+              <div className="flex items-baseline gap-1 md:flex-col md:items-start md:gap-0 lg:flex-row lg:items-baseline lg:gap-1">
                 <span className="text-lg font-black text-slate-900">
                   {value}
                 </span>
-                <span className="text-[10px] font-bold text-slate-400">
+                <span className="text-[10px] font-bold text-slate-600">
                   {unit}
                 </span>
               </div>
@@ -344,7 +335,6 @@ function StatsGrid({ user }: { user: UserProfile }) {
     </div>
   );
 }
-
 // ─── Section Header ───────────────────────────────────────────────────────────
 
 function SectionHeader({
@@ -474,7 +464,7 @@ function LatestPostsSection() {
         <div className="flex items-center gap-2">
           {hasMore && (
             <Link
-              href="/profile/posts"
+              href="/profil/postari"
               className="flex items-center gap-1 text-sm font-semibold text-lime-700 hover:text-lime-800 transition-colors"
             >
               Toate ({totalActive})
@@ -514,7 +504,7 @@ function LatestPostsSection() {
           ))}
           {!hasMore && (
             <Link
-              href="/profile/posts"
+              href="/profil/postari"
               className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-slate-100 bg-white text-sm font-semibold text-slate-500 hover:border-lime-200 hover:text-lime-700 transition-all"
             >
               Toate postările <ChevronRight className="w-4 h-4" />
@@ -552,7 +542,7 @@ function LatestTransactionsSection({ userId }: { userId: string }) {
     <div className="mx-4 sm:mx-6 lg:mx-8 mb-8">
       <SectionHeader
         title="Tranzacții recente"
-        href="/profile/transactions"
+        href="/profil/tranzactii"
         hrefLabel={total > 3 ? `Vezi istoric (${total})` : "Vezi istoric"}
       />
       <div className="space-y-3">
@@ -670,7 +660,7 @@ function BadgesSection() {
     <div className="mx-4 sm:mx-6 lg:mx-8 mb-10">
       <SectionHeader
         title="Badge-urile mele"
-        href="/profile/badges"
+        href="/profil/badges"
         hrefLabel="Toate badge-urile"
       />
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -832,13 +822,6 @@ export function ProfileClient({ user }: { user: UserProfile }) {
 
             <div className="hidden sm:flex flex-wrap gap-4 mt-4">
               <div className="flex items-center gap-1.5 text-white/70 text-sm">
-                <FaWineBottle className="w-4 h-4 text-lime-400" />
-                <span className="font-bold text-white">
-                  {totalBottles}
-                </span>{" "}
-                sticle reciclate
-              </div>
-              <div className="flex items-center gap-1.5 text-white/70 text-sm">
                 <Trophy className="w-4 h-4 text-lime-400" />
                 <span className="font-bold text-white">
                   {user._count.badges}
@@ -848,7 +831,14 @@ export function ProfileClient({ user }: { user: UserProfile }) {
               <div className="flex items-center gap-1.5 text-white/70 text-sm">
                 <Calendar className="w-4 h-4 text-lime-400" />
                 Membru din{" "}
-                <span className="font-bold text-white ml-1">{memberSince}</span>
+                <span className="font-bold text-white">{memberSince}</span>
+              </div>{" "}
+              <div className="flex items-center gap-1.5 text-white/70 text-sm">
+                <FaWineBottle className="w-4 h-4 text-lime-400" />
+                <span className="font-bold text-white">
+                  {totalBottles}
+                </span>{" "}
+                sticle reciclate
               </div>
             </div>
           </div>
@@ -857,10 +847,6 @@ export function ProfileClient({ user }: { user: UserProfile }) {
         {/* Mobile stats row */}
         <div className="relative flex sm:hidden flex-wrap gap-3 mt-4 pt-4 border-t border-white/10">
           <div className="flex items-center gap-1.5 text-white/70 text-xs">
-            <FaWineBottle className="w-3.5 h-3.5 text-lime-400" />
-            <span className="font-bold text-white">{totalBottles}</span> sticle
-          </div>
-          <div className="flex items-center gap-1.5 text-white/70 text-xs">
             <Trophy className="w-3.5 h-3.5 text-lime-400" />
             <span className="font-bold text-white">
               {user._count.badges}
@@ -868,7 +854,8 @@ export function ProfileClient({ user }: { user: UserProfile }) {
             badge-uri
           </div>
           <div className="flex items-center gap-1.5 text-white/70 text-xs">
-            <Calendar className="w-3.5 h-3.5 text-lime-400" />
+            <Calendar className="w-4 h-4 text-lime-400" />
+            Membru din{" "}
             <span className="font-bold text-white">{memberSince}</span>
           </div>
         </div>
