@@ -76,6 +76,26 @@ type Badge = {
   seen: boolean;
 };
 
+const BADGE_COLORS: Record<string, string> = {
+  FIRST_POST: "#2563EB",
+  POST_VETERAN_10: "#2563EB",
+  POST_VETERAN_50: "#1D4ED8",
+  POST_VETERAN_100: "#1E3A8A",
+  FIRST_COLLECTION: "#EA580C",
+  COLLECTOR_STARTER_10: "#EA580C",
+  COLLECTOR_PRO_50: "#C2410C",
+  COLLECTOR_ELITE_100: "#9A3412",
+  ECO_STARTER: "#16A34A",
+  ECO_WARRIOR: "#15803D",
+  ECO_CHAMPION: "#166534",
+  ECO_LEGEND: "#14532D",
+  SPEED_DEMON: "#9333EA",
+  FIRST_WEEK: "#0D9488",
+  MONTHLY_ACTIVE: "#0891B2",
+  VETERAN_1_YEAR: "#0369A1",
+  CENTURION: "#1E293B",
+  PERFECT_RATING: "#D97706",
+};
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -281,13 +301,13 @@ function StatsGrid({ user }: { user: UserProfile }) {
     {
       icon: "/images/icons/plastic.svg",
       label: "Plastic recuperat",
-      value: (totalBottles * 0.033).toFixed(1),
+      value: `${totalBottles > 0 && "~"} ${(totalBottles * 0.033).toFixed(1)}`,
       unit: "kg",
     },
     {
       icon: "/images/icons/co2-footprint.svg",
       label: "Amprentă CO₂",
-      value: (totalBottles * 0.12).toFixed(1),
+      value: `${totalBottles > 0 && "~"} ${(totalBottles * 0.12).toFixed(1)}`,
       unit: "kg CO₂ redus",
     },
   ];
@@ -301,7 +321,7 @@ function StatsGrid({ user }: { user: UserProfile }) {
               key={idx}
               className={`
                 flex items-center justify-between p-4 transition-colors group
-                border-b border-slate-100 last:border-b-0 
+                border-b border-slate-100 last:border-b-0
                 md:border-b-0 md:border-r md:last:border-r-0
               `}
             >
@@ -314,12 +334,10 @@ function StatsGrid({ user }: { user: UserProfile }) {
                   priority
                   className="w-8 h-8 shrink-0"
                 />
-
                 <span className="text-sm font-medium text-slate-600">
                   {label}
                 </span>
               </div>
-
               <div className="flex items-baseline gap-1 md:flex-col md:items-start md:gap-0 lg:flex-row lg:items-baseline lg:gap-1">
                 <span className="text-lg font-black text-slate-900">
                   {value}
@@ -335,6 +353,7 @@ function StatsGrid({ user }: { user: UserProfile }) {
     </div>
   );
 }
+
 // ─── Section Header ───────────────────────────────────────────────────────────
 
 function SectionHeader({
@@ -445,7 +464,6 @@ function PostCard({ post }: { post: Post }) {
 // ─── Latest Posts Section ─────────────────────────────────────────────────────
 
 function LatestPostsSection() {
-  // Fetch up to 3 active posts + total active count
   const { data: activeData, isLoading: loadingActive } = useSWR(
     "/api/v1/profile/posts?status=active&limit=3&page=1",
     fetcher,
@@ -531,7 +549,7 @@ function LatestTransactionsSection({ userId }: { userId: string }) {
     return (
       <div className="mx-4 sm:mx-6 lg:mx-8 mb-8">
         <SectionHeader title="Tranzacții recente" />
-        <TransactionsSkeleton count={2} />
+        <TransactionsSkeleton count={3} />
       </div>
     );
   }
@@ -609,9 +627,6 @@ function LatestTransactionsSection({ userId }: { userId: string }) {
                           />
                         </svg>
                       ))}
-                      <span className="text-xs text-slate-400 ml-1">
-                        primit
-                      </span>
                     </div>
                   )}
                 </div>
@@ -622,14 +637,77 @@ function LatestTransactionsSection({ userId }: { userId: string }) {
             </div>
           );
         })}
-        {/* {total > 3 && (
-          <Link
-            href="/profile/transactions"
-            className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-slate-100 bg-white text-sm font-semibold text-slate-500 hover:border-lime-200 hover:text-lime-700 transition-all"
-          >
-            Vezi toate tranzacțiile <ChevronRight className="w-4 h-4" />
-          </Link>
-        )} */}
+      </div>
+    </div>
+  );
+}
+
+function ShieldBadge({
+  type,
+  cfg,
+  earned,
+  earnedAt,
+}: {
+  type: string;
+  cfg: { emoji: string; label: string; desc: string };
+  earned: boolean;
+  earnedAt?: string;
+}) {
+  const color = earned ? (BADGE_COLORS[type] ?? "#64748B") : "#CBD5E1";
+
+  return (
+    <div
+      className={`
+        flex flex-col items-center gap-3 p-4 rounded-2xl bg-white border transition-colors
+        ${earned ? "border-slate-200 hover:border-lime-400" : "border-slate-100 opacity-40 grayscale pointer-events-none"}
+      `}
+    >
+      {/* Hex */}
+      <div className="relative w-[56px] h-[63px] flex-shrink-0">
+        <div
+          className="absolute inset-0"
+          style={{
+            clipPath:
+              "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+            backgroundColor: `color-mix(in srgb, ${color} 60%, black)`,
+          }}
+        />
+        <div
+          className="absolute"
+          style={{
+            inset: "2.5px",
+            clipPath:
+              "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+            backgroundColor: color,
+          }}
+        />
+        <span
+          className="absolute inset-0 flex items-center justify-center"
+          style={{ fontSize: "22px", lineHeight: 1 }}
+        >
+          {cfg.emoji}
+        </span>
+      </div>
+
+      {/* Text */}
+      <div className="flex flex-col items-center gap-1 text-center w-full">
+        <p className="text-[11px] font-bold text-slate-800 leading-tight">
+          {cfg.label}
+        </p>
+        <p className="text-[9px] text-slate-400 leading-snug">{cfg.desc}</p>
+      </div>
+
+      {/* Date */}
+      <div className="w-full pt-2 border-t border-slate-100 text-center">
+        <span className="text-[9px] font-semibold text-slate-400">
+          {earnedAt
+            ? new Date(earnedAt).toLocaleDateString("ro-RO", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })
+            : "Neobținut"}
+        </span>
       </div>
     </div>
   );
@@ -661,32 +739,25 @@ function BadgesSection() {
       <SectionHeader
         title="Badge-urile mele"
         href="/profil/badges"
-        hrefLabel="Toate badge-urile"
+        hrefLabel="Vezi toate"
       />
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
         {earnedBadges.map((badge) => {
           const cfg = BADGE_CONFIG[badge.type];
           return (
-            <div
+            <ShieldBadge
               key={badge.id}
-              className="bg-gradient-to-br from-lime-50 to-emerald-50 border border-lime-200 rounded-2xl p-4 flex flex-col items-center text-center shadow-sm"
-            >
-              <div className="text-3xl mb-2">{cfg.emoji}</div>
-              <div className="font-bold text-sm text-slate-900">
-                {cfg.label}
-              </div>
-              <div className="text-xs text-slate-500 mt-0.5">{cfg.desc}</div>
-              <div className="text-xs text-lime-600 font-semibold mt-2">
-                {new Date(badge.earnedAt).toLocaleDateString("ro-RO")}
-              </div>
-            </div>
+              type={badge.type}
+              cfg={cfg}
+              earned
+              earnedAt={badge.earnedAt}
+            />
           );
         })}
       </div>
     </div>
   );
 }
-
 // ─── Skeletons ────────────────────────────────────────────────────────────────
 
 function PostsSkeleton({ count = 3 }: { count?: number }) {
@@ -730,39 +801,50 @@ function TransactionsSkeleton({ count = 3 }: { count?: number }) {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-slate-100 shrink-0" />
               <div className="space-y-2">
-                <div className="h-4 w-24 bg-slate-100 rounded-lg" />
-                <div className="h-3 w-28 bg-slate-100 rounded-lg" />
+                <div className="h-3.5 w-24 bg-slate-100 rounded-lg" />
+                <div className="h-3 w-32 bg-slate-100 rounded-lg" />
                 <div className="h-3 w-20 bg-slate-100 rounded-lg" />
               </div>
             </div>
-            <div className="flex flex-col items-end gap-1.5 shrink-0">
+            <div className="flex flex-col items-end gap-2 shrink-0">
               <div className="h-6 w-20 bg-slate-100 rounded-lg" />
               <div className="h-3 w-28 bg-slate-100 rounded-lg" />
             </div>
+          </div>
+          {/* italic description line */}
+          <div className="mt-3 h-3 w-3/4 bg-slate-100 rounded-lg" />
+        </div>
+      ))}
+    </div>
+  );
+}
+function BadgesSkeleton({ count = 4 }: { count?: number }) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 animate-pulse">
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          className="flex flex-col items-center gap-3 p-4 rounded-2xl border border-slate-100 bg-white"
+        >
+          <div
+            className="w-[56px] h-[63px] bg-slate-100"
+            style={{
+              clipPath:
+                "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+            }}
+          />
+          <div className="flex flex-col items-center gap-1.5 w-full">
+            <div className="h-2.5 w-14 bg-slate-100 rounded" />
+            <div className="h-2 w-12 bg-slate-100 rounded" />
+          </div>
+          <div className="w-full pt-2 border-t border-slate-100">
+            <div className="h-2 w-10 bg-slate-100 rounded mx-auto" />
           </div>
         </div>
       ))}
     </div>
   );
 }
-
-function BadgesSkeleton({ count = 4 }: { count?: number }) {
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 animate-pulse">
-      {Array.from({ length: count }).map((_, i) => (
-        <div
-          key={i}
-          className="rounded-2xl border border-slate-100 p-4 flex flex-col items-center gap-2.5"
-        >
-          <div className="w-10 h-10 bg-slate-100 rounded-full" />
-          <div className="h-4 w-20 bg-slate-100 rounded-lg" />
-          <div className="h-3 w-24 bg-slate-100 rounded-lg" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function ProfileClient({ user }: { user: UserProfile }) {
@@ -821,21 +903,21 @@ export function ProfileClient({ user }: { user: UserProfile }) {
             <StarRating score={user.reputationScore} count={user.ratingCount} />
 
             <div className="hidden sm:flex flex-wrap gap-4 mt-4">
-              <div className="flex items-center gap-1.5 text-white/70 text-sm">
-                <Trophy className="w-4 h-4 text-lime-400" />
-                <span className="font-bold text-white">
+              <div className="flex items-center text-white/70 text-sm">
+                <Trophy className="w-4 h-4 text-lime-400 mr-1.5" />
+                <span className="font-bold text-white mr-1">
                   {user._count.badges}
                 </span>{" "}
                 badge-uri
               </div>
-              <div className="flex items-center gap-1.5 text-white/70 text-sm">
-                <Calendar className="w-4 h-4 text-lime-400" />
-                Membru din{" "}
+              <div className="flex items-center text-white/70 text-sm">
+                <Calendar className="w-4 h-4 text-lime-400 mr-1.5" />
+                <span className="mr-1">Membru din</span>
                 <span className="font-bold text-white">{memberSince}</span>
-              </div>{" "}
-              <div className="flex items-center gap-1.5 text-white/70 text-sm">
-                <FaWineBottle className="w-4 h-4 text-lime-400" />
-                <span className="font-bold text-white">
+              </div>
+              <div className="flex items-center text-white/70 text-sm">
+                <FaWineBottle className="w-4 h-4 text-lime-400 mr-1.5 " />
+                <span className="font-bold text-white mr-1">
                   {totalBottles}
                 </span>{" "}
                 sticle reciclate
@@ -846,16 +928,16 @@ export function ProfileClient({ user }: { user: UserProfile }) {
 
         {/* Mobile stats row */}
         <div className="relative flex sm:hidden flex-wrap gap-3 mt-4 pt-4 border-t border-white/10">
-          <div className="flex items-center gap-1.5 text-white/70 text-xs">
-            <Trophy className="w-3.5 h-3.5 text-lime-400" />
-            <span className="font-bold text-white">
+          <div className="flex items-center text-white/70 text-xs">
+            <Trophy className="w-3.5 h-3.5 text-lime-400 mr-1.5" />
+            <span className="font-bold text-white mr-1">
               {user._count.badges}
             </span>{" "}
             badge-uri
           </div>
-          <div className="flex items-center gap-1.5 text-white/70 text-xs">
-            <Calendar className="w-4 h-4 text-lime-400" />
-            Membru din{" "}
+          <div className="flex items-center text-white/70 text-xs">
+            <Calendar className="w-4 h-4 text-lime-400 mr-1.5" />
+            <span className="mr-1">Membru din</span>
             <span className="font-bold text-white">{memberSince}</span>
           </div>
         </div>

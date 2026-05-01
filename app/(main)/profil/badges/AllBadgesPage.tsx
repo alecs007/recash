@@ -4,8 +4,6 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import useSWR from "swr";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type Badge = {
   id: string;
   type: string;
@@ -13,14 +11,11 @@ type Badge = {
   seen: boolean;
 };
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-const BADGE_CONFIG: Record<
-  string,
-  { emoji: string; label: string; desc: string; group: string }
-> = {
+type BadgeCfg = { emoji: string; label: string; desc: string; group: string };
+
+const BADGE_CONFIG: Record<string, BadgeCfg> = {
   FIRST_POST: {
     emoji: "🍾",
     label: "Prima Postare",
@@ -131,7 +126,101 @@ const BADGE_CONFIG: Record<
   },
 };
 
+const BADGE_COLORS: Record<string, string> = {
+  FIRST_POST: "#2563EB",
+  POST_VETERAN_10: "#2563EB",
+  POST_VETERAN_50: "#1D4ED8",
+  POST_VETERAN_100: "#1E3A8A",
+  FIRST_COLLECTION: "#EA580C",
+  COLLECTOR_STARTER_10: "#EA580C",
+  COLLECTOR_PRO_50: "#C2410C",
+  COLLECTOR_ELITE_100: "#9A3412",
+  ECO_STARTER: "#16A34A",
+  ECO_WARRIOR: "#15803D",
+  ECO_CHAMPION: "#166534",
+  ECO_LEGEND: "#14532D",
+  SPEED_DEMON: "#9333EA",
+  FIRST_WEEK: "#0D9488",
+  MONTHLY_ACTIVE: "#0891B2",
+  VETERAN_1_YEAR: "#0369A1",
+  CENTURION: "#1E293B",
+  PERFECT_RATING: "#D97706",
+};
+
 const GROUPS = ["Postări", "Colectări", "Eco", "Activitate", "Speciale"];
+
+// ─── Hex Badge Card ───────────────────────────────────────────────────────────
+
+function BadgeCard({
+  type,
+  cfg,
+  earned,
+  earnedAt,
+}: {
+  type: string;
+  cfg: { emoji: string; label: string; desc: string };
+  earned: boolean;
+  earnedAt?: string;
+}) {
+  const color = earned ? (BADGE_COLORS[type] ?? "#64748B") : "#CBD5E1";
+
+  return (
+    <div
+      className={`
+        flex flex-col items-center gap-3 p-4 rounded-2xl bg-white border transition-colors
+        ${earned ? "border-slate-200 hover:border-slate-300" : "border-slate-100 opacity-40 grayscale pointer-events-none"}
+      `}
+    >
+      {/* Hex */}
+      <div className="relative w-[56px] h-[63px] flex-shrink-0">
+        <div
+          className="absolute inset-0"
+          style={{
+            clipPath:
+              "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+            backgroundColor: `color-mix(in srgb, ${color} 60%, black)`,
+          }}
+        />
+        <div
+          className="absolute"
+          style={{
+            inset: "2.5px",
+            clipPath:
+              "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+            backgroundColor: color,
+          }}
+        />
+        <span
+          className="absolute inset-0 flex items-center justify-center"
+          style={{ fontSize: "22px", lineHeight: 1 }}
+        >
+          {cfg.emoji}
+        </span>
+      </div>
+
+      {/* Text */}
+      <div className="flex flex-col items-center gap-1 text-center w-full">
+        <p className="text-[11px] font-bold text-slate-800 leading-tight">
+          {cfg.label}
+        </p>
+        <p className="text-[9px] text-slate-400 leading-snug">{cfg.desc}</p>
+      </div>
+
+      {/* Date */}
+      <div className="w-full pt-2 border-t border-slate-100 text-center">
+        <span className="text-[9px] font-semibold text-slate-400">
+          {earnedAt
+            ? new Date(earnedAt).toLocaleDateString("ro-RO", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })
+            : "Neobținut"}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
@@ -141,15 +230,26 @@ function Skeleton() {
       {[1, 2].map((g) => (
         <div key={g}>
           <div className="h-5 w-24 bg-slate-100 rounded-lg mb-4" />
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="rounded-2xl border border-slate-100 p-4 flex flex-col items-center gap-2.5"
+                className="rounded-2xl border border-slate-100 bg-white p-4 flex flex-col items-center gap-3"
               >
-                <div className="w-10 h-10 bg-slate-100 rounded-full" />
-                <div className="h-4 w-20 bg-slate-100 rounded-lg" />
-                <div className="h-3 w-24 bg-slate-100 rounded-lg" />
+                <div
+                  className="w-[56px] h-[63px] bg-slate-100"
+                  style={{
+                    clipPath:
+                      "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+                  }}
+                />
+                <div className="flex flex-col items-center gap-1.5 w-full">
+                  <div className="h-2.5 w-14 bg-slate-100 rounded" />
+                  <div className="h-2 w-12 bg-slate-100 rounded" />
+                </div>
+                <div className="w-full pt-2 border-t border-slate-100">
+                  <div className="h-2 w-10 bg-slate-100 rounded mx-auto" />
+                </div>
               </div>
             ))}
           </div>
@@ -166,6 +266,7 @@ export default function AllBadgesPage() {
     "/api/v1/profile/badges",
     fetcher,
   );
+
   const earnedTypes = new Set(badges.map((b) => b.type));
   const earnedCount = Object.keys(BADGE_CONFIG).filter((t) =>
     earnedTypes.has(t),
@@ -175,35 +276,31 @@ export default function AllBadgesPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-2">
+      <div className="flex items-center gap-3 mb-4">
         <Link
           href="/profil"
           className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center hover:border-slate-300 transition-colors"
         >
           <ArrowLeft className="w-4 h-4 text-slate-600" />
         </Link>
-        <div>
-          <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-            Badge-urile mele
-          </h1>
-        </div>
+        <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
+          Badge-urile mele
+        </h1>
       </div>
 
-      {/* Progress bar */}
+      {/* Progress */}
       {!isLoading && (
-        <div className="mb-8 mt-4">
+        <div className="mb-8">
           <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
             <div
               className="h-full bg-lime-400 rounded-full transition-all duration-700"
               style={{ width: `${(earnedCount / total) * 100}%` }}
             />
           </div>
-          {!isLoading && (
-            <p className="text-sm text-slate-500 mt-1.5 text-right">
-              <span className="font-bold text-lime-600">{earnedCount}</span> din{" "}
-              {total} obținute
-            </p>
-          )}
+          <p className="text-sm text-slate-500 mt-1.5 text-right">
+            <span className="font-bold text-lime-500">{earnedCount}</span> din{" "}
+            {total} obținute
+          </p>
         </div>
       )}
 
@@ -218,39 +315,20 @@ export default function AllBadgesPage() {
             );
             return (
               <div key={group}>
-                <h2 className="font-semibold text-slate-700 mb-3">{group}</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <h2 className="font-bold text-slate-900 mb-3 tracking-wide">
+                  {group}
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
                   {groupBadges.map(([type, cfg]) => {
-                    const earned = earnedTypes.has(type);
                     const badge = badges.find((b) => b.type === type);
                     return (
-                      <div
+                      <BadgeCard
                         key={type}
-                        className={`rounded-2xl border p-4 flex flex-col items-center text-center transition-all ${
-                          earned
-                            ? "bg-gradient-to-br from-lime-50 to-emerald-50 border-lime-200 shadow-sm"
-                            : "bg-slate-50 border-slate-100 opacity-50 grayscale"
-                        }`}
-                      >
-                        <div className="text-3xl mb-2">{cfg.emoji}</div>
-                        <div className="font-bold text-sm text-slate-900">
-                          {cfg.label}
-                        </div>
-                        <div className="text-xs text-slate-500 mt-0.5 leading-tight">
-                          {cfg.desc}
-                        </div>
-                        {badge ? (
-                          <div className="text-xs text-lime-600 font-semibold mt-2">
-                            {new Date(badge.earnedAt).toLocaleDateString(
-                              "ro-RO",
-                            )}
-                          </div>
-                        ) : (
-                          <div className="text-xs text-slate-400 mt-2 font-medium">
-                            Neobținut
-                          </div>
-                        )}
-                      </div>
+                        type={type}
+                        cfg={cfg}
+                        earned={earnedTypes.has(type)}
+                        earnedAt={badge?.earnedAt}
+                      />
                     );
                   })}
                 </div>
