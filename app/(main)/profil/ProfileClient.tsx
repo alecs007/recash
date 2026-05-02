@@ -489,7 +489,7 @@ function LatestPostsSection() {
       </div>
 
       {loadingPosts ? (
-        <PostsSkeleton count={2} />
+        <PostsSkeleton count={3} />
       ) : posts.length === 0 ? (
         <div className="bg-white rounded-2xl border border-dashed border-slate-200 p-8 text-center">
           <Image

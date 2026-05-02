@@ -263,7 +263,7 @@ export default function AllPostsPage() {
           <button
             key={f.value}
             onClick={() => handleFilterChange(f.value)}
-            className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+            className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
               statusFilter === f.value
                 ? "bg-[#123424] text-white border-[#123424]"
                 : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"

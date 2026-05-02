@@ -12,6 +12,22 @@ import { IoChevronDown } from "react-icons/io5";
 import { MdLogout } from "react-icons/md";
 import { LuBike } from "react-icons/lu";
 import { motion, AnimatePresence } from "framer-motion";
+import useSWR from "swr";
+
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
+function useUnreadCount(authenticated: boolean) {
+  const { data } = useSWR(
+    authenticated ? "/api/v1/profile/notifications?page=1&limit=1" : null,
+    fetcher,
+    {
+      refreshInterval: 20000, // poll every 20s
+      revalidateOnFocus: true,
+      dedupingInterval: 10000,
+    },
+  );
+  return (data?.unreadCount as number) ?? 0;
+}
 
 const ProfileShimmer = () => (
   <div className="flex items-center gap-3 pl-1 pr-2 py-1">
@@ -30,6 +46,10 @@ export default function Header({ children }: { children: React.ReactNode }) {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const isAuthPage = pathname?.startsWith("/auth");
+  const isAuthenticated = status === "authenticated" && !!session?.user;
+  const isLoading = status === "loading";
+
+  const unreadCount = useUnreadCount(isAuthenticated);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -45,10 +65,6 @@ export default function Header({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (isAuthPage) return <>{children}</>;
-
-  const unreadCount = 3;
-  const isAuthenticated = status === "authenticated" && !!session?.user;
-  const isLoading = status === "loading";
 
   const initials = session?.user?.name
     ?.split(" ")
@@ -143,7 +159,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                         transition={{ duration: 0.2, ease: "easeOut" }}
                         className="absolute right-0 top-full mt-0 pt-2 w-56 origin-top-right z-50"
                       >
-                        <div className="bg-white rounded-3xl border border-slate-200 p-2 shadow-xl">
+                        <div className="bg-white rounded-3xl border border-slate-200 p-2">
                           <Link
                             href="/profil"
                             onClick={() => setDropdownOpen(false)}

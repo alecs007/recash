@@ -3,7 +3,6 @@ import { redis } from "./redis";
 
 export type RateLimitConfig = {
   limit?: number;
-
   windowSec?: number;
 };
 

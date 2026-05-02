@@ -1,8 +1,5 @@
-// middleware.ts
 import { NextRequest, NextResponse } from "next/server";
 
-// ── Protected page routes ────────────────────────────────────────────────────
-// Any pathname that starts with one of these requires an active session.
 const PROTECTED_PAGE_PREFIXES = [
   "/profil",
   "/post",
