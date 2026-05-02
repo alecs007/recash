@@ -4,6 +4,7 @@ import Google from "next-auth/providers/google";
 import Facebook from "next-auth/providers/facebook";
 import { prisma } from "@/lib/prisma";
 import authConfig from "./auth.config";
+import { awardBadge } from "@/lib/badges";
 import type { UserRole } from "@prisma/client";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -27,6 +28,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
 
   session: { strategy: "jwt" },
+
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -47,12 +49,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   events: {
     async createUser({ user }) {
       if (!user.id) return;
-      await prisma.badge.create({
-        data: {
-          userId: user.id!,
-          type: "FIRST_WEEK",
-        },
-      });
+      await awardBadge(user.id, "FIRST_WEEK").catch((err) =>
+        console.error("[auth] FIRST_WEEK badge error:", err),
+      );
     },
   },
 

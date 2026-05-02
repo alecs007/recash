@@ -16,31 +16,6 @@ import useSWR from "swr";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-function useUnreadCount(authenticated: boolean) {
-  const { data } = useSWR(
-    authenticated ? "/api/v1/profile/notifications?page=1&limit=1" : null,
-    fetcher,
-    {
-      refreshInterval: 20000,
-      revalidateOnFocus: true,
-      dedupingInterval: 10000,
-    },
-  );
-  return (data?.unreadCount as number) ?? 0;
-}
-
-function useActiveStatus(authenticated: boolean) {
-  const { data } = useSWR(
-    authenticated ? "/api/v1/posts/active" : null,
-    fetcher,
-    { refreshInterval: 15000 },
-  );
-  return {
-    activePost: data?.activePost,
-    activeCollection: data?.activeCollection,
-  };
-}
-
 const ProfileShimmer = () => (
   <div className="flex items-center gap-3 pl-1 pr-2 py-1">
     <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse"></div>
@@ -59,10 +34,13 @@ export default function Header({ children }: { children: React.ReactNode }) {
 
   const isAuthPage = pathname?.startsWith("/auth");
   const isAuthenticated = status === "authenticated" && !!session?.user;
-  const isLoading = status === "loading";
 
-  const unreadCount = useUnreadCount(isAuthenticated);
-  const { activePost, activeCollection } = useActiveStatus(isAuthenticated);
+  const { data: notifData } = useSWR(
+    isAuthenticated ? "/api/v1/profile/notifications?page=1&limit=1" : null,
+    fetcher,
+    { refreshInterval: 60_000 },
+  );
+  const unreadCount: number = notifData?.unreadCount ?? 0;
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -78,6 +56,8 @@ export default function Header({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (isAuthPage) return <>{children}</>;
+
+  const isLoading = status === "loading";
 
   const initials = session?.user?.name
     ?.split(" ")
@@ -96,7 +76,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <header className="sticky top-0 z-40 bg-white backdrop-blur-md">
+      <header className="sticky top-0 z-40 backdrop-blur-md bg-white">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2">
             <Image
@@ -137,6 +117,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                   <button
                     onClick={() => setDropdownOpen((v) => !v)}
                     className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+                    aria-label="Meniu profil"
                   >
                     {session!.user!.image ? (
                       <Image
@@ -164,13 +145,14 @@ export default function Header({ children }: { children: React.ReactNode }) {
                         initial={{ opacity: 0, y: -10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
                         className="absolute right-0 top-full mt-0 pt-2 w-56 origin-top-right z-50"
                       >
                         <div className="bg-white rounded-3xl border border-slate-200 p-2">
                           <Link
                             href="/profil"
                             onClick={() => setDropdownOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors"
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                           >
                             <FaRegUser className="w-4 h-4 text-slate-600" />
                             Profilul meu
@@ -178,7 +160,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                           <Link
                             href="/post"
                             onClick={() => setDropdownOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors"
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                           >
                             <FaWineBottle className="w-4 h-4 text-slate-600" />
                             Postează sticle
@@ -186,7 +168,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                           <Link
                             href="/map"
                             onClick={() => setDropdownOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors"
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                           >
                             <LuBike className="w-4 h-4 text-slate-600" />
                             Colectează sticle
@@ -198,7 +180,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                                 show("Se deconectează...");
                                 signOut({ callbackUrl: "/" });
                               }}
-                              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm rounded-xl text-red-600 hover:bg-red-50 transition-colors"
+                              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm rounded-xl text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                             >
                               <MdLogout className="w-4 h-4" />
                               Deconectează-te
@@ -214,55 +196,26 @@ export default function Header({ children }: { children: React.ReactNode }) {
               <div className="flex items-center gap-1">
                 <button
                   onClick={openAuthModal}
-                  className="hidden sm:flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors px-3 py-2 rounded-xl hover:bg-slate-50"
+                  className="hidden sm:flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors px-3 py-2 rounded-xl hover:bg-slate-50 cursor-pointer"
                 >
                   Intră în cont
                 </button>
                 <button
                   onClick={openAuthModal}
-                  className="flex items-center justify-center gap-1 text-white bg-[#1a4d36] font-bold py-2.25 px-4 rounded-full text-sm hover:scale-105 transition-all duration-200 group"
+                  className="flex items-center justify-center gap-1 text-white bg-[#1a4d36] font-bold py-2.25 px-4 rounded-full text-sm hover:scale-105 transition-all duration-200 cursor-pointer group"
                 >
-                  <FaRecycle className="w-4 h-4 text-lime-400 group-hover:rotate-360 transition-transform duration-700" />
-                  <span>Conectează-te!</span>
+                  <FaRecycle className="w-4 h-4 text-lime-400 group-hover:rotate-360 translate-y-px transition-transform duration-700 ease-in-out" />
+                  <span className="tracking-tight">
+                    Conectează-te
+                    <span className="text-lime-400 ml-0.75 inline-block rotate-3 text-[16px] translate-y-[1px]">
+                      !
+                    </span>
+                  </span>
                 </button>
               </div>
             )}
           </div>
         </div>
-
-        {/* Active Indicators Bar */}
-        <AnimatePresence>
-          {(activePost || activeCollection) && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="bg-lime-50 border-b border-lime-100 overflow-hidden"
-            >
-              <div className="max-w-7xl mx-auto px-4 py-2 flex flex-wrap gap-4">
-                {activePost && (
-                  <Link
-                    href={`/post/${activePost.id}`}
-                    className="flex items-center gap-2 text-xs font-medium text-lime-800 hover:underline"
-                  >
-                    <span className="flex h-2 w-2 rounded-full bg-lime-500 animate-pulse" />
-                    Postare activă: {activePost.bottleCount} sticle la{" "}
-                    {activePost.locationName}
-                  </Link>
-                )}
-                {activeCollection && (
-                  <Link
-                    href={`/post/${activeCollection.id}`}
-                    className="flex items-center gap-2 text-xs font-medium text-blue-700 hover:underline"
-                  >
-                    <span className="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-                    Colectare în curs: {activeCollection.bottleCount} sticle
-                  </Link>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </header>
 
       <main className="flex-1">{children}</main>

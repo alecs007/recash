@@ -1,8 +1,14 @@
+import { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ProfileClient } from "./ProfileClient";
 import { cached, CacheKey, TTL } from "@/lib/cache";
+
+export const metadata: Metadata = {
+  title: "Profilul meu | Recash",
+  description: "Vezi activitatea, câștigurile și reputația ta pe Recash.",
+};
 
 export default async function ProfilePage() {
   const session = await auth();

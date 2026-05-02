@@ -14,6 +14,7 @@ import {
   AlertCircle,
   Loader2,
   Plus,
+  LucideIcon,
 } from "lucide-react";
 import { FaWineBottle } from "react-icons/fa";
 import useSWR from "swr";
@@ -191,7 +192,7 @@ const BADGE_CONFIG: Record<
 
 const POST_STATUS_CONFIG: Record<
   string,
-  { label: string; color: string; Icon: any }
+  { label: string; color: string; Icon: LucideIcon }
 > = {
   OPEN: {
     label: "Deschis",
