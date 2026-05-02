@@ -66,7 +66,7 @@ export async function POST(
     }
 
     // Check if already reviewed
-    if (isPoster && post.transaction.posterRating) {
+    if (isPoster && post.transaction.posterRating !== null) {
       return NextResponse.json(
         { error: "Ai acordat deja un rating" },
         { status: 409 },
@@ -102,21 +102,29 @@ export async function POST(
             },
       });
 
-      // Recalculate reputation score for reviewed user
-      const allRatings = await tx.transaction.findMany({
-        where: isPoster
-          ? { collectorId: reviewedUserId, collectorRating: { not: null } }
-          : { posterId: reviewedUserId, posterRating: { not: null } },
-        select: isPoster ? { collectorRating: true } : { posterRating: true },
-      });
+      let ratings: number[] = [];
 
-      // Include the new rating
-      const ratings = allRatings.map((r) =>
-        isPoster
-          ? r.collectorRating!
-          : (r as { posterRating: number }).posterRating,
-      );
-      ratings.push(rating);
+      if (isPoster) {
+        const allRatings = await tx.transaction.findMany({
+          where: {
+            collectorId: reviewedUserId,
+            collectorRating: { not: null },
+          },
+          select: { collectorRating: true },
+        });
+
+        ratings = allRatings.map((r) => r.collectorRating!);
+      } else {
+        const allRatings = await tx.transaction.findMany({
+          where: {
+            posterId: reviewedUserId,
+            posterRating: { not: null },
+          },
+          select: { posterRating: true },
+        });
+
+        ratings = allRatings.map((r) => r.posterRating!);
+      }
 
       const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length;
 

@@ -9,7 +9,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const lat = parseFloat(searchParams.get("lat") ?? "0");
   const lng = parseFloat(searchParams.get("lng") ?? "0");
-  const radius = Math.min(50, parseFloat(searchParams.get("radius") ?? "10")); // km
+  const radius = Math.min(50, parseFloat(searchParams.get("radius") ?? "10"));
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1") || 1);
   const limit = Math.min(
     100,
@@ -17,7 +17,6 @@ export async function GET(req: Request) {
   );
 
   try {
-    // Basic lat/lng bounding box filter (approximation: 1deg ≈ 111km)
     const latDelta = radius / 111;
     const lngDelta = radius / (111 * Math.cos((lat * Math.PI) / 180));
 
@@ -56,6 +55,7 @@ export async function GET(req: Request) {
               name: true,
               image: true,
               reputationScore: true,
+              ratingCount: true,
             },
           },
         },
@@ -86,6 +86,26 @@ export async function POST(req: Request) {
   const rl = await rateLimit(session.user.id, RL.write);
   if (!rl.ok) return rl.response;
 
+  // ── Enforce: one active post per poster ──────────────────────────────────
+  const existingActive = await prisma.post.findFirst({
+    where: {
+      authorId: session.user.id,
+      status: { in: ["OPEN", "CLAIMED", "IN_PROGRESS"] },
+    },
+    select: { id: true, status: true },
+  });
+
+  if (existingActive) {
+    return NextResponse.json(
+      {
+        error:
+          "Ai deja un anunț activ. Finalizează-l sau anulează-l înainte de a crea unul nou.",
+        activePostId: existingActive.id,
+      },
+      { status: 409 },
+    );
+  }
+
   let body: unknown;
   try {
     body = await req.json();
@@ -108,7 +128,6 @@ export async function POST(req: Request) {
       Date.now() + data.expiresInHours * 60 * 60 * 1000,
     );
 
-    // If phone is provided, update user's phone too
     const post = await prisma.$transaction(async (tx) => {
       if (data.phone) {
         await tx.user.update({
@@ -123,7 +142,7 @@ export async function POST(req: Request) {
           bottleCount: data.bottleCount,
           estimatedValue: data.estimatedValue,
           collectorSharePercent: data.collectorSharePercent,
-          description: data.description,
+          description: data.description ?? "",
           latitude: data.latitude,
           longitude: data.longitude,
           locationName: data.locationName ?? null,
@@ -148,7 +167,6 @@ export async function POST(req: Request) {
       });
     });
 
-    // Invalidate profile post caches
     await invalidate(CacheKey.posts(session.user.id, 1, 10, "all"));
 
     return NextResponse.json(post, { status: 201 });

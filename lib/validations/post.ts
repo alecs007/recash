@@ -68,16 +68,15 @@ export const createPostSchema = z.object({
 
   description: z
     .string()
-    .min(3, "Descrierea este prea scurtă")
     .max(500, "Maxim 500 de caractere")
-    .trim(),
+    .trim()
+    .optional()
+    .default(""),
 
   latitude: z.number().min(-90).max(90),
-
   longitude: z.number().min(-180).max(180),
 
   locationName: z.string().max(200).trim().optional().nullable(),
-
   address: z.string().max(500).trim().optional().nullable(),
 
   phone: z
@@ -95,12 +94,7 @@ export const createPostSchema = z.object({
     .optional()
     .default([]),
 
-  expiresInHours: z
-    .number()
-    .int()
-    .min(1)
-    .max(168) // 7 days
-    .default(48),
+  expiresInHours: z.number().int().min(1).max(168).default(48),
 });
 
 export type CreatePostInput = z.infer<typeof createPostSchema>;

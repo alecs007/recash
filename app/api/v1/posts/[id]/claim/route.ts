@@ -18,6 +18,26 @@ export async function POST(
 
   const { id } = await params;
 
+  // ── Enforce: one active collection per collector ──────────────────────────
+  const existingCollection = await prisma.post.findFirst({
+    where: {
+      collectorId: session.user.id,
+      status: { in: ["CLAIMED", "IN_PROGRESS"] },
+    },
+    select: { id: true, status: true },
+  });
+
+  if (existingCollection) {
+    return NextResponse.json(
+      {
+        error:
+          "Ai deja o colectare activă. Finalizează-o înainte de a prelua alta.",
+        activeCollectionId: existingCollection.id,
+      },
+      { status: 409 },
+    );
+  }
+
   try {
     const post = await prisma.post.findUnique({ where: { id } });
 
@@ -45,9 +65,9 @@ export async function POST(
       return NextResponse.json({ error: "Anunțul a expirat" }, { status: 410 });
     }
 
-    // Claim the post
+    // Optimistic lock: only update if still OPEN
     const updated = await prisma.post.update({
-      where: { id, status: "OPEN" }, // optimistic lock
+      where: { id, status: "OPEN" },
       data: {
         status: "CLAIMED",
         collectorId: session.user.id,
@@ -55,13 +75,11 @@ export async function POST(
       },
     });
 
-    // Get collector info for notification
     const collector = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { name: true },
     });
 
-    // Notify poster
     await notifyPostClaimed(
       post.authorId,
       id,
@@ -71,7 +89,6 @@ export async function POST(
 
     return NextResponse.json({ success: true, status: updated.status });
   } catch (err: unknown) {
-    // P2025 = record not found (already claimed by someone else)
     if ((err as { code?: string }).code === "P2025") {
       return NextResponse.json(
         { error: "Anunțul a fost revendicat de altcineva" },
