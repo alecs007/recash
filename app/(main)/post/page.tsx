@@ -1,0 +1,16 @@
+import { Metadata } from "next";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+import PostCreationClient from "./PostCreationPage";
+
+export const metadata: Metadata = {
+  title: "Postează sticle | Recash",
+  description: "Postează sticlele tale pentru a câștiga bani prin reciclare.",
+};
+
+export default async function PostPage() {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/?auth=1");
+
+  return <PostCreationClient userPhone={null} />;
+}

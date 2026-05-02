@@ -9,12 +9,15 @@ const PROTECTED_PAGE_PREFIXES = [
 ];
 
 const API_VERSION = process.env.NEXT_PUBLIC_API_VERSION ?? "v1";
-const PROTECTED_API_PREFIXES = [
+
+const ALWAYS_PROTECTED_API_PREFIXES = [
   `/api/${API_VERSION}/profile`,
-  `/api/${API_VERSION}/posts`,
   `/api/${API_VERSION}/transactions`,
   `/api/${API_VERSION}/notifications`,
 ];
+
+const WRITE_PROTECTED_API_PREFIXES = [`/api/${API_VERSION}/posts`];
+const WRITE_METHODS = new Set(["POST", "PATCH", "PUT", "DELETE"]);
 
 const SESSION_COOKIE_NAMES = [
   "authjs.session-token",
@@ -31,9 +34,13 @@ export function middleware(req: NextRequest) {
   const isProtectedPage = PROTECTED_PAGE_PREFIXES.some((prefix) =>
     pathname.startsWith(prefix),
   );
-  const isProtectedApi = PROTECTED_API_PREFIXES.some((prefix) =>
+  const isAlwaysProtectedApi = ALWAYS_PROTECTED_API_PREFIXES.some((prefix) =>
     pathname.startsWith(prefix),
   );
+  const isWriteProtectedApi =
+    WRITE_PROTECTED_API_PREFIXES.some((prefix) =>
+      pathname.startsWith(prefix),
+    ) && WRITE_METHODS.has(req.method);
 
   if (!isAuthenticated) {
     if (isProtectedPage) {
@@ -43,7 +50,7 @@ export function middleware(req: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    if (isProtectedApi) {
+    if (isAlwaysProtectedApi || isWriteProtectedApi) {
       return NextResponse.json({ error: "Neautentificat" }, { status: 401 });
     }
   }
