@@ -166,7 +166,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         className="absolute right-0 top-full mt-0 pt-2 w-56 origin-top-right z-50"
                       >
-                        <div className="bg-white rounded-3xl border border-slate-200 p-2 shadow-xl">
+                        <div className="bg-white rounded-3xl border border-slate-200 p-2">
                           <Link
                             href="/profil"
                             onClick={() => setDropdownOpen(false)}
