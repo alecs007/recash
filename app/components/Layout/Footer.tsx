@@ -6,7 +6,7 @@ import Link from "next/link";
 
 export const Footer = () => {
   return (
-    <footer className="bg-[#123524] border-t border-white/10 py-12 rounded-t-[2rem] lg:rounded-t-[3rem]">
+    <footer className="bg-gradient-to-br from-[#123524] to-[#1a4d36] border-t border-white/10 py-12 rounded-t-[2rem] lg:rounded-t-[3rem]">
       <div className="w-full px-4 sm:px-12 md:px-16 lg:px-20 space-y-8">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="text-center md:text-left">
@@ -27,7 +27,7 @@ export const Footer = () => {
               href="https://instagram.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-white/60 hover:text-lime-400 transition-colors"
+              className="text-white/80 hover:text-lime-400 transition-colors"
               aria-label="Instagram"
             >
               <FaInstagram size={24} />
@@ -36,7 +36,7 @@ export const Footer = () => {
               href="https://facebook.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-white/60 hover:text-lime-400 transition-colors"
+              className="text-white/80 hover:text-lime-400 transition-colors"
               aria-label="Facebook"
             >
               <FaFacebook size={24} />
@@ -45,14 +45,14 @@ export const Footer = () => {
               href="https://twitter.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-white/60 hover:text-lime-400 transition-colors"
+              className="text-white/80 hover:text-lime-400 transition-colors"
               aria-label="Twitter"
             >
               <FaXTwitter size={24} />
             </a>
             <a
               href="mailto:contact@recash.ro"
-              className="text-white/60 hover:text-lime-400 transition-colors"
+              className="text-white/80 hover:text-lime-400 transition-colors"
               aria-label="Email"
             >
               <LuMail size={24} />
