@@ -19,7 +19,7 @@ export const Footer = () => {
               width={643}
               height={138}
               draggable={false}
-              className="h-9 w-auto mx-auto md:mx-0 mb-4 brightness-0 invert sepia-[.5] hue-rotate-[60deg] saturate-[2]"
+              className="h-9 w-auto mx-auto md:mx-0 mb-4 brightness-0 invert"
             />
             <p className="text-white/80">
               Transformăm{" "}
