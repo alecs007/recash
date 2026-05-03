@@ -63,7 +63,7 @@ export function ProfilePage({ summary }: { summary: ProfileSummary }) {
                 <span className="font-bold text-white mr-1">
                   {user._count.badges}
                 </span>{" "}
-                badge-uri
+                {user._count.badges === 1 ? "badge" : "badge-uri"}
               </div>
               <div className="flex items-center text-white/70 text-sm">
                 <Calendar className="w-4 h-4 text-lime-400 mr-1.5" />

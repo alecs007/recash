@@ -120,7 +120,7 @@ model User {
   totalTransactions     Int   @default(0)
   totalEarned           Float @default(0)
   totalSaved            Float @default(0)
-  reputationScore       Float @default(5.0)
+  reputationScore       Float @default(0.0)
   ratingCount           Int   @default(0)
 
   accounts              Account[]
