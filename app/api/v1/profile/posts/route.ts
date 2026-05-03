@@ -64,12 +64,7 @@ export async function GET(req: Request) {
   }
 
   const where = { authorId: session.user.id, ...statusFilter };
-  const cacheKey = CacheKey.posts(
-    session.user.id,
-    page,
-    limit,
-    statusParam || "all",
-  );
+  const cacheKey = CacheKey.posts(session.user.id, statusParam || "all");
 
   try {
     if (statusParam === "active") {

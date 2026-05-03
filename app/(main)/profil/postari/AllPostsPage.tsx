@@ -3,16 +3,10 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Plus, LucideIcon } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import { PostCard } from "@/app/components/UI/PostCard";
 import { Post } from "@/types";
 import useSWR from "swr";
-
-type StatusConfig = {
-  label: string;
-  color: string;
-  Icon: LucideIcon;
-};
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
