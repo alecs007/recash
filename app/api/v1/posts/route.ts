@@ -176,8 +176,8 @@ export async function POST(req: Request) {
 
     // Invalidate cached post lists for this user
     await invalidate(
-      CacheKey.posts(session.user.id, 1, 10, "all"),
-      CacheKey.posts(session.user.id, 1, 10, "active"),
+      CacheKey.posts(session.user.id, "all"),
+      CacheKey.posts(session.user.id, "active"),
     );
 
     // Award badges asynchronously — never block the response

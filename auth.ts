@@ -18,12 +18,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.AUTH_GOOGLE_ID!,
       clientSecret: process.env.AUTH_GOOGLE_SECRET!,
-      allowDangerousEmailAccountLinking: true,
     }),
     Facebook({
       clientId: process.env.AUTH_FACEBOOK_ID!,
       clientSecret: process.env.AUTH_FACEBOOK_SECRET!,
-      allowDangerousEmailAccountLinking: true,
     }),
   ],
 
@@ -59,5 +57,5 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error: "/",
   },
 
-  trustHost: true,
+  trustHost: process.env.NODE_ENV === "development",
 });

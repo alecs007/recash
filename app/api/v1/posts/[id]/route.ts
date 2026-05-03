@@ -73,7 +73,16 @@ export async function GET(
       });
     }
 
-    return NextResponse.json({ ...post, isAuthor, isCollector });
+    const showPhone = isParticipant && post.status === "IN_PROGRESS";
+    return NextResponse.json({
+      ...post,
+      author: { ...post.author, phone: showPhone ? post.author.phone : null },
+      collector: post.collector
+        ? { ...post.collector, phone: showPhone ? post.collector.phone : null }
+        : null,
+      isAuthor,
+      isCollector,
+    });
   } catch (err) {
     console.error("[GET /api/v1/posts/[id]]", err);
     return NextResponse.json({ error: "Eroare internă" }, { status: 500 });

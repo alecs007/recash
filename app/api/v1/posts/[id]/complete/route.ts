@@ -77,7 +77,15 @@ export async function POST(
         { status: 410 },
       );
     }
-
+    if (body.actualBottleCount !== undefined) {
+      if (
+        !Number.isInteger(body.actualBottleCount) ||
+        body.actualBottleCount < 1 ||
+        body.actualBottleCount > 10_000
+      ) {
+        return NextResponse.json({ error: "Număr invalid" }, { status: 400 });
+      }
+    }
     // Use actual count if provided, otherwise use post's bottleCount
     const finalBottleCount = body.actualBottleCount ?? post.bottleCount;
     const actualValue = finalBottleCount * SGR_VALUE_PER_BOTTLE;

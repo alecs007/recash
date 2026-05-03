@@ -38,8 +38,8 @@ export async function invalidate(...keys: string[]): Promise<void> {
 export const CacheKey = {
   profile: (userId: string) => `profile:${userId}`,
 
-  posts: (userId: string, page: number, limit: number, status: string) =>
-    `profile:${userId}:posts:${page}:${limit}:${status}`,
+  posts: (userId: string, status: string) =>
+    `profile:${userId}:posts:${status}`,
 
   transactions: (userId: string, page: number, limit: number, side: string) =>
     `profile:${userId}:tx:${page}:${limit}:${side}`,

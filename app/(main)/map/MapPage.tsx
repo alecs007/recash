@@ -16,7 +16,6 @@ import {
   Star,
   Clock,
   ChevronRight,
-  FunnelIcon,
   LayoutList,
   Map as MapIcon,
 } from "lucide-react";
