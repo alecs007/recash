@@ -11,7 +11,7 @@ export function PostCard({ post }: { post: Post }) {
     <div className="bg-white rounded-2xl border border-slate-100 hover:border-lime-200 hover:shadow-sm transition-all">
       <Link
         href={`/post/${post.id}`}
-        className="flex items-start justify-between gap-3 p-4 pb-0"
+        className="flex items-start justify-between gap-3 p-4"
       >
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
@@ -54,7 +54,7 @@ export function PostCard({ post }: { post: Post }) {
         </div>
       </Link>
       {post.collector && (
-        <div className="mt-3 border-t border-slate-50 flex items-center gap-2 py-3 px-4">
+        <div className="border-t border-slate-50 flex items-center gap-2 py-3 px-4">
           <div className="w-6 h-6 rounded-full bg-lime-100 flex items-center justify-center overflow-hidden border border-lime-200">
             {post.collector.image ? (
               <Image
