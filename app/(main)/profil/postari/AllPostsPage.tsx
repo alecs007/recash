@@ -169,7 +169,7 @@ export default function AllPostsPage() {
       ) : (
         <div className="space-y-3">
           <p className="text-xs text-slate-400 font-medium px-1">
-            {total} postări găsite
+            {total} {total === 1 ? "postare găsită" : "postari găsite"}
           </p>
           {posts.map((post) => (
             <PostCard key={post.id} post={post} />

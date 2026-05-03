@@ -24,7 +24,7 @@ function Skeleton() {
       {[1, 2].map((g) => (
         <div key={g}>
           <div className="h-5 w-24 bg-slate-100 rounded-lg mb-4" />
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
             {[1, 2, 3, 4].map((i) => (
               <BadgeCardSkeleton key={i} />
             ))}
