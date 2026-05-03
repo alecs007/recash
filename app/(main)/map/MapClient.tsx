@@ -179,37 +179,37 @@ const VIRTUAL_PAGE_SIZE = 30;
 
 function useVirtualList<T>(items: T[]) {
   const [limit, setLimit] = useState(VIRTUAL_PAGE_SIZE);
-  const sentinel = useRef<HTMLDivElement>(null);
-  // Track items identity to reset limit without an effect
-  const prevItemsRef = useRef(items);
 
-  // Derive: if items reference changed, reset limit synchronously during render
-  // This avoids setState-in-effect while still resetting on new data.
+  // 1. Keep track of the "source of truth" for the current list
+  const [prevItems, setPrevItems] = useState(items);
+  const sentinel = useRef<HTMLDivElement>(null);
+
+  // 2. Sync state during render
+  // If the items reference changed, reset the limit immediately
   let effectiveLimit = limit;
-  if (prevItemsRef.current !== items) {
-    prevItemsRef.current = items;
+  if (items !== prevItems) {
+    setPrevItems(items);
+    setLimit(VIRTUAL_PAGE_SIZE);
     effectiveLimit = VIRTUAL_PAGE_SIZE;
-    // Schedule the state sync without triggering an extra render cascade
-    if (limit !== VIRTUAL_PAGE_SIZE) {
-      // Use queueMicrotask so we're not inside render proper
-      queueMicrotask(() => setLimit(VIRTUAL_PAGE_SIZE));
-    }
   }
 
   useEffect(() => {
     const el = sentinel.current;
-    if (!el) return;
+    if (!el || items.length === 0) return;
+
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
+          // Use functional update to ensure we have the latest limit
           setLimit((prev) => Math.min(prev + VIRTUAL_PAGE_SIZE, items.length));
         }
       },
       { threshold: 0.1 },
     );
+
     observer.observe(el);
     return () => observer.disconnect();
-  }, [items.length]);
+  }, [items.length]); // Re-bind observer if total length changes
 
   return {
     visible: items.slice(0, effectiveLimit),
@@ -411,12 +411,7 @@ function SelectedPostOverlay({
     isLoggedIn && (isOwnPost || !canClaim || claiming === post.id);
 
   return (
-    // Mobile: centered in the map panel vertically via translate trick
-    // Desktop: pinned bottom-right
-    <div
-      className="absolute inset-x-4 sm:inset-x-auto sm:right-4 sm:bottom-4 sm:w-80 pointer-events-auto z-[1000]
-      top-1/2 -translate-y-1/2 sm:top-auto sm:translate-y-0"
-    >
+    <div className="absolute inset-x-auto right-4 bottom-4 w-[calc(100vw-2rem)] sm:w-80 pointer-events-auto z-[1000] translate-y-0">
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
         <div className="bg-gradient-to-r from-[#123424] to-[#1a4d36] px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
