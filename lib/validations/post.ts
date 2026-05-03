@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-// ─── Bottle count presets ────────────────────────────────────────────────────
-
 export const BOTTLE_PRESETS = [
   {
     value: 5,
@@ -42,10 +40,7 @@ export const BOTTLE_PRESETS = [
   { value: 0, label: "Altul", image: null, desc: "Introduc eu numărul" },
 ] as const;
 
-// SGR Romania: 0.50 RON per bottle
 export const RON_PER_BOTTLE = 0.5;
-
-// ─── Schemas ─────────────────────────────────────────────────────────────────
 
 export const createPostSchema = z.object({
   bottleCount: z
@@ -99,8 +94,6 @@ export const createPostSchema = z.object({
 
 export type CreatePostInput = z.infer<typeof createPostSchema>;
 
-// ─── Review schema ────────────────────────────────────────────────────────────
-
 export const reviewSchema = z.object({
   rating: z
     .number({ error: "Rating-ul este obligatoriu" })
@@ -118,13 +111,9 @@ export const reviewSchema = z.object({
 
 export type ReviewInput = z.infer<typeof reviewSchema>;
 
-// ─── Claim schema ─────────────────────────────────────────────────────────────
-
 export const approveClaimSchema = z.object({
   action: z.enum(["approve", "deny"]),
 });
-
-// ─── Cancel schema ────────────────────────────────────────────────────────────
 
 export const cancelSchema = z.object({
   reason: z.string().max(200).trim().optional().nullable(),

@@ -3,31 +3,10 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  MapPin,
-  CheckCircle,
-  Clock,
-  XCircle,
-  AlertCircle,
-  Loader2,
-  Plus,
-  LucideIcon,
-} from "lucide-react";
+import { ArrowLeft, Plus, LucideIcon } from "lucide-react";
+import { PostCard } from "@/app/components/UI/PostCard";
+import { Post } from "@/types";
 import useSWR from "swr";
-
-type Post = {
-  id: string;
-  status: string;
-  description: string;
-  bottleCount: number;
-  estimatedValue: number;
-  collectorSharePercent: number;
-  locationName: string | null;
-  createdAt: string;
-  collector?: { id: string; name: string | null; image: string | null } | null;
-  transaction?: { actualValue: number; posterEarning: number } | null;
-};
 
 type StatusConfig = {
   label: string;
@@ -37,39 +16,6 @@ type StatusConfig = {
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-const POST_STATUS_CONFIG: Record<string, StatusConfig> = {
-  OPEN: {
-    label: "Deschis",
-    color: "text-emerald-600 bg-emerald-50 border-emerald-200",
-    Icon: AlertCircle,
-  },
-  CLAIMED: {
-    label: "Revendicat",
-    color: "text-blue-600 bg-blue-50 border-blue-200",
-    Icon: Clock,
-  },
-  IN_PROGRESS: {
-    label: "În desfășurare",
-    color: "text-amber-600 bg-amber-50 border-amber-200",
-    Icon: Loader2,
-  },
-  COMPLETED: {
-    label: "Finalizat",
-    color: "text-lime-700 bg-lime-50 border-lime-200",
-    Icon: CheckCircle,
-  },
-  CANCELLED: {
-    label: "Anulat",
-    color: "text-red-500 bg-red-50 border-red-200",
-    Icon: XCircle,
-  },
-  EXPIRED: {
-    label: "Expirat",
-    color: "text-slate-500 bg-slate-50 border-slate-200",
-    Icon: Clock,
-  },
-};
-
 const STATUS_FILTERS = [
   { value: "all", label: "Toate" },
   { value: "active", label: "Active" },
@@ -77,82 +23,6 @@ const STATUS_FILTERS = [
   { value: "CANCELLED", label: "Anulate" },
   { value: "EXPIRED", label: "Expirate" },
 ];
-
-function PostCard({ post }: { post: Post }) {
-  const cfg = POST_STATUS_CONFIG[post.status] ?? POST_STATUS_CONFIG.OPEN;
-  const Icon = cfg.Icon;
-
-  return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-4 hover:border-lime-200 hover:shadow-sm transition-all">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span
-              className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border ${cfg.color}`}
-            >
-              <Icon className="w-3 h-3" />
-              {cfg.label}
-            </span>
-            <span className="text-xs text-slate-400">
-              {new Date(post.createdAt).toLocaleDateString("ro-RO")}
-            </span>
-          </div>
-          <p className="text-sm font-semibold text-slate-800 truncate">
-            {post.description}
-          </p>
-          {post.locationName && (
-            <div className="flex items-center gap-1 mt-1">
-              <MapPin className="w-3 h-3 text-slate-400" />
-              <span className="text-xs text-slate-500">
-                {post.locationName}
-              </span>
-            </div>
-          )}
-        </div>
-        <div className="text-right shrink-0">
-          <div className="text-lg font-black text-slate-900">
-            {post.bottleCount}
-          </div>
-          <div className="text-xs text-slate-400">sticle</div>
-          {post.transaction ? (
-            <div className="text-sm font-bold text-lime-600 mt-1">
-              +{post.transaction.posterEarning.toFixed(2)} RON
-            </div>
-          ) : (
-            <div className="text-sm text-slate-400 mt-1">
-              ~{post.estimatedValue.toFixed(0)} RON
-            </div>
-          )}
-        </div>
-      </div>
-      {post.collector && (
-        <div className="mt-3 pt-3 border-t border-slate-50 flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-lime-100 flex items-center justify-center overflow-hidden border border-lime-200">
-            {post.collector.image ? (
-              <Image
-                src={post.collector.image}
-                alt={post.collector.name ?? ""}
-                width={24}
-                height={24}
-                className="object-cover"
-              />
-            ) : (
-              <span className="text-[10px] font-bold text-lime-700">
-                {post.collector.name?.[0]}
-              </span>
-            )}
-          </div>
-          <span className="text-xs text-slate-500">
-            Colectat de{" "}
-            <span className="font-semibold text-slate-700">
-              {post.collector.name}
-            </span>
-          </span>
-        </div>
-      )}
-    </div>
-  );
-}
 
 function Skeleton() {
   return (
@@ -257,7 +127,6 @@ export default function AllPostsPage() {
         </Link>
       </div>
 
-      {/* Status filter pills */}
       <div className="flex gap-2 flex-wrap mb-5">
         {STATUS_FILTERS.map((f) => (
           <button
@@ -274,7 +143,6 @@ export default function AllPostsPage() {
         ))}
       </div>
 
-      {/* Content */}
       {isLoading ? (
         <Skeleton />
       ) : posts.length === 0 ? (

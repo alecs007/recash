@@ -12,7 +12,7 @@ export const POST_STATUS_CONFIG: Record<
   { label: string; color: string; Icon: LucideIcon }
 > = {
   OPEN: {
-    label: "Deschis",
+    label: "Activ",
     color: "text-emerald-600 bg-emerald-50 border-emerald-200",
     Icon: AlertCircle,
   },

@@ -16,13 +16,100 @@ import useSWR from "swr";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
+// ─── Hooks ────────────────────────────────────────────────────────────────────
+
+function useUnreadCount(authenticated: boolean) {
+  const { data } = useSWR(
+    authenticated ? "/api/v1/profile/notifications?page=1&limit=1" : null,
+    fetcher,
+    {
+      refreshInterval: 20_000,
+      revalidateOnFocus: true,
+      dedupingInterval: 10_000,
+    },
+  );
+  return (data?.unreadCount as number) ?? 0;
+}
+
+function useActiveCounts(authenticated: boolean) {
+  const { data } = useSWR(
+    authenticated ? "/api/v1/profile/active-counts" : null,
+    fetcher,
+    {
+      refreshInterval: 60_000,
+      revalidateOnFocus: true,
+      dedupingInterval: 30_000,
+    },
+  );
+  return {
+    activePosts: (data?.activePosts as number) ?? 0,
+    activeCollections: (data?.activeCollections as number) ?? 0,
+  };
+}
+
+// ─── Active indicator pill ────────────────────────────────────────────────────
+
+function ActiveIndicator({
+  activePosts,
+  activeCollections,
+}: {
+  activePosts: number;
+  activeCollections: number;
+}) {
+  const hasPosts = activePosts > 0;
+  const hasCollections = activeCollections > 0;
+
+  if (!hasPosts && !hasCollections) return null;
+
+  // Show both if user has both, otherwise just the relevant one
+  return (
+    <div className="flex items-center gap-1.5">
+      {hasPosts && (
+        <Link
+          href="/profil/postari?status=active"
+          className="group flex items-center gap-1.5 bg-lime-50 border border-lime-200 hover:bg-lime-100 hover:border-lime-300 text-[#123424] px-2.5 py-1.5 rounded-full text-xs font-semibold transition-all"
+          title={`${activePosts} ${activePosts === 1 ? "postare activă" : "postări active"}`}
+        >
+          <FaWineBottle className="w-3 h-3 text-lime-600 shrink-0" />
+          <span className="hidden sm:inline">
+            {activePosts === 1
+              ? "1 postare activă"
+              : `${activePosts} postări active`}
+          </span>
+          <span className="sm:hidden font-black">{activePosts}</span>
+        </Link>
+      )}
+
+      {hasCollections && (
+        <Link
+          href="/profil/postari?status=active"
+          className="group flex items-center gap-1.5 bg-blue-50 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 text-blue-800 px-2.5 py-1.5 rounded-full text-xs font-semibold transition-all"
+          title={`${activeCollections} ${activeCollections === 1 ? "colectare activă" : "colectări active"}`}
+        >
+          <LuBike className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+          <span className="hidden sm:inline">
+            {activeCollections === 1
+              ? "1 colectare activă"
+              : `${activeCollections} colectări active`}
+          </span>
+          <span className="sm:hidden font-black">{activeCollections}</span>
+        </Link>
+      )}
+    </div>
+  );
+}
+
+// ─── Shimmer ──────────────────────────────────────────────────────────────────
+
 const ProfileShimmer = () => (
   <div className="flex items-center gap-3 pl-1 pr-2 py-1">
-    <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse"></div>
-    <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse"></div>
+    <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse" />
+    <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse" />
     <div className="w-3.5 h-3.5 rounded-full bg-slate-200 animate-pulse" />
   </div>
 );
+
+// ─── Header ───────────────────────────────────────────────────────────────────
 
 export default function Header({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -34,13 +121,10 @@ export default function Header({ children }: { children: React.ReactNode }) {
 
   const isAuthPage = pathname?.startsWith("/auth");
   const isAuthenticated = status === "authenticated" && !!session?.user;
+  const isLoading = status === "loading";
 
-  const { data: notifData } = useSWR(
-    isAuthenticated ? "/api/v1/profile/notifications?page=1&limit=1" : null,
-    fetcher,
-    { refreshInterval: 60_000 },
-  );
-  const unreadCount: number = notifData?.unreadCount ?? 0;
+  const unreadCount = useUnreadCount(isAuthenticated);
+  const { activePosts, activeCollections } = useActiveCounts(isAuthenticated);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -57,8 +141,6 @@ export default function Header({ children }: { children: React.ReactNode }) {
 
   if (isAuthPage) return <>{children}</>;
 
-  const isLoading = status === "loading";
-
   const initials = session?.user?.name
     ?.split(" ")
     .map((n) => n[0])
@@ -69,7 +151,6 @@ export default function Header({ children }: { children: React.ReactNode }) {
   const handleMouseEnter = () => {
     if (window.matchMedia("(pointer: fine)").matches) setDropdownOpen(true);
   };
-
   const handleMouseLeave = () => {
     if (window.matchMedia("(pointer: fine)").matches) setDropdownOpen(false);
   };
@@ -78,7 +159,8 @@ export default function Header({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-white flex flex-col">
       <header className="sticky top-0 z-40 backdrop-blur-md bg-white">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center gap-2">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2 shrink-0">
             <Image
               src="/images/recash-logo.webp"
               alt="Recash Logo"
@@ -90,11 +172,19 @@ export default function Header({ children }: { children: React.ReactNode }) {
             />
           </Link>
 
-          <div className="flex items-center gap-3">
+          {/* Right side */}
+          <div className="flex items-center gap-2 sm:gap-3">
             {isLoading ? (
               <ProfileShimmer />
             ) : isAuthenticated ? (
               <>
+                {/* Active posts / collections indicator */}
+                <ActiveIndicator
+                  activePosts={activePosts}
+                  activeCollections={activeCollections}
+                />
+
+                {/* Notification bell */}
                 <Link
                   href="/notificari"
                   className="relative grid place-items-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors"
@@ -108,6 +198,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                   )}
                 </Link>
 
+                {/* Profile dropdown */}
                 <div
                   ref={dropdownRef}
                   className="relative"
@@ -133,9 +224,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                       </div>
                     )}
                     <IoChevronDown
-                      className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-300 ${
-                        dropdownOpen ? "rotate-180" : ""
-                      }`}
+                      className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-300 ${dropdownOpen ? "rotate-180" : ""}`}
                     />
                   </button>
 
@@ -160,18 +249,33 @@ export default function Header({ children }: { children: React.ReactNode }) {
                           <Link
                             href="/post"
                             onClick={() => setDropdownOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                            className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                           >
-                            <FaWineBottle className="w-4 h-4 text-slate-600" />
-                            Postează sticle
+                            <span className="flex items-center gap-3">
+                              <FaWineBottle className="w-4 h-4 text-slate-600" />
+                              Postează sticle
+                            </span>
+                            {activePosts > 0 && (
+                              <span className="bg-lime-100 text-lime-700 text-[10px] font-black px-1.5 py-0.5 rounded-full">
+                                {activePosts} activ{activePosts > 1 ? "e" : "ă"}
+                              </span>
+                            )}
                           </Link>
                           <Link
                             href="/map"
                             onClick={() => setDropdownOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                            className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                           >
-                            <LuBike className="w-4 h-4 text-slate-600" />
-                            Colectează sticle
+                            <span className="flex items-center gap-3">
+                              <LuBike className="w-4 h-4 text-slate-600" />
+                              Colectează sticle
+                            </span>
+                            {activeCollections > 0 && (
+                              <span className="bg-blue-100 text-blue-700 text-[10px] font-black px-1.5 py-0.5 rounded-full">
+                                {activeCollections} activ
+                                {activeCollections > 1 ? "e" : "ă"}
+                              </span>
+                            )}
                           </Link>
                           <div className="border-t border-slate-100 mt-1 pt-1">
                             <button

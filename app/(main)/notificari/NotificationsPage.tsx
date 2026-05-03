@@ -3,37 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Bell, BellOff, CheckCheck, Loader2 } from "lucide-react";
-import {
-  FaWineBottle,
-  FaRecycle,
-  FaStar,
-  FaTruck,
-  FaBan,
-  FaClock,
-  FaBell,
-  FaShieldAlt,
-} from "react-icons/fa";
 import useSWR, { mutate } from "swr";
-
-type NotificationType =
-  | "POST_CLAIMED"
-  | "POST_COMPLETED"
-  | "POST_CANCELLED"
-  | "POST_EXPIRED"
-  | "COLLECTOR_ARRIVED"
-  | "BADGE_EARNED"
-  | "RATING_RECEIVED"
-  | "SYSTEM";
-
-type Notification = {
-  id: string;
-  type: NotificationType;
-  title: string;
-  message: string;
-  read: boolean;
-  link: string | null;
-  createdAt: string;
-};
+import { NOTIF_CONFIG } from "@/lib/constants/notifications";
+import { Notification } from "@prisma/client";
 
 type ApiResponse = {
   notifications: Notification[];
@@ -43,64 +15,6 @@ type ApiResponse = {
   unreadCount: number;
 };
 
-type NotifConfig = {
-  Icon: React.ElementType;
-  color: string;
-  bg: string;
-  border: string;
-};
-
-const NOTIF_CONFIG: Record<NotificationType, NotifConfig> = {
-  POST_CLAIMED: {
-    Icon: FaTruck,
-    color: "text-blue-600",
-    bg: "bg-blue-50",
-    border: "border-blue-200",
-  },
-  POST_COMPLETED: {
-    Icon: FaRecycle,
-    color: "text-lime-700",
-    bg: "bg-lime-50",
-    border: "border-lime-200",
-  },
-  POST_CANCELLED: {
-    Icon: FaBan,
-    color: "text-red-500",
-    bg: "bg-red-50",
-    border: "border-red-200",
-  },
-  POST_EXPIRED: {
-    Icon: FaClock,
-    color: "text-slate-500",
-    bg: "bg-slate-50",
-    border: "border-slate-200",
-  },
-  COLLECTOR_ARRIVED: {
-    Icon: FaWineBottle,
-    color: "text-amber-600",
-    bg: "bg-amber-50",
-    border: "border-amber-200",
-  },
-  BADGE_EARNED: {
-    Icon: FaShieldAlt,
-    color: "text-purple-600",
-    bg: "bg-purple-50",
-    border: "border-purple-200",
-  },
-  RATING_RECEIVED: {
-    Icon: FaStar,
-    color: "text-yellow-600",
-    bg: "bg-yellow-50",
-    border: "border-yellow-200",
-  },
-  SYSTEM: {
-    Icon: FaBell,
-    color: "text-slate-600",
-    bg: "bg-slate-50",
-    border: "border-slate-200",
-  },
-};
-
 const FILTERS = [
   { value: "all", label: "Toate" },
   { value: "unread", label: "Necitite" },
@@ -108,7 +22,7 @@ const FILTERS = [
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-function timeAgo(dateStr: string): string {
+function timeAgo(dateStr: Date): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return "acum";
@@ -123,7 +37,13 @@ function timeAgo(dateStr: string): string {
   });
 }
 
-function NotificationCard({ notif }: { notif: Notification }) {
+function NotificationCard({
+  notif,
+  onClick,
+}: {
+  notif: Notification;
+  onClick: (id: string) => void;
+}) {
   const cfg = NOTIF_CONFIG[notif.type] ?? NOTIF_CONFIG.SYSTEM;
   const Icon = cfg.Icon;
 
@@ -135,6 +55,7 @@ function NotificationCard({ notif }: { notif: Notification }) {
             ? "bg-white border-slate-100 hover:border-slate-200"
             : "bg-lime-50 border-lime-300 hover:border-lime-300"
         }`}
+      onClick={() => onClick(notif.id)}
     >
       {!notif.read && (
         <span className="absolute top-3.5 right-3.5 w-2 h-2 rounded-full bg-lime-400 shadow shadow-lime-300" />
@@ -248,7 +169,22 @@ export default function NotificationsPage() {
   const notifications = data?.notifications ?? [];
   const totalPages = data?.totalPages ?? 1;
   const unreadCount = data?.unreadCount ?? 0;
-  const total = data?.total ?? 0;
+
+  const handleMarkRead = async (id: string) => {
+    if (data?.notifications.find((n) => n.id === id)?.read) return; // already read
+    await fetch("/api/v1/profile/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: [id] }),
+    });
+    await revalidate();
+    // Revalidate header bell count too
+    await mutate(
+      (key: unknown) =>
+        typeof key === "string" &&
+        key.includes("/api/v1/profile/notifications"),
+    );
+  };
 
   const handleMarkAllRead = async () => {
     setMarkingAll(true);
@@ -274,7 +210,6 @@ export default function NotificationsPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Link
@@ -310,7 +245,6 @@ export default function NotificationsPage() {
         )}
       </div>
 
-      {/* Filter pills */}
       <div className="flex gap-2 mb-5">
         {FILTERS.map((f) => (
           <button
@@ -338,7 +272,6 @@ export default function NotificationsPage() {
         ))}
       </div>
 
-      {/* Content */}
       {isLoading ? (
         <Skeleton />
       ) : notifications.length === 0 ? (
@@ -365,7 +298,11 @@ export default function NotificationsPage() {
         <div>
           <div className="space-y-2.5">
             {notifications.map((notif) => (
-              <NotificationCard key={notif.id} notif={notif} />
+              <NotificationCard
+                key={notif.id}
+                notif={notif}
+                onClick={handleMarkRead}
+              />
             ))}
           </div>
           {totalPages > 1 && (

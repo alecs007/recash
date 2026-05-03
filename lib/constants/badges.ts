@@ -1,12 +1,5 @@
 type BadgeCfg = { emoji: string; label: string; desc: string; group: string };
 
-export type Badge = {
-  id: string;
-  type: string;
-  earnedAt: string;
-  seen: boolean;
-};
-
 export const BADGE_CONFIG: Record<string, BadgeCfg> = {
   FIRST_POST: {
     emoji: "🍾",
