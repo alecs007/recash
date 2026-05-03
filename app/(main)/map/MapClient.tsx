@@ -99,7 +99,7 @@ let _leafletPromise: Promise<void> | null = null;
 
 function ensureLeaflet(): Promise<void> {
   if (typeof window === "undefined") return Promise.resolve();
-  if ((window as Window & { L?: LeafletLib }).L) return Promise.resolve();
+  if ((window as unknown as { L?: LeafletLib }).L) return Promise.resolve();
 
   const existingScript = document.querySelector('script[src*="leaflet.js"]');
   if (existingScript && _leafletPromise) return _leafletPromise;
@@ -153,7 +153,7 @@ function useLeaflet() {
   const [ready, setReady] = useState(
     () =>
       typeof window !== "undefined" &&
-      !!(window as Window & { L?: LeafletLib }).L,
+      !!(window as unknown as { L?: LeafletLib }).L,
   );
 
   useEffect(() => {
@@ -411,7 +411,7 @@ function SelectedPostOverlay({
     isLoggedIn && (isOwnPost || !canClaim || claiming === post.id);
 
   return (
-    <div className="absolute inset-x-auto right-4 bottom-4 w-[calc(100vw-2rem)] sm:w-80 pointer-events-auto z-[1000] translate-y-0">
+    <div className="absolute bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 pointer-events-auto z-[1000]">
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
         <div className="bg-gradient-to-r from-[#123424] to-[#1a4d36] px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -600,7 +600,7 @@ function PostMap({
   // User location marker
   useEffect(() => {
     if (!mapRef.current || !userLocation) return;
-    const L = (window as Window & { L?: LeafletLib }).L;
+    const L = (window as unknown as { L?: LeafletLib }).L;
     if (!L) return;
 
     const pulseIcon = L.divIcon({
@@ -628,7 +628,7 @@ function PostMap({
   // Sync markers — diffing approach for performance with large lists
   useEffect(() => {
     if (!mapRef.current || !leafletReady || !clusterGroupRef.current) return;
-    const L = (window as Window & { L?: LeafletLib }).L;
+    const L = (window as unknown as { L?: LeafletLib }).L;
     if (!L) return;
 
     const cluster = clusterGroupRef.current;
@@ -994,7 +994,6 @@ export default function MapPage() {
           </div>
         )}
       </div>
-      {/* ── Filter dropdown — floats over content, doesn't shift layout ──── w-full sm:w-80 lg:w-96 */}
 
       {showFilters && (
         <div
@@ -1032,6 +1031,7 @@ export default function MapPage() {
           </div>
         </div>
       )}
+
       {/* ── Main layout ───────────────────────────────────────────────────────── */}
       <div className="flex-1 flex overflow-hidden min-h-0">
         {/* ── Sidebar (list) ──────────────────────────────────────────────────── */}
