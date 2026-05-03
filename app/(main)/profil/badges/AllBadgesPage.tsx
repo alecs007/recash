@@ -21,11 +21,18 @@ function makeUnearnedBadge(type: string): BadgeData {
 function Skeleton() {
   return (
     <div className="space-y-8 animate-pulse">
-      {[1, 2].map((g) => (
+      <div className="mb-8">
+        <div className="w-full h-2 bg-slate-100 rounded-full" />
+        <div className="flex justify-end mt-1.5">
+          <div className="h-4 w-28 bg-slate-100 rounded" />
+        </div>
+      </div>
+
+      {[1, 2, 3, 4].map((g) => (
         <div key={g}>
           <div className="h-5 w-24 bg-slate-100 rounded-lg mb-4" />
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-            {[1, 2, 3, 4].map((i) => (
+            {[1, 2, 3, 4, 5, 6].map((i) => (
               <BadgeCardSkeleton key={i} />
             ))}
           </div>
@@ -56,9 +63,8 @@ export default function AllBadgesPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 min-h-[100dvh]">
+      <div className="flex items-center gap-3 mb-6">
         <Link
           href="/profil"
           className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center hover:border-slate-300 transition-colors"
@@ -70,62 +76,61 @@ export default function AllBadgesPage() {
         </h1>
       </div>
 
-      {/* Progress */}
-      {!isLoading && (
-        <div className="mb-8">
-          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-lime-400 rounded-full transition-all duration-700"
-              style={{ width: `${(earnedCount / total) * 100}%` }}
-            />
-          </div>
-          <p className="text-sm text-slate-500 mt-1.5 text-right">
-            <span className="font-bold text-lime-500">{earnedCount}</span> din{" "}
-            {total} obținute
-          </p>
-        </div>
-      )}
-
       {isLoading ? (
         <Skeleton />
       ) : (
-        <div className="space-y-8">
-          {GROUPS.map((group) => {
-            const groupTypes = Object.entries(BADGE_CONFIG)
-              .filter(([, cfg]) => cfg.group === group)
-              .map(([type]) => type);
+        <>
+          <div className="mb-8">
+            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-lime-400 rounded-full transition-all duration-700"
+                style={{ width: `${(earnedCount / total) * 100}%` }}
+              />
+            </div>
+            <p className="text-sm text-slate-500 mt-1.5 text-right">
+              <span className="font-bold text-lime-500">{earnedCount}</span> din{" "}
+              {total} obținute
+            </p>
+          </div>
 
-            return (
-              <div key={group}>
-                <h2 className="font-bold text-slate-900 mb-3 tracking-wide">
-                  {group}
-                </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-                  {groupTypes.map((type) => {
-                    const badge = badges.find((b) => b.type === type);
-                    if (badge) {
+          <div className="space-y-8">
+            {GROUPS.map((group) => {
+              const groupTypes = Object.entries(BADGE_CONFIG)
+                .filter(([, cfg]) => cfg.group === group)
+                .map(([type]) => type);
+
+              return (
+                <div key={group}>
+                  <h2 className="font-bold text-slate-900 mb-3 tracking-wide">
+                    {group}
+                  </h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+                    {groupTypes.map((type) => {
+                      const badge = badges.find((b) => b.type === type);
+                      if (badge) {
+                        return (
+                          <BadgeCard
+                            key={type}
+                            badge={badge}
+                            earned
+                            onSeen={handleSeen}
+                          />
+                        );
+                      }
                       return (
                         <BadgeCard
                           key={type}
-                          badge={badge}
-                          earned
-                          onSeen={handleSeen}
+                          badge={makeUnearnedBadge(type)}
+                          earned={false}
                         />
                       );
-                    }
-                    return (
-                      <BadgeCard
-                        key={type}
-                        badge={makeUnearnedBadge(type)}
-                        earned={false}
-                      />
-                    );
-                  })}
+                    })}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );

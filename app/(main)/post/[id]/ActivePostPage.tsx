@@ -671,7 +671,7 @@ export default function ActivePostClient({
     : (post.author.name ?? "Posterul");
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
+    <div className="max-w-lg mx-auto px-4 py-6 space-y-4 min-h-[100dvh]">
       {/* Header */}
       <div className="flex items-center gap-3">
         <Link

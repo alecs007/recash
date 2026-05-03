@@ -209,7 +209,7 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 min-h-[100dvh]">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Link

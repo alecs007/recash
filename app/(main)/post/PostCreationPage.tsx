@@ -1056,7 +1056,7 @@ export default function PostCreationClient({
 
   return (
     <ActivePostGuard>
-      <div className="max-w-lg mx-auto px-4 py-8">
+      <div className="max-w-lg mx-auto px-4 py-8 min-h-[100dvh]">
         <div className="mb-6 text-center">
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
             Postează sticle
