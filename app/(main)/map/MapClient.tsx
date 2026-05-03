@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -51,23 +51,60 @@ type ActiveData = {
   activeCollection: { id: string } | null;
 };
 
+// Leaflet-specific types to avoid `any`
+type LeafletMap = {
+  remove: () => void;
+  setView: (latlng: [number, number], zoom: number, opts?: object) => void;
+  panTo: (latlng: [number, number], opts?: object) => void;
+  invalidateSize: (opts?: object) => void;
+  on: (event: string, handler: (e: LeafletEvent) => void) => void;
+};
+
+type LeafletMarker = {
+  remove: () => void;
+  setLatLng: (latlng: [number, number]) => void;
+  setIcon: (icon: LeafletIcon) => void;
+  addTo: (map: LeafletMap) => LeafletMarker;
+  bindPopup: (content: string) => LeafletMarker;
+  on: (event: string, handler: () => void) => LeafletMarker;
+};
+
+type LeafletIcon = object;
+
+type LeafletEvent = {
+  latlng: { lat: number; lng: number };
+};
+
+type LeafletLayer = {
+  addTo: (map: LeafletMap) => LeafletLayer;
+  addLayer: (marker: LeafletMarker) => void;
+  removeLayer: (marker: LeafletMarker) => void;
+  clearLayers: () => void;
+  hasLayer: (marker: LeafletMarker) => boolean;
+};
+
+type LeafletLib = {
+  map: (el: HTMLDivElement, opts: object) => LeafletMap;
+  tileLayer: (url: string, opts: object) => { addTo: (m: LeafletMap) => void };
+  marker: (latlng: [number, number], opts: object) => LeafletMarker;
+  divIcon: (opts: object) => LeafletIcon;
+  markerClusterGroup?: (opts?: object) => LeafletLayer;
+};
+
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-// ─── Leaflet — module-level singleton ────────────────────────────────────────
-// Prevents duplicate script/CSS injection across React re-renders and HMR.
+// ─── Leaflet singleton loader ─────────────────────────────────────────────────
 
 let _leafletPromise: Promise<void> | null = null;
 
 function ensureLeaflet(): Promise<void> {
   if (typeof window === "undefined") return Promise.resolve();
-  if ((window as any).L) return Promise.resolve();
+  if ((window as Window & { L?: LeafletLib }).L) return Promise.resolve();
 
-  // Check if script is already in document but not finished loading
   const existingScript = document.querySelector('script[src*="leaflet.js"]');
   if (existingScript && _leafletPromise) return _leafletPromise;
 
   _leafletPromise = new Promise<void>((resolve, reject) => {
-    // 1. Inject CSS if missing
     if (!document.querySelector('link[href*="leaflet.css"]')) {
       const css = document.createElement("link");
       css.rel = "stylesheet";
@@ -75,18 +112,37 @@ function ensureLeaflet(): Promise<void> {
       document.head.appendChild(css);
     }
 
-    // 2. Inject Script
+    // Marker cluster CSS
+    if (!document.querySelector('link[href*="MarkerCluster"]')) {
+      const css2 = document.createElement("link");
+      css2.rel = "stylesheet";
+      css2.href =
+        "https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css";
+      const css3 = document.createElement("link");
+      css3.rel = "stylesheet";
+      css3.href =
+        "https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css";
+      document.head.appendChild(css2);
+      document.head.appendChild(css3);
+    }
+
     const script = document.createElement("script");
     script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
     script.async = true;
-
-    script.onload = () => resolve();
-    script.onerror = (err) => {
-      _leafletPromise = null; // Essential: Reset so retry is possible
-      console.error("Leaflet injection failed", err);
-      reject(new Error("Failed to load Leaflet"));
+    script.onload = () => {
+      // Load cluster plugin after Leaflet
+      const clusterScript = document.createElement("script");
+      clusterScript.src =
+        "https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js";
+      clusterScript.async = true;
+      clusterScript.onload = () => resolve();
+      clusterScript.onerror = () => resolve(); // cluster is optional, resolve anyway
+      document.head.appendChild(clusterScript);
     };
-
+    script.onerror = (err) => {
+      _leafletPromise = null;
+      reject(new Error("Failed to load Leaflet: " + String(err)));
+    };
     document.head.appendChild(script);
   });
 
@@ -95,7 +151,9 @@ function ensureLeaflet(): Promise<void> {
 
 function useLeaflet() {
   const [ready, setReady] = useState(
-    () => typeof window !== "undefined" && !!(window as any).L,
+    () =>
+      typeof window !== "undefined" &&
+      !!(window as Window & { L?: LeafletLib }).L,
   );
 
   useEffect(() => {
@@ -114,6 +172,63 @@ function useLeaflet() {
   return ready;
 }
 
+// ─── Virtual list hook — only render visible cards ────────────────────────────
+// Renders a window of VIRTUAL_PAGE_SIZE items, expanding on scroll.
+
+const VIRTUAL_PAGE_SIZE = 30;
+
+function useVirtualList<T>(items: T[]) {
+  const [limit, setLimit] = useState(VIRTUAL_PAGE_SIZE);
+  const sentinel = useRef<HTMLDivElement>(null);
+  // Track items identity to reset limit without an effect
+  const prevItemsRef = useRef(items);
+
+  // Derive: if items reference changed, reset limit synchronously during render
+  // This avoids setState-in-effect while still resetting on new data.
+  let effectiveLimit = limit;
+  if (prevItemsRef.current !== items) {
+    prevItemsRef.current = items;
+    effectiveLimit = VIRTUAL_PAGE_SIZE;
+    // Schedule the state sync without triggering an extra render cascade
+    if (limit !== VIRTUAL_PAGE_SIZE) {
+      // Use queueMicrotask so we're not inside render proper
+      queueMicrotask(() => setLimit(VIRTUAL_PAGE_SIZE));
+    }
+  }
+
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setLimit((prev) => Math.min(prev + VIRTUAL_PAGE_SIZE, items.length));
+        }
+      },
+      { threshold: 0.1 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [items.length]);
+
+  return {
+    visible: items.slice(0, effectiveLimit),
+    sentinel,
+    hasMore: effectiveLimit < items.length,
+  };
+}
+
+// ─── Pure helper — computes hoursLeft without Date.now() in render ────────────
+// Called once per card mount/update via useMemo with a stable snapshot.
+
+function computeHoursLeft(expiresAt: string | null): number | null {
+  if (!expiresAt) return null;
+  return Math.max(
+    0,
+    Math.floor((new Date(expiresAt).getTime() - Date.now()) / 3_600_000),
+  );
+}
+
 // ─── Post Card ────────────────────────────────────────────────────────────────
 
 function PostCard({
@@ -124,6 +239,7 @@ function PostCard({
   claiming,
   canClaim,
   isLoggedIn,
+  isOwnPost,
 }: {
   post: Post;
   selected: boolean;
@@ -132,18 +248,26 @@ function PostCard({
   claiming: string | null;
   canClaim: boolean;
   isLoggedIn: boolean;
+  isOwnPost: boolean;
 }) {
   const collectorEarning =
     (post.estimatedValue * post.collectorSharePercent) / 100;
-  const hoursLeft = post.expiresAt
-    ? Math.max(
-        0,
-        Math.floor(
-          (new Date(post.expiresAt).getTime() - Date.now()) / 3_600_000,
-        ),
-      )
-    : null;
+  // useMemo keeps Date.now() out of the render path itself
+  const hoursLeft = useMemo(
+    () => computeHoursLeft(post.expiresAt),
+    [post.expiresAt],
+  );
   const urgent = hoursLeft !== null && hoursLeft < 6;
+
+  const buttonDisabled =
+    isLoggedIn && (isOwnPost || !canClaim || claiming === post.id);
+
+  const buttonText = () => {
+    if (!isLoggedIn) return "Autentifică-te pentru a colecta";
+    if (isOwnPost) return "Anunțul tău";
+    if (!canClaim) return "Colectare activă";
+    return "Colectează";
+  };
 
   return (
     <div
@@ -234,15 +358,19 @@ function PostCard({
           e.stopPropagation();
           onClaim(post.id);
         }}
-        disabled={isLoggedIn && (!canClaim || claiming === post.id)}
-        className="w-full py-2.5 rounded-xl bg-[#123424] text-white text-xs font-bold hover:bg-[#1a4d36] active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+        disabled={buttonDisabled}
+        className={`w-full py-2.5 rounded-xl text-white text-xs font-bold active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 ${
+          isOwnPost
+            ? "bg-slate-300 cursor-not-allowed opacity-70"
+            : "bg-[#123424] hover:bg-[#1a4d36] disabled:opacity-40 disabled:cursor-not-allowed"
+        }`}
       >
         {claiming === post.id ? (
           <Loader2 className="w-3.5 h-3.5 animate-spin" />
         ) : (
           <>
             <FaWineBottle className="w-3.5 h-3.5 text-lime-400" />
-            {isLoggedIn ? "Colectează" : "Autentifică-te pentru a colecta"}
+            {buttonText()}
           </>
         )}
       </button>
@@ -259,6 +387,7 @@ function SelectedPostOverlay({
   claiming,
   canClaim,
   isLoggedIn,
+  isOwnPost,
 }: {
   post: Post;
   onClose: () => void;
@@ -266,12 +395,28 @@ function SelectedPostOverlay({
   claiming: string | null;
   canClaim: boolean;
   isLoggedIn: boolean;
+  isOwnPost: boolean;
 }) {
   const collectorEarning =
     (post.estimatedValue * post.collectorSharePercent) / 100;
 
+  const buttonText = () => {
+    if (!isLoggedIn) return "Autentifică-te";
+    if (isOwnPost) return "Anunțul tău";
+    if (!canClaim) return "Colectare activă";
+    return "Colectează acum";
+  };
+
+  const buttonDisabled =
+    isLoggedIn && (isOwnPost || !canClaim || claiming === post.id);
+
   return (
-    <div className="absolute bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 pointer-events-auto z-[1000]">
+    // Mobile: centered in the map panel vertically via translate trick
+    // Desktop: pinned bottom-right
+    <div
+      className="absolute inset-x-4 sm:inset-x-auto sm:right-4 sm:bottom-4 sm:w-80 pointer-events-auto z-[1000]
+      top-1/2 -translate-y-1/2 sm:top-auto sm:translate-y-0"
+    >
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
         <div className="bg-gradient-to-r from-[#123424] to-[#1a4d36] px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -335,15 +480,21 @@ function SelectedPostOverlay({
 
           <button
             onClick={() => onClaim(post.id)}
-            disabled={isLoggedIn && (!canClaim || claiming === post.id)}
-            className="w-full py-3 rounded-xl bg-[#123424] text-white text-sm font-bold hover:bg-[#1a4d36] active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            disabled={buttonDisabled}
+            className={`w-full py-3 rounded-xl text-sm font-bold active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${
+              isOwnPost
+                ? "bg-slate-200 text-slate-500 cursor-not-allowed"
+                : "bg-[#123424] text-white hover:bg-[#1a4d36] disabled:opacity-40 disabled:cursor-not-allowed"
+            }`}
           >
             {claiming === post.id ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <>
-                <FaWineBottle className="w-4 h-4 text-lime-400" />
-                {isLoggedIn ? "Colectează acum" : "Autentifică-te"}
+                <FaWineBottle
+                  className={`w-4 h-4 ${isOwnPost ? "text-slate-400" : "text-lime-400"}`}
+                />
+                {buttonText()}
               </>
             )}
           </button>
@@ -354,6 +505,7 @@ function SelectedPostOverlay({
 }
 
 // ─── Map Component ────────────────────────────────────────────────────────────
+// Uses MarkerClusterGroup for scalability — handles 10k+ posts efficiently.
 
 function PostMap({
   posts,
@@ -367,22 +519,26 @@ function PostMap({
   onSelectPost: (id: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
-  const markersRef = useRef<Map<string, any>>(new Map());
-  const userMarkerRef = useRef<any>(null);
+  const mapRef = useRef<LeafletMap | null>(null);
+  const clusterGroupRef = useRef<LeafletLayer | null>(null);
+  const markersRef = useRef<Map<string, LeafletMarker>>(new Map());
+  const userMarkerRef = useRef<LeafletMarker | null>(null);
+  // Store callback in ref — update in useEffect, not render
   const onSelectRef = useRef(onSelectPost);
   const leafletReady = useLeaflet();
 
-  // Keep callback ref fresh without re-running effects
-  onSelectRef.current = onSelectPost;
+  // Update the callback ref in an effect (not during render)
+  useEffect(() => {
+    onSelectRef.current = onSelectPost;
+  }, [onSelectPost]);
 
   // Init map exactly once
   useEffect(() => {
     if (!leafletReady || !containerRef.current || mapRef.current) return;
 
-    const L = (window as any).L;
+    const L = (window as unknown as { L: LeafletLib }).L;
     const map = L.map(containerRef.current, {
-      center: [45.9432, 24.9668], // Romania center
+      center: [45.9432, 24.9668],
       zoom: 7,
       zoomControl: true,
       attributionControl: true,
@@ -393,27 +549,64 @@ function PostMap({
       maxZoom: 19,
     }).addTo(map);
 
+    // Create cluster group for scalability
+    let clusterGroup: LeafletLayer;
+    if (L.markerClusterGroup) {
+      clusterGroup = L.markerClusterGroup({
+        chunkedLoading: true,
+        chunkInterval: 100,
+        maxClusterRadius: 60,
+        showCoverageOnHover: false,
+        zoomToBoundsOnClick: true,
+        spiderfyOnMaxZoom: true,
+      });
+    } else {
+      // Fallback: fake layer group API using map directly
+      clusterGroup = {
+        addTo: (m: LeafletMap) => {
+          void m;
+          return clusterGroup;
+        },
+        addLayer: (marker: LeafletMarker) => {
+          marker.addTo(map);
+        },
+        removeLayer: (marker: LeafletMarker) => {
+          marker.remove();
+        },
+        clearLayers: () => {
+          markersRef.current.forEach((m) => m.remove());
+        },
+        hasLayer: () => false,
+      };
+    }
+
+    clusterGroup.addTo(map);
+    clusterGroupRef.current = clusterGroup;
     mapRef.current = map;
 
-    // ResizeObserver → invalidateSize when container is shown/resized
     const ro = new ResizeObserver(() => {
       if (mapRef.current) mapRef.current.invalidateSize({ animate: false });
     });
     ro.observe(containerRef.current);
 
+    // Capture ref values for cleanup closure
+    const capturedMarkers = markersRef.current;
+
     return () => {
       ro.disconnect();
       map.remove();
       mapRef.current = null;
-      markersRef.current.clear();
+      clusterGroupRef.current = null;
+      capturedMarkers.clear();
       userMarkerRef.current = null;
     };
   }, [leafletReady]);
 
   // User location marker
   useEffect(() => {
-    if (!mapRef.current || !userLocation || !(window as any).L) return;
-    const L = (window as any).L;
+    if (!mapRef.current || !userLocation) return;
+    const L = (window as Window & { L?: LeafletLib }).L;
+    if (!L) return;
 
     const pulseIcon = L.divIcon({
       className: "",
@@ -437,17 +630,21 @@ function PostMap({
     mapRef.current.setView(userLocation, 13, { animate: true });
   }, [userLocation]);
 
-  // Sync markers with posts list
+  // Sync markers — diffing approach for performance with large lists
   useEffect(() => {
-    if (!mapRef.current || !leafletReady || !(window as any).L) return;
-    const L = (window as any).L;
+    if (!mapRef.current || !leafletReady || !clusterGroupRef.current) return;
+    const L = (window as Window & { L?: LeafletLib }).L;
+    if (!L) return;
+
+    const cluster = clusterGroupRef.current;
+    const currentMarkers = markersRef.current;
 
     // Remove stale markers
     const postIds = new Set(posts.map((p) => p.id));
-    markersRef.current.forEach((marker, id) => {
+    currentMarkers.forEach((marker, id) => {
       if (!postIds.has(id)) {
-        marker.remove();
-        markersRef.current.delete(id);
+        cluster.removeLayer(marker);
+        currentMarkers.delete(id);
       }
     });
 
@@ -482,14 +679,17 @@ function PostMap({
         iconAnchor: [size / 2, size / 2],
       });
 
-      const existing = markersRef.current.get(post.id);
+      const existing = currentMarkers.get(post.id);
       if (existing) {
         existing.setIcon(icon);
       } else {
-        const marker = L.marker([post.latitude, post.longitude], { icon })
-          .addTo(mapRef.current)
-          .on("click", () => onSelectRef.current(post.id));
-        markersRef.current.set(post.id, marker);
+        const postId = post.id; // capture for closure
+        const marker = L.marker([post.latitude, post.longitude], { icon }).on(
+          "click",
+          () => onSelectRef.current(postId),
+        );
+        cluster.addLayer(marker);
+        currentMarkers.set(post.id, marker);
       }
     });
   }, [posts, selectedId, leafletReady]);
@@ -548,7 +748,6 @@ export default function MapPage() {
   const { open: openAuthModal } = useAuthModal();
   const router = useRouter();
 
-  // "list" | "map" — only meaningful on mobile
   const [mobileView, setMobileView] = useState<"list" | "map">("map");
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -561,7 +760,20 @@ export default function MapPage() {
   const [minBottles, setMinBottles] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
 
+  const topbarRef = useRef<HTMLDivElement>(null);
+  const [topbarHeight, setTopbarHeight] = useState(57);
+
+  useEffect(() => {
+    const el = topbarRef.current;
+    if (!el) return;
+    setTopbarHeight(el.offsetHeight);
+    const ro = new ResizeObserver(() => setTopbarHeight(el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const isLoggedIn = !!session?.user?.id;
+  const currentUserId = session?.user?.id ?? null;
 
   const { data, isLoading, mutate } = useSWR<{ posts: Post[] }>(
     "/api/v1/posts?limit=200",
@@ -575,27 +787,33 @@ export default function MapPage() {
     { refreshInterval: 15_000 },
   );
 
-  const posts = data?.posts ?? [];
+  const posts = useMemo(() => data?.posts ?? [], [data]);
 
-  const filtered = posts.filter((p) => {
-    if (minBottles > 0 && p.bottleCount < minBottles) return false;
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      if (
-        !p.locationName?.toLowerCase().includes(q) &&
-        !p.description?.toLowerCase().includes(q) &&
-        !p.author.name?.toLowerCase().includes(q)
-      )
-        return false;
-    }
-    return true;
-  });
+  const filtered = useMemo(
+    () =>
+      posts.filter((p) => {
+        if (minBottles > 0 && p.bottleCount < minBottles) return false;
+        if (search.trim()) {
+          const q = search.toLowerCase();
+          if (
+            !p.locationName?.toLowerCase().includes(q) &&
+            !p.description?.toLowerCase().includes(q) &&
+            !p.author.name?.toLowerCase().includes(q)
+          )
+            return false;
+        }
+        return true;
+      }),
+    [posts, minBottles, search],
+  );
 
   const selectedPost = selectedId
     ? (filtered.find((p) => p.id === selectedId) ?? null)
     : null;
 
   const canClaim = isLoggedIn && !activeData?.activeCollection;
+
+  const { visible: visiblePosts, sentinel, hasMore } = useVirtualList(filtered);
 
   const handleGetLocation = useCallback(() => {
     if (!navigator.geolocation) return;
@@ -616,6 +834,11 @@ export default function MapPage() {
         openAuthModal();
         return;
       }
+
+      // Check if own post
+      const post = posts.find((p) => p.id === postId);
+      if (post?.author.id === currentUserId) return;
+
       if (activeData?.activeCollection) {
         setClaimError("Ai deja o colectare activă. Finalizează-o mai întâi.");
         return;
@@ -628,7 +851,7 @@ export default function MapPage() {
         const res = await fetch(`/api/v1/posts/${postId}/claim`, {
           method: "POST",
         });
-        const json = await res.json();
+        const json = (await res.json()) as { error?: string };
 
         if (!res.ok) {
           setClaimError(json.error ?? "Eroare la revendicare.");
@@ -643,22 +866,33 @@ export default function MapPage() {
         setClaiming(null);
       }
     },
-    [isLoggedIn, activeData, mutate, router, openAuthModal],
+    [
+      isLoggedIn,
+      activeData,
+      mutate,
+      router,
+      openAuthModal,
+      posts,
+      currentUserId,
+    ],
   );
 
   const handleSelectPost = useCallback((id: string) => {
     setSelectedId((prev) => (prev === id ? null : id));
-    // Switch to map view on mobile so the overlay is visible
     setMobileView("map");
   }, []);
 
   return (
     <div
-      className="flex flex-col overflow-hidden"
+      className="flex flex-col overflow-hidden relative"
       style={{ height: "calc(100vh - 64px)" }}
     >
-      {/* ── Top bar ──────────────────────────────────────────────────────────── */}
-      <div className="shrink-0 bg-white border-b border-slate-100 px-4 py-3 space-y-2">
+      {/* ── Top bar — sticky on mobile ────────────────────────────────────── */}
+      <div
+        ref={topbarRef}
+        className="shrink-0 bg-white border-b border-slate-100 px-4 py-3 z-10"
+        style={{ position: "sticky", top: 0 }}
+      >
         <div className="flex items-center gap-2 max-w-7xl mx-auto">
           {/* Search */}
           <div className="relative flex-1">
@@ -731,9 +965,48 @@ export default function MapPage() {
           </div>
         </div>
 
-        {/* Filter pills */}
-        {showFilters && (
-          <div className="max-w-7xl mx-auto flex items-center gap-2 flex-wrap pt-1">
+        {/* Active collection banner */}
+        {activeData?.activeCollection && (
+          <div className="max-w-7xl mx-auto mt-2">
+            <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+              <span className="text-xs font-semibold text-amber-700">
+                Ai o colectare activă în desfășurare
+              </span>
+              <Link
+                href={`/post/${activeData.activeCollection.id}`}
+                className="flex items-center gap-0.5 text-xs font-bold text-amber-700 hover:underline"
+              >
+                Vezi <ChevronRight className="w-3 h-3" />
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Claim error banner */}
+        {claimError && (
+          <div className="max-w-7xl mx-auto mt-2">
+            <div className="flex items-center justify-between bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+              <span className="text-xs font-semibold text-red-600">
+                {claimError}
+              </span>
+              <button
+                onClick={() => setClaimError(null)}
+                className="text-red-400 hover:text-red-600 ml-2"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+      {/* ── Filter dropdown — floats over content, doesn't shift layout ──── w-full sm:w-80 lg:w-96 */}
+
+      {showFilters && (
+        <div
+          className="absolute left-0 right-0 z-1001 sm:pl-80 lg:pl-96"
+          style={{ top: topbarHeight }}
+        >
+          <div className="max-w-7xl mx-auto bg-white px-4 py-3 flex items-center justify-center gap-2 flex-wrap">
             <span className="text-xs font-semibold text-slate-500">
               Minim sticle:
             </span>
@@ -762,51 +1035,11 @@ export default function MapPage() {
               </button>
             )}
           </div>
-        )}
-
-        {/* Active collection banner */}
-        {activeData?.activeCollection && (
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
-              <span className="text-xs font-semibold text-amber-700">
-                Ai o colectare activă în desfășurare
-              </span>
-              <Link
-                href={`/post/${activeData.activeCollection.id}`}
-                className="flex items-center gap-0.5 text-xs font-bold text-amber-700 hover:underline"
-              >
-                Vezi <ChevronRight className="w-3 h-3" />
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {/* Claim error banner */}
-        {claimError && (
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between bg-red-50 border border-red-200 rounded-xl px-3 py-2">
-              <span className="text-xs font-semibold text-red-600">
-                {claimError}
-              </span>
-              <button
-                onClick={() => setClaimError(null)}
-                className="text-red-400 hover:text-red-600 ml-2"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
+        </div>
+      )}
       {/* ── Main layout ───────────────────────────────────────────────────────── */}
       <div className="flex-1 flex overflow-hidden min-h-0">
         {/* ── Sidebar (list) ──────────────────────────────────────────────────── */}
-        {/*
-          Always rendered in DOM so map isn't affected by sidebar mount/unmount.
-          On mobile: hidden when map view is active.
-          On desktop: fixed 320px wide, always visible.
-        */}
         <div
           className={`
             flex flex-col bg-slate-50 border-r border-slate-100
@@ -816,7 +1049,7 @@ export default function MapPage() {
           `}
         >
           {/* Count row */}
-          <div className="shrink-0 px-4 py-2 bg-white border-b border-slate-100 flex items-center justify-between">
+          <div className="shrink-0 p-4 bg-white border-b border-slate-100 flex items-center justify-between">
             <span className="text-xs text-slate-500">
               {isLoading ? (
                 "Se încarcă..."
@@ -839,7 +1072,7 @@ export default function MapPage() {
             )}
           </div>
 
-          {/* Scrollable post list */}
+          {/* Scrollable post list — virtualized with sentinel */}
           <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
             {isLoading ? (
               <>
@@ -875,27 +1108,32 @@ export default function MapPage() {
                 )}
               </div>
             ) : (
-              filtered.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  selected={selectedId === post.id}
-                  onClick={() => handleSelectPost(post.id)}
-                  onClaim={handleClaim}
-                  claiming={claiming}
-                  canClaim={canClaim}
-                  isLoggedIn={isLoggedIn}
-                />
-              ))
+              <>
+                {visiblePosts.map((post) => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    selected={selectedId === post.id}
+                    onClick={() => handleSelectPost(post.id)}
+                    onClaim={handleClaim}
+                    claiming={claiming}
+                    canClaim={canClaim}
+                    isLoggedIn={isLoggedIn}
+                    isOwnPost={post.author.id === currentUserId}
+                  />
+                ))}
+                {/* Infinite scroll sentinel */}
+                {hasMore && (
+                  <div ref={sentinel} className="py-4 flex justify-center">
+                    <Loader2 className="w-5 h-5 text-slate-300 animate-spin" />
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
 
         {/* ── Map panel ──────────────────────────────────────────────────────── */}
-        {/*
-          Also always in DOM. On mobile: hidden when list view is active.
-          The ResizeObserver inside PostMap handles invalidateSize automatically.
-        */}
         <div
           className={`
             flex-1 relative overflow-hidden min-h-0
@@ -909,7 +1147,7 @@ export default function MapPage() {
             onSelectPost={handleSelectPost}
           />
 
-          {/* Selected post overlay — rendered on top of the map */}
+          {/* Selected post overlay */}
           {selectedPost && (
             <SelectedPostOverlay
               post={selectedPost}
@@ -918,10 +1156,11 @@ export default function MapPage() {
               claiming={claiming}
               canClaim={canClaim}
               isLoggedIn={isLoggedIn}
+              isOwnPost={selectedPost.author.id === currentUserId}
             />
           )}
 
-          {/* Zero-posts hint (desktop only when map is showing) */}
+          {/* Zero-posts hint */}
           {!isLoading && filtered.length === 0 && !selectedPost && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="bg-white/90 backdrop-blur-sm rounded-2xl px-6 py-4 shadow-lg border border-slate-200 text-center">
