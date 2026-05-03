@@ -157,7 +157,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <header className="sticky top-0 z-40 backdrop-blur-md bg-white">
+      <header className="sticky top-0 z-[1001] backdrop-blur-md bg-white">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
@@ -235,7 +235,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="absolute right-0 top-full mt-0 pt-2 w-56 origin-top-right z-50"
+                        className="absolute right-0 top-full mt-0 pt-2 w-56 origin-top-right"
                       >
                         <div className="bg-white rounded-3xl border border-slate-200 p-2">
                           <Link

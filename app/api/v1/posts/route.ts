@@ -2,81 +2,69 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit, RL } from "@/lib/rate-limit";
-import { createPostSchema } from "@/lib/validations/post";
 import { invalidate, CacheKey } from "@/lib/cache";
+import { checkPostBadges } from "@/lib/badges";
+
+const ACTIVE_STATUSES = ["OPEN", "CLAIMED", "IN_PROGRESS"] as const;
+
+// ─── GET /api/v1/posts ────────────────────────────────────────────────────────
+// Public endpoint — returns open, non-expired posts for the map feed
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const lat = parseFloat(searchParams.get("lat") ?? "0");
-  const lng = parseFloat(searchParams.get("lng") ?? "0");
-  const radius = Math.min(50, parseFloat(searchParams.get("radius") ?? "10")); // km
-  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1") || 1);
   const limit = Math.min(
-    100,
-    Math.max(1, parseInt(searchParams.get("limit") ?? "50") || 50),
+    200,
+    Math.max(1, parseInt(searchParams.get("limit") ?? "100") || 100),
   );
 
   try {
-    // Basic lat/lng bounding box filter (approximation: 1deg ≈ 111km)
-    const latDelta = radius / 111;
-    const lngDelta = radius / (111 * Math.cos((lat * Math.PI) / 180));
-
-    const where =
-      lat && lng
-        ? {
-            status: "OPEN" as const,
-            latitude: { gte: lat - latDelta, lte: lat + latDelta },
-            longitude: { gte: lng - lngDelta, lte: lng + lngDelta },
-          }
-        : { status: "OPEN" as const };
-
-    const [posts, total] = await Promise.all([
-      prisma.post.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        skip: (page - 1) * limit,
-        take: limit,
-        select: {
-          id: true,
-          status: true,
-          description: true,
-          bottleCount: true,
-          estimatedValue: true,
-          collectorSharePercent: true,
-          latitude: true,
-          longitude: true,
-          locationName: true,
-          address: true,
-          images: true,
-          createdAt: true,
-          expiresAt: true,
-          author: {
-            select: {
-              id: true,
-              name: true,
-              image: true,
-              reputationScore: true,
-              ratingCount: true,
-            },
+    const posts = await prisma.post.findMany({
+      where: {
+        status: "OPEN",
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        status: true,
+        description: true,
+        bottleCount: true,
+        estimatedValue: true,
+        collectorSharePercent: true,
+        latitude: true,
+        longitude: true,
+        locationName: true,
+        images: true,
+        createdAt: true,
+        expiresAt: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            reputationScore: true,
+            ratingCount: true,
           },
         },
-      }),
-      prisma.post.count({ where }),
-    ]);
-
-    return NextResponse.json({
-      posts,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit),
+      },
     });
+
+    return NextResponse.json(
+      { posts },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=15, stale-while-revalidate=30",
+        },
+      },
+    );
   } catch (err) {
     console.error("[GET /api/v1/posts]", err);
     return NextResponse.json({ error: "Eroare internă" }, { status: 500 });
   }
 }
 
-// ─── POST /api/v1/posts — create post (authenticated) ────────────────────────
+// ─── POST /api/v1/posts ───────────────────────────────────────────────────────
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -94,82 +82,165 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Cerere invalidă" }, { status: 400 });
   }
 
-  const parsed = createPostSchema.safeParse(body);
-  if (!parsed.success) {
+  if (typeof body !== "object" || body === null || Array.isArray(body)) {
+    return NextResponse.json({ error: "Cerere invalidă" }, { status: 400 });
+  }
+
+  const {
+    description,
+    bottleCount,
+    estimatedValue,
+    collectorSharePercent,
+    latitude,
+    longitude,
+    locationName,
+    address,
+    images,
+  } = body as Record<string, unknown>;
+
+  // ── Validate ────────────────────────────────────────────────────────────────
+
+  if (
+    typeof description !== "string" ||
+    description.trim().length === 0 ||
+    description.trim().length > 500
+  ) {
     return NextResponse.json(
-      { error: "Date invalide", details: parsed.error.flatten().fieldErrors },
+      { error: "Descrierea trebuie să aibă între 1 și 500 de caractere" },
       { status: 400 },
     );
   }
 
-  const data = parsed.data;
+  if (
+    typeof bottleCount !== "number" ||
+    !Number.isInteger(bottleCount) ||
+    bottleCount < 1 ||
+    bottleCount > 10_000
+  ) {
+    return NextResponse.json(
+      { error: "Numărul de sticle trebuie să fie între 1 și 10.000" },
+      { status: 400 },
+    );
+  }
 
-  // ── Constraint: poster can only have ONE active post at a time ─────────────
-  const existingActivePost = await prisma.post.findFirst({
+  if (
+    typeof estimatedValue !== "number" ||
+    estimatedValue < 0 ||
+    estimatedValue > 100_000
+  ) {
+    return NextResponse.json(
+      { error: "Valoarea estimată este invalidă" },
+      { status: 400 },
+    );
+  }
+
+  if (
+    typeof collectorSharePercent !== "number" ||
+    !Number.isInteger(collectorSharePercent) ||
+    collectorSharePercent < 1 ||
+    collectorSharePercent > 99
+  ) {
+    return NextResponse.json(
+      { error: "Procentul colectorului trebuie să fie între 1% și 99%" },
+      { status: 400 },
+    );
+  }
+
+  if (
+    typeof latitude !== "number" ||
+    latitude < -90 ||
+    latitude > 90 ||
+    typeof longitude !== "number" ||
+    longitude < -180 ||
+    longitude > 180
+  ) {
+    return NextResponse.json(
+      { error: "Coordonate geografice invalide" },
+      { status: 400 },
+    );
+  }
+
+  if (
+    locationName !== undefined &&
+    (typeof locationName !== "string" || locationName.length > 200)
+  ) {
+    return NextResponse.json(
+      { error: "Numele locației este prea lung (max 200 caractere)" },
+      { status: 400 },
+    );
+  }
+
+  const safeImages: string[] = [];
+  if (images !== undefined) {
+    if (!Array.isArray(images) || images.length > 5) {
+      return NextResponse.json(
+        { error: "Poți atașa cel mult 5 imagini" },
+        { status: 400 },
+      );
+    }
+    for (const img of images) {
+      if (typeof img !== "string" || img.length > 2048) {
+        return NextResponse.json(
+          { error: "URL imagine invalid" },
+          { status: 400 },
+        );
+      }
+      safeImages.push(img);
+    }
+  }
+
+  // ── Enforce one active post per user ────────────────────────────────────────
+
+  const existingActive = await prisma.post.findFirst({
     where: {
       authorId: session.user.id,
-      status: { in: ["OPEN", "CLAIMED", "IN_PROGRESS"] },
+      status: { in: [...ACTIVE_STATUSES] },
     },
-    select: { id: true },
+    select: { id: true, status: true },
   });
 
-  if (existingActivePost) {
+  if (existingActive) {
     return NextResponse.json(
       {
         error:
-          "Ai deja un anunț activ. Finalizează sau anulează anunțul curent înainte de a posta unul nou.",
+          "Ai deja o postare activă. Finalizează sau anulează postarea curentă înainte de a crea una nouă.",
+        existingPostId: existingActive.id,
       },
       { status: 409 },
     );
   }
 
+  // ── Create ───────────────────────────────────────────────────────────────────
+
   try {
-    const expiresAt = new Date(
-      Date.now() + data.expiresInHours * 60 * 60 * 1000,
-    );
-
-    // If phone is provided, update user's phone too
-    const post = await prisma.$transaction(async (tx) => {
-      if (data.phone) {
-        await tx.user.update({
-          where: { id: session.user.id },
-          data: { phone: data.phone },
-        });
-      }
-
-      return tx.post.create({
-        data: {
-          authorId: session.user.id,
-          bottleCount: data.bottleCount,
-          estimatedValue: data.estimatedValue,
-          collectorSharePercent: data.collectorSharePercent,
-          description: data.description,
-          latitude: data.latitude,
-          longitude: data.longitude,
-          locationName: data.locationName ?? null,
-          address: data.address ?? null,
-          images: data.images ?? [],
-          expiresAt,
-          status: "OPEN",
-        },
-        select: {
-          id: true,
-          status: true,
-          bottleCount: true,
-          estimatedValue: true,
-          collectorSharePercent: true,
-          description: true,
-          latitude: true,
-          longitude: true,
-          locationName: true,
-          createdAt: true,
-          expiresAt: true,
-        },
-      });
+    const post = await prisma.post.create({
+      data: {
+        authorId: session.user.id,
+        description: description.trim(),
+        bottleCount,
+        estimatedValue,
+        collectorSharePercent,
+        latitude,
+        longitude,
+        locationName:
+          typeof locationName === "string" ? locationName.trim() || null : null,
+        address: typeof address === "string" ? address.trim() || null : null,
+        images: safeImages,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      },
+      select: { id: true, status: true, createdAt: true },
     });
 
-    // Invalidate profile post caches
-    await invalidate(CacheKey.posts(session.user.id, "all"));
+    // Invalidate cached post lists for this user
+    await invalidate(
+      CacheKey.posts(session.user.id, "all"),
+      CacheKey.posts(session.user.id, "active"),
+    );
+
+    // Award badges asynchronously — never block the response
+    checkPostBadges(session.user.id).catch((err) =>
+      console.error("[posts] badge check error:", err),
+    );
 
     return NextResponse.json(post, { status: 201 });
   } catch (err) {
