@@ -50,7 +50,6 @@ export function NavigationProgress() {
         animate(opacity, 0, {
           duration: 0.4,
           onComplete: () => {
-            setVisible(false);
             // 3. ONLY reset scale to 0 once it is completely invisible
             scaleX.jump(0);
           },
