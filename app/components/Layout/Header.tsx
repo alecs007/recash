@@ -61,44 +61,60 @@ function ActiveIndicator({
 
   if (!hasPosts && !hasCollections) return null;
 
-  // Show both if user has both, otherwise just the relevant one
   return (
-    <div className="flex items-center gap-1.5">
-      {hasPosts && (
-        <Link
-          href="/profil/postari?status=active"
-          className="group flex items-center gap-1.5 bg-lime-50 border border-lime-200 hover:bg-lime-100 hover:border-lime-300 text-[#123424] px-2.5 py-1.5 rounded-full text-xs font-semibold transition-all"
-          title={`${activePosts} ${activePosts === 1 ? "postare activă" : "postări active"}`}
-        >
-          <FaWineBottle className="w-3 h-3 text-lime-600 shrink-0" />
-          <span className="hidden sm:inline">
-            {activePosts === 1
-              ? "1 postare activă"
-              : `${activePosts} postări active`}
-          </span>
-          <span className="sm:hidden font-black">{activePosts}</span>
-        </Link>
-      )}
+    <div className="flex items-center gap-2">
+      <AnimatePresence mode="popLayout">
+        {hasPosts && (
+          <motion.div
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            key="post-active"
+          >
+            <Link
+              href="/profil/postari?status=active"
+              className="relative grid place-items-center w-10 h-10 rounded-full bg-lime-50 border-2 border-lime-400 hover:bg-lime-100 transition-colors group"
+              title="Ai o postare activă"
+            >
+              <motion.div
+                animate={{ scale: [1, 1.15, 1] }}
+                transition={{
+                  repeat: Infinity,
+                  duration: 2,
+                  ease: "easeInOut",
+                }}
+              >
+                <FaWineBottle className="w-5 h-5 text-lime-600" />
+              </motion.div>
+            </Link>
+          </motion.div>
+        )}
 
-      {hasCollections && (
-        <Link
-          href="/profil/postari?status=active"
-          className="group flex items-center gap-1.5 bg-blue-50 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 text-blue-800 px-2.5 py-1.5 rounded-full text-xs font-semibold transition-all"
-          title={`${activeCollections} ${activeCollections === 1 ? "colectare activă" : "colectări active"}`}
-        >
-          <LuBike className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-          <span className="hidden sm:inline">
-            {activeCollections === 1
-              ? "1 colectare activă"
-              : `${activeCollections} colectări active`}
-          </span>
-          <span className="sm:hidden font-black">{activeCollections}</span>
-        </Link>
-      )}
+        {hasCollections && (
+          <motion.div
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            key="collect-active"
+          >
+            <Link
+              href="/profil/postari?status=active"
+              className="relative grid place-items-center w-10 h-10 rounded-full bg-blue-50 border-2 border-blue-400 hover:bg-blue-100 transition-colors group"
+              title="Ai o colectare activă"
+            >
+              <motion.div
+                animate={{ x: [-1, 1, -1] }}
+                transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+              >
+                <LuBike className="w-5 h-5 text-blue-600" />
+              </motion.div>
+            </Link>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
-
 // ─── Shimmer ──────────────────────────────────────────────────────────────────
 
 const ProfileShimmer = () => (
