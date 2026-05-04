@@ -27,7 +27,7 @@ export const Steps = () => {
 
   return (
     <section className="py-12">
-      <div className="grid md:grid-cols-3 gap-20 md:gap-12 px-3 md:px-0">
+      <div className="grid lg:grid-cols-3 gap-20 md:gap-12 px-3 md:px-0">
         {steps.map((step) => (
           <div key={step.number} className="group">
             <div className="flex items-center gap-3 mb-3">

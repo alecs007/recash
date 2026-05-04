@@ -262,7 +262,7 @@ function PostCard({
     isLoggedIn && (isOwnPost || !canClaim || claiming === post.id);
 
   const buttonText = () => {
-    if (!isLoggedIn) return "Autentifică-te pentru a colecta";
+    if (!isLoggedIn) return "Conectează-te pentru a colecta";
     if (isOwnPost) return "Anunțul tău";
     if (!canClaim) return "Colectare activă";
     return "Colectează";
@@ -358,7 +358,7 @@ function PostCard({
           onClaim(post.id);
         }}
         disabled={buttonDisabled}
-        className={`w-full py-2.5 rounded-xl text-white text-xs font-bold active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 ${
+        className={`w-full py-2.5 rounded-xl text-white text-xs font-bold active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
           isOwnPost
             ? "bg-slate-300 cursor-not-allowed opacity-70"
             : "bg-[#123424] hover:bg-[#1a4d36] disabled:opacity-40 disabled:cursor-not-allowed"
@@ -400,7 +400,7 @@ function SelectedPostOverlay({
     (post.estimatedValue * post.collectorSharePercent) / 100;
 
   const buttonText = () => {
-    if (!isLoggedIn) return "Autentifică-te";
+    if (!isLoggedIn) return "Conectează-te";
     if (isOwnPost) return "Anunțul tău";
     if (!canClaim) return "Colectare activă";
     return "Colectează acum";
@@ -442,7 +442,7 @@ function SelectedPostOverlay({
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+            className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors cursor-pointer"
           >
             <X className="w-3.5 h-3.5 text-white" />
           </button>
@@ -475,7 +475,7 @@ function SelectedPostOverlay({
           <button
             onClick={() => onClaim(post.id)}
             disabled={buttonDisabled}
-            className={`w-full py-3 rounded-xl text-sm font-bold active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${
+            className={`w-full py-3 rounded-xl text-sm font-bold active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer ${
               isOwnPost
                 ? "bg-slate-200 text-slate-500 cursor-not-allowed"
                 : "bg-[#123424] text-white hover:bg-[#1a4d36] disabled:opacity-40 disabled:cursor-not-allowed"
@@ -1096,9 +1096,9 @@ export default function MapPage() {
             {!isLoggedIn && (
               <button
                 onClick={openAuthModal}
-                className="text-xs font-semibold text-lime-700 hover:underline"
+                className="text-xs font-semibold text-lime-700 cursor-pointer flex items-center gap-1 hover:text-lime-800 transition-colors"
               >
-                Autentifică-te →
+                Conectează-te <ChevronRight className="w-3 h-3 inline" />
               </button>
             )}
           </div>
@@ -1132,7 +1132,7 @@ export default function MapPage() {
                       setSearch("");
                       setMinBottles(0);
                     }}
-                    className="mt-3 text-xs font-semibold text-lime-700 hover:underline"
+                    className="mt-3 text-xs font-semibold text-lime-700 hover:underline cursor-pointer"
                   >
                     Resetează filtrele
                   </button>

@@ -311,12 +311,10 @@ function CancelModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[1002] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
         <div className="flex items-center justify-between mb-4">
-          <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-            <AlertTriangle className="w-5 h-5 text-red-500" />
-          </div>
+          <p className="text-slate-900 max-w-[80%]">{getMessage()}</p>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 cursor-pointer"
@@ -324,8 +322,7 @@ function CancelModal({
             <X className="w-4 h-4 text-slate-600" />
           </button>
         </div>
-        <h3 className="font-bold text-slate-900 mb-2">Confirmare anulare</h3>
-        <p className="text-sm text-slate-600 mb-4">{getMessage()}</p>
+
         <textarea
           value={reason}
           onChange={(e) => setReason(e.target.value)}
