@@ -16,8 +16,6 @@ import useSWR from "swr";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-// ─── Hooks ────────────────────────────────────────────────────────────────────
-
 function useUnreadCount(authenticated: boolean) {
   const { data } = useSWR(
     authenticated ? "/api/v1/profile/notifications?page=1&limit=1" : null,
@@ -47,8 +45,6 @@ function useActiveCounts(authenticated: boolean) {
   };
 }
 
-// ─── Active indicator pill ────────────────────────────────────────────────────
-
 function ActiveIndicator({
   activePosts,
   activeCollections,
@@ -61,7 +57,6 @@ function ActiveIndicator({
   const hasPosts = activePosts > 0;
   const hasCollections = activeCollections > 0;
 
-  // Close mini-dropdown when clicking outside
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (
@@ -75,105 +70,121 @@ function ActiveIndicator({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  if (!hasPosts && !hasCollections) return null;
+  const containerVariants = {
+    initial: { opacity: 0, scale: 0.8, x: 10 },
+    animate: { opacity: 1, scale: 1, x: 0 },
+    exit: { opacity: 0, scale: 0.8, x: 10, transition: { duration: 0.2 } },
+  };
 
-  // Logic: If both are active, show the "Diagonal Overlap" view
-  if (hasPosts && hasCollections) {
-    return (
-      <div className="relative" ref={containerRef}>
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="relative w-10 h-10 flex items-center justify-center"
-        >
-          {/* Bottle Icon (Top Left-ish) */}
-          <div className="absolute top-0 left-0 z-10 w-7 h-7 rounded-full bg-lime-50 border-2 border-lime-400 flex items-center justify-center">
-            <FaWineBottle className="w-3.5 h-3.5 text-lime-600" />
-          </div>
-          {/* Bike Icon (Bottom Right-ish) */}
-          <div className="absolute bottom-0 right-0 z-0 w-7 h-7 rounded-full bg-blue-50 border-2 border-blue-400 flex items-center justify-center">
-            <LuBike className="w-3.5 h-3.5 text-blue-600" />
-          </div>
-        </button>
-
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 5 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 5 }}
-              className="absolute top-full mt-2 right-0 bg-white border border-slate-200 rounded-2xl p-1.5 flex flex-col gap-1 z-[1002]"
-            >
-              <Link
-                href="/profil/postari?status=active"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center gap-3 p-2 hover:bg-lime-50 rounded-xl transition-colors"
-              >
-                <div className="relative grid place-items-center w-8.5 h-8.5 rounded-full bg-lime-50 border-2 border-lime-400 hover:bg-lime-100 transition-colors group">
-                  <motion.div
-                    animate={{ scale: [1, 1.1, 1] }}
-                    transition={{ repeat: Infinity, duration: 2 }}
-                  >
-                    <FaWineBottle className="w-4 h-4 text-lime-600" />
-                  </motion.div>
-                </div>
-                <span className="text-xs font-bold text-slate-700 pr-2 whitespace-nowrap">
-                  Postare activă
-                </span>
-              </Link>
-              <Link
-                href="/map"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center gap-3 p-2 hover:bg-blue-50 rounded-xl transition-colors"
-              >
-                <div className="relative grid place-items-center w-8.5 h-8.5 rounded-full bg-blue-50 border-2 border-blue-400 hover:bg-blue-100 transition-colors group">
-                  <motion.div
-                    animate={{ x: [-1, 1, -1] }}
-                    transition={{ repeat: Infinity, duration: 1.5 }}
-                  >
-                    <LuBike className="w-4 h-4 text-blue-600" />
-                  </motion.div>
-                </div>
-                <span className="text-xs font-bold text-slate-700 pr-2 whitespace-nowrap">
-                  Colectare activă
-                </span>
-              </Link>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    );
-  }
-
-  // Fallback: If only one is active, show the original single icon style
   return (
-    <div className="flex items-center">
-      {hasPosts && (
-        <Link
-          href="/profil/postari?status=active"
-          className="relative grid place-items-center w-10 h-10 rounded-full bg-lime-50 border-2 border-lime-400 hover:bg-lime-100 transition-colors group"
+    <AnimatePresence mode="wait">
+      {/* 1. Both Active: Diagonal Overlap View */}
+      {hasPosts && hasCollections ? (
+        <motion.div
+          key="dual-indicator"
+          variants={containerVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          className="relative"
+          ref={containerRef}
         >
-          <motion.div
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ repeat: Infinity, duration: 2 }}
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="relative w-10 h-10 flex items-center justify-center cursor-pointer"
           >
-            <FaWineBottle className="w-5 h-5 text-lime-600" />
-          </motion.div>
-        </Link>
-      )}
-      {hasCollections && (
-        <Link
-          href="/map"
-          className="relative grid place-items-center w-10 h-10 rounded-full bg-blue-50 border-2 border-blue-400 hover:bg-blue-100 transition-colors group"
+            <div className="absolute top-0 left-0 z-10 w-7 h-7 rounded-full bg-lime-50 border-2 border-lime-400 flex items-center justify-center">
+              <FaWineBottle className="w-3.5 h-3.5 text-lime-600" />
+            </div>
+            <div className="absolute bottom-0 right-0 z-0 w-7 h-7 rounded-full bg-blue-50 border-2 border-blue-400 flex items-center justify-center">
+              <LuBike className="w-3.5 h-3.5 text-blue-600" />
+            </div>
+          </button>
+
+          <AnimatePresence>
+            {isOpen && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 5 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 5 }}
+                className="absolute top-full mt-2 right-0 bg-white border border-slate-200 rounded-2xl p-1.5 flex flex-col gap-1 z-[1002]"
+              >
+                <Link
+                  href="/profil/postari?status=active"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-3 p-2 hover:bg-lime-50 rounded-xl transition-colors"
+                >
+                  <div className="relative grid place-items-center w-8.5 h-8.5 rounded-full bg-lime-50 border-2 border-lime-400">
+                    <motion.div
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ repeat: Infinity, duration: 2 }}
+                    >
+                      <FaWineBottle className="w-4 h-4 text-lime-600" />
+                    </motion.div>
+                  </div>
+                  <span className="text-xs font-bold text-slate-700 pr-2 whitespace-nowrap">
+                    Postare activă
+                  </span>
+                </Link>
+                <Link
+                  href="/map"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-3 p-2 hover:bg-blue-50 rounded-xl transition-colors"
+                >
+                  <div className="relative grid place-items-center w-8.5 h-8.5 rounded-full bg-blue-50 border-2 border-blue-400">
+                    <motion.div
+                      animate={{ x: [-1, 1, -1] }}
+                      transition={{ repeat: Infinity, duration: 1.5 }}
+                    >
+                      <LuBike className="w-4 h-4 text-blue-600" />
+                    </motion.div>
+                  </div>
+                  <span className="text-xs font-bold text-slate-700 pr-2 whitespace-nowrap">
+                    Colectare activă
+                  </span>
+                </Link>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      ) : hasPosts || hasCollections ? (
+        /* 2. Single Active View */
+        <motion.div
+          key="single-indicator"
+          variants={containerVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          className="flex items-center"
         >
-          <motion.div
-            animate={{ x: [-1, 1, -1] }}
-            transition={{ repeat: Infinity, duration: 1.5 }}
-          >
-            <LuBike className="w-5 h-5 text-blue-600" />
-          </motion.div>
-        </Link>
-      )}
-    </div>
+          {hasPosts ? (
+            <Link
+              href="/profil/postari?status=active"
+              className="relative grid place-items-center w-10 h-10 rounded-full bg-lime-50 border-2 border-lime-400 hover:bg-lime-100 transition-colors group"
+            >
+              <motion.div
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ repeat: Infinity, duration: 2 }}
+              >
+                <FaWineBottle className="w-5 h-5 text-lime-600" />
+              </motion.div>
+            </Link>
+          ) : (
+            <Link
+              href="/map"
+              className="relative grid place-items-center w-10 h-10 rounded-full bg-blue-50 border-2 border-blue-400 hover:bg-blue-100 transition-colors group"
+            >
+              <motion.div
+                animate={{ x: [-1, 1, -1] }}
+                transition={{ repeat: Infinity, duration: 1.5 }}
+              >
+                <LuBike className="w-5 h-5 text-blue-600" />
+              </motion.div>
+            </Link>
+          )}
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
   );
 }
 // ─── Shimmer ──────────────────────────────────────────────────────────────────
