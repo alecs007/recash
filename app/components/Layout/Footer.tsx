@@ -83,7 +83,7 @@ export const Footer = () => {
               </Link>
             </div>
             <p className="text-center md:text-right">
-              © {new Date().getFullYear()} RECASH. Toate drepturile rezervate.
+              © {new Date().getFullYear()} Recash. Toate drepturile rezervate.
             </p>
           </div>
         </div>
