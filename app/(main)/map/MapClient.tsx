@@ -10,16 +10,15 @@ import {
   MapPin,
   Search,
   Loader2,
-  Navigation,
   X,
   Star,
   Clock,
   ChevronRight,
-  SlidersHorizontal,
-  List,
-  Map as MapIcon,
 } from "lucide-react";
-import { FaWineBottle } from "react-icons/fa";
+import { LuFilter } from "react-icons/lu";
+import { FiMap } from "react-icons/fi";
+import { FaListUl } from "react-icons/fa6";
+import { FaWineBottle, FaRegCompass } from "react-icons/fa";
 import useSWR from "swr";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -652,7 +651,7 @@ function PostMap({
       const fg = isSelected ? "#123424" : "#ffffff";
       const border = isSelected ? "#ffffff" : "rgba(255,255,255,0.8)";
       const shadow = isSelected
-        ? "0 4px 12px rgba(0,0,0,0.4)"
+        ? "0 4px 12px rgba(0,0,0,0.28)"
         : "0 2px 6px rgba(0,0,0,0.28)";
       const scale = isSelected ? 1.18 : 1;
       const label = n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
@@ -693,12 +692,51 @@ function PostMap({
   useEffect(() => {
     if (!selectedId || !mapRef.current) return;
     const post = posts.find((p) => p.id === selectedId);
-    if (post) {
-      mapRef.current.panTo([post.latitude, post.longitude], {
-        animate: true,
-        duration: 0.4,
-      });
-    }
+    if (!post) return;
+
+    const doPan = () => {
+      const map = mapRef.current;
+      if (!map) return;
+      const isMobile = window.innerWidth < 640;
+      if (isMobile) {
+        map.invalidateSize({ animate: false });
+        const leafletMap = map as unknown as {
+          latLngToContainerPoint: (latlng: [number, number]) => {
+            x: number;
+            y: number;
+          };
+          containerPointToLatLng: (point: { x: number; y: number }) => {
+            lat: number;
+            lng: number;
+          };
+          panTo: (
+            latlng: { lat: number; lng: number } | [number, number],
+            options?: object,
+          ) => void;
+        };
+        const L = (
+          window as unknown as {
+            L: { point: (x: number, y: number) => { x: number; y: number } };
+          }
+        ).L;
+        const targetPoint = leafletMap.latLngToContainerPoint([
+          post.latitude,
+          post.longitude,
+        ]);
+        const offsetPoint = L.point(targetPoint.x, targetPoint.y + 120);
+        const offsetLatLng = leafletMap.containerPointToLatLng(offsetPoint);
+        leafletMap.panTo(offsetLatLng, { animate: true, duration: 0.4 });
+      } else {
+        map.panTo([post.latitude, post.longitude], {
+          animate: true,
+          duration: 0.4,
+        });
+      }
+    };
+
+    // Delay pan so the map panel is visible in the DOM before calculating coordinates
+    const timer = setTimeout(doPan, 50);
+    return () => clearTimeout(timer);
   }, [selectedId, posts]);
 
   return (
@@ -893,13 +931,13 @@ export default function MapPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Caută locație, autor..."
+              placeholder="Caută o locație..."
               className="w-full pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none transition-shadow"
             />
             {search && (
               <button
                 onClick={() => setSearch("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -911,48 +949,48 @@ export default function MapPage() {
             onClick={handleGetLocation}
             disabled={geoLoading}
             title="Folosește GPS-ul"
-            className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-50 shrink-0"
+            className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-50 shrink-0 cursor-pointer"
           >
             {geoLoading ? (
               <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
             ) : (
-              <Navigation className="w-4 h-4 text-[#123424]" />
+              <FaRegCompass className="w-4 h-4 text-[#123424]" />
             )}
           </button>
 
           {/* Filters toggle */}
           <button
             onClick={() => setShowFilters((v) => !v)}
-            className={`p-2.5 rounded-xl border transition-colors shrink-0 ${
+            className={`p-2.5 rounded-xl border transition-colors shrink-0 cursor-pointer ${
               showFilters || minBottles > 0
                 ? "border-lime-400 bg-lime-50 text-lime-700"
-                : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+                : "border-slate-200 bg-white text-[#123424] hover:bg-slate-50"
             }`}
           >
-            <SlidersHorizontal className="w-4 h-4" />
+            <LuFilter className="w-4 h-4" />
           </button>
 
           {/* Mobile view toggle */}
           <div className="flex sm:hidden items-center bg-slate-100 rounded-xl p-1 gap-0.5 shrink-0">
             <button
               onClick={() => setMobileView("list")}
-              className={`p-2 rounded-lg transition-colors ${
+              className={`p-2 rounded-lg transition-colors cursor-pointer ${
                 mobileView === "list"
                   ? "bg-white shadow-sm text-[#123424]"
                   : "text-slate-400 hover:text-slate-600"
               }`}
             >
-              <List className="w-3.5 h-3.5" />
+              <FaListUl className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => setMobileView("map")}
-              className={`p-2 rounded-lg transition-colors ${
+              className={`p-2 rounded-lg transition-colors cursor-pointer ${
                 mobileView === "map"
                   ? "bg-white shadow-sm text-[#123424]"
                   : "text-slate-400 hover:text-slate-600"
               }`}
             >
-              <MapIcon className="w-3.5 h-3.5" />
+              <FiMap className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -1005,11 +1043,12 @@ export default function MapPage() {
               <button
                 key={n}
                 onClick={() => setMinBottles(n)}
-                className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
+                className={`px-3 py-1 rounded-full text-xs font-semibold border cursor-pointer transition-all duration-300 ease-in-out ${
                   minBottles === n
-                    ? "bg-[#123424] text-white border-[#123424]"
-                    : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
-                }`}
+                    ? "bg-[#123524] text-white border-[#123524] shadow-sm"
+                    : "bg-white text-slate-600 border-slate-200 hover:border-slate-400 hover:bg-slate-50"
+                }
+    `}
               >
                 {n === 0 ? "Toate" : `${n}+`}
               </button>
@@ -1020,7 +1059,7 @@ export default function MapPage() {
                   setMinBottles(0);
                   setSearch("");
                 }}
-                className="px-3 py-1 rounded-full text-xs font-semibold text-red-500 border border-red-200 hover:bg-red-50 transition-colors"
+                className="px-3 py-1 rounded-full text-xs font-semibold text-red-500 border border-red-200 hover:bg-red-50 transition-colors cursor-pointer"
               >
                 Resetează
               </button>
