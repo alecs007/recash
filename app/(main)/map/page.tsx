@@ -20,6 +20,10 @@ const MapClient = dynamic(() => import("./MapClient"), {
   ),
 });
 
-export default function MapPage() {
-  return <MapClient />;
+export default async function MapPage() {
+  return (
+    <div className="relative">
+      <MapClient />
+    </div>
+  );
 }

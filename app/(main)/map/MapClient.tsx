@@ -878,10 +878,7 @@ export default function MapPage() {
   }, []);
 
   return (
-    <div
-      className="flex flex-col overflow-hidden relative"
-      style={{ height: "calc(100vh - 64px)" }}
-    >
+    <div className="flex flex-col max-w-7xl mx-auto overflow-hidden fixed inset-0 bottom-0 top-16">
       {/* ── Top bar — sticky on mobile ────────────────────────────────────── */}
       <div
         ref={topbarRef}
