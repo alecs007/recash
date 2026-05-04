@@ -14,12 +14,12 @@ export const Footer = () => {
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="text-center md:text-left">
             <Image
-              src="/images/recash-logo.webp"
+              src="/images/recash-footer-logo.svg"
               alt="Recash Logo"
               width={643}
               height={138}
               draggable={false}
-              className="h-9 w-auto mx-auto md:mx-0 mb-4 brightness-0 invert"
+              className="h-9 w-auto mx-auto md:mx-0 mb-4"
             />
             <p className="text-white/80">
               Transformăm{" "}

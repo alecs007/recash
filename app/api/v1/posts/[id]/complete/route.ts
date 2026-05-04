@@ -5,7 +5,7 @@ import { rateLimit, RL } from "@/lib/rate-limit";
 import { redis } from "@/lib/redis";
 import { notifyPostCompleted } from "@/lib/notifications";
 import { invalidate, CacheKey } from "@/lib/cache";
-import { BadgeType } from "@prisma/client";
+import { checkTransactionBadges } from "@/lib/badges";
 
 const SGR_VALUE_PER_BOTTLE = 0.5; // RON
 
@@ -77,15 +77,7 @@ export async function POST(
         { status: 410 },
       );
     }
-    if (body.actualBottleCount !== undefined) {
-      if (
-        !Number.isInteger(body.actualBottleCount) ||
-        body.actualBottleCount < 1 ||
-        body.actualBottleCount > 10_000
-      ) {
-        return NextResponse.json({ error: "Număr invalid" }, { status: 400 });
-      }
-    }
+
     // Use actual count if provided, otherwise use post's bottleCount
     const finalBottleCount = body.actualBottleCount ?? post.bottleCount;
     const actualValue = finalBottleCount * SGR_VALUE_PER_BOTTLE;
@@ -137,8 +129,13 @@ export async function POST(
     // Clean up QR token
     await redis.del(`qr:${id}`);
 
-    // Award badges async
-    awardBadges(post.authorId, post.collectorId!).catch(console.error);
+    // Award badges via the single centralized path — never block the response.
+    // Pass claimedAt so SPEED_DEMON can be evaluated.
+    checkTransactionBadges(
+      post.authorId,
+      post.collectorId!,
+      post.claimedAt,
+    ).catch((err) => console.error("[complete] badge check error:", err));
 
     // Notify both parties
     await Promise.all([
@@ -165,99 +162,4 @@ export async function POST(
     console.error("[POST /api/v1/posts/[id]/complete]", err);
     return NextResponse.json({ error: "Eroare internă" }, { status: 500 });
   }
-}
-
-// ─── Badge Awards ─────────────────────────────────────────────────────────────
-
-async function awardBadges(posterId: string, collectorId: string) {
-  const [poster, collector] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: posterId },
-      select: { totalTransactions: true, _count: { select: { posts: true } } },
-    }),
-    prisma.user.findUnique({
-      where: { id: collectorId },
-      select: {
-        totalTransactions: true,
-        _count: { select: { claimedPosts: true } },
-      },
-    }),
-  ]);
-
-  const posterBadges: BadgeType[] = [];
-  if (poster) {
-    if (poster._count.posts === 1) posterBadges.push("FIRST_POST");
-    if (poster._count.posts >= 10) posterBadges.push("POST_VETERAN_10");
-    if (poster._count.posts >= 50)
-      posterBadges.push("POST_VETERAN_50" as const);
-    if (poster._count.posts >= 100)
-      posterBadges.push("POST_VETERAN_100" as const);
-    if (poster.totalTransactions >= 100)
-      posterBadges.push("CENTURION" as const);
-  }
-
-  const collectorBadges: BadgeType[] = [];
-  if (collector) {
-    if (collector._count.claimedPosts === 1)
-      collectorBadges.push("FIRST_COLLECTION" as const);
-    if (collector._count.claimedPosts >= 10)
-      collectorBadges.push("COLLECTOR_STARTER_10" as const);
-    if (collector._count.claimedPosts >= 50)
-      collectorBadges.push("COLLECTOR_PRO_50" as const);
-    if (collector._count.claimedPosts >= 100)
-      collectorBadges.push("COLLECTOR_ELITE_100" as const);
-    if (collector.totalTransactions >= 100)
-      collectorBadges.push("CENTURION" as const);
-  }
-
-  // Award badges (ignore duplicates via @@unique constraint)
-  await Promise.allSettled([
-    ...posterBadges.map((type) =>
-      prisma.badge
-        .create({ data: { userId: posterId, type } })
-        .catch(() => null),
-    ),
-    ...collectorBadges.map((type) =>
-      prisma.badge
-        .create({ data: { userId: collectorId, type } })
-        .catch(() => null),
-    ),
-  ]);
-
-  // Check eco badges based on total bottles
-  await awardEcoBadges(posterId, collectorId);
-}
-
-async function awardEcoBadges(posterId: string, collectorId: string) {
-  const [poster, collector] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: posterId },
-      select: { totalBottlesGiven: true },
-    }),
-    prisma.user.findUnique({
-      where: { id: collectorId },
-      select: { totalBottlesCollected: true },
-    }),
-  ]);
-
-  const posterBottles = poster?.totalBottlesGiven ?? 0;
-  const collectorBottles = collector?.totalBottlesCollected ?? 0;
-
-  const ecoBadgesFor = async (userId: string, bottles: number) => {
-    const badges: BadgeType[] = [];
-    if (bottles >= 50) badges.push("ECO_STARTER" as const);
-    if (bottles >= 250) badges.push("ECO_WARRIOR" as const);
-    if (bottles >= 1000) badges.push("ECO_CHAMPION" as const);
-    if (bottles >= 5000) badges.push("ECO_LEGEND" as const);
-    await Promise.allSettled(
-      badges.map((type) =>
-        prisma.badge.create({ data: { userId, type } }).catch(() => null),
-      ),
-    );
-  };
-
-  await Promise.all([
-    ecoBadgesFor(posterId, posterBottles),
-    ecoBadgesFor(collectorId, collectorBottles),
-  ]);
 }

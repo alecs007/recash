@@ -37,28 +37,39 @@ export async function awardBadge(
   type: BadgeType,
 ): Promise<boolean> {
   try {
-    await prisma.badge.create({ data: { userId, type } });
+    // 1. Attempt to create the badge record.
+    // Because of @@unique([userId, type]) in schema.prisma,
+    // this will FAIL if the user already has this badge.
+    await prisma.badge.create({
+      data: { userId, type },
+    });
+
+    // 2. If we reached this line, the badge is brand NEW.
+    // We fire side effects only for the first-time award.
+    await Promise.all([
+      prisma.notification.create({
+        data: {
+          userId,
+          type: "BADGE_EARNED",
+          title: "Badge nou obținut! 🏆",
+          message: `Felicitări! Ai obținut badge-ul „${BADGE_LABELS[type]}".`,
+          link: "/profil/badges",
+        },
+      }),
+      invalidate(CacheKey.badges(userId)),
+    ]);
+
+    return true;
   } catch (err) {
-    // P2002 = unique constraint (userId, type) → already awarded, not an error
-    if ((err as { code?: string }).code === "P2002") return false;
+    // P2002 = MongoDB unique constraint violation.
+    // This means the user already has the badge; we return false silently.
+    if ((err as { code?: string }).code === "P2002") {
+      return false;
+    }
+
+    // For any other error (DB connection, etc.), throw it.
     throw err;
   }
-
-  // Newly awarded — notify the user and bust the cache in parallel
-  await Promise.all([
-    prisma.notification.create({
-      data: {
-        userId,
-        type: "BADGE_EARNED",
-        title: "Badge nou obținut! 🏆",
-        message: `Felicitări! Ai obținut badge-ul „${BADGE_LABELS[type]}".`,
-        link: "/profil/badges",
-      },
-    }),
-    invalidate(CacheKey.badges(userId)),
-  ]);
-
-  return true;
 }
 
 // ─── Event: post created ──────────────────────────────────────────────────────
