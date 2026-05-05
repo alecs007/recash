@@ -10,12 +10,12 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  QrCode,
   Star,
   Phone,
   User,
   AlertTriangle,
   X,
+  RefreshCw,
 } from "lucide-react";
 import { FaWineBottle } from "react-icons/fa";
 
@@ -80,15 +80,14 @@ interface Post {
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-// ─── Timer component ──────────────────────────────────────────────────────────
+// ─── Countdown Timer ──────────────────────────────────────────────────────────
 
 function CountdownTimer({ deadline }: { deadline: string }) {
   const [remaining, setRemaining] = useState(0);
 
   useEffect(() => {
     const calc = () => {
-      const diff = new Date(deadline).getTime() - Date.now();
-      setRemaining(Math.max(0, diff));
+      setRemaining(Math.max(0, new Date(deadline).getTime() - Date.now()));
     };
     calc();
     const interval = setInterval(calc, 1000);
@@ -146,69 +145,85 @@ function CountdownTimer({ deadline }: { deadline: string }) {
   );
 }
 
-// ─── QR code display (for poster) ────────────────────────────────────────────
+// ─── Code Display (for poster) ────────────────────────────────────────────────
 
-function QRDisplay({ postId }: { postId: string }) {
-  const { data, error, isLoading } = useSWR(
-    `/api/v1/posts/${postId}/qr`,
+function CodeDisplay({ postId }: { postId: string }) {
+  const { data, error, isLoading, mutate } = useSWR(
+    `/api/v1/posts/${postId}/code`,
     fetcher,
-    { refreshInterval: 0, revalidateOnFocus: false },
+    { revalidateOnFocus: false },
   );
 
   if (isLoading) {
     return (
       <div className="flex flex-col items-center gap-3 p-6">
-        <div className="w-48 h-48 bg-slate-100 rounded-2xl animate-pulse" />
-        <p className="text-sm text-slate-500">Se generează codul QR...</p>
+        <div className="flex gap-2">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="w-14 h-16 bg-slate-100 rounded-xl animate-pulse"
+            />
+          ))}
+        </div>
+        <p className="text-sm text-slate-400">Se generează codul...</p>
       </div>
     );
   }
 
-  if (error || !data?.qrImageUrl) {
+  if (error || !data?.code) {
     return (
       <div className="text-center p-6">
-        <p className="text-sm text-red-500">Nu s-a putut genera codul QR.</p>
+        <p className="text-sm text-red-500 mb-3">Nu s-a putut obține codul.</p>
+        <button
+          onClick={() => mutate()}
+          className="flex items-center gap-1.5 mx-auto text-xs font-semibold text-slate-600 hover:text-slate-800"
+        >
+          <RefreshCw className="w-3.5 h-3.5" /> Încearcă din nou
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center gap-3 p-4">
-      <div className="p-3 bg-white rounded-2xl border-2 border-slate-200 shadow-sm">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={data.qrImageUrl}
-          alt="QR Code"
-          width={200}
-          height={200}
-          className="block"
-        />
+    <div className="flex flex-col items-center gap-4 p-4">
+      <div className="flex gap-2">
+        {data.code.split("").map((char: string, i: number) => (
+          <div
+            key={i}
+            className="w-14 h-16 bg-[#123424] rounded-xl flex items-center justify-center"
+          >
+            <span className="text-2xl font-black text-lime-400 tracking-wider">
+              {char}
+            </span>
+          </div>
+        ))}
       </div>
-      <p className="text-xs text-slate-500 text-center max-w-xs">
-        Arată acest cod colectorului. El îl scanează când ajunge la tine pentru
+      <p className="text-xs text-slate-500 text-center max-w-xs leading-relaxed">
+        Arată acest cod colectorului când ajunge la tine. El îl introduce pentru
         a confirma colectarea.
       </p>
     </div>
   );
 }
 
-// ─── QR Scanner (for collector) ──────────────────────────────────────────────
+// ─── Code Entry (for collector) ───────────────────────────────────────────────
 
-function QRScanner({
+function CodeEntry({
   postId,
   onComplete,
 }: {
   postId: string;
   onComplete: () => void;
 }) {
-  const [token, setToken] = useState("");
+  const [code, setCode] = useState("");
+  const [bottles, setBottles] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [bottles, setBottles] = useState("");
 
-  const handleScan = async () => {
-    if (!token.trim()) {
-      setError("Introdu tokenul din QR sau scanează-l.");
+  const handleSubmit = async () => {
+    const trimmed = code.trim().toUpperCase();
+    if (trimmed.length !== 4) {
+      setError("Introdu codul de 4 caractere primit de la poster.");
       return;
     }
     setLoading(true);
@@ -218,7 +233,7 @@ function QRScanner({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          token: token.trim(),
+          code: trimmed,
           actualBottleCount: bottles ? parseInt(bottles) : undefined,
         }),
       });
@@ -235,24 +250,38 @@ function QRScanner({
     }
   };
 
+  // Auto-uppercase and limit to 4 chars
+  const handleCodeChange = (val: string) => {
+    setCode(
+      val
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, "")
+        .slice(0, 4),
+    );
+  };
+
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-600">
-        Cere posterului să îți arate codul QR și introdu tokenul de mai jos, sau
-        accesează direct linkul din QR.
+        Introdu codul de 4 caractere afișat de poster pentru a confirma
+        colectarea.
       </p>
+
       <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-          Token QR
+        <label className="block text-sm font-semibold text-slate-700 mb-2">
+          Cod de confirmare
         </label>
         <input
           type="text"
-          value={token}
-          onChange={(e) => setToken(e.target.value)}
-          placeholder="Lipește tokenul din QR..."
-          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none text-sm font-mono bg-white"
+          value={code}
+          onChange={(e) => handleCodeChange(e.target.value)}
+          placeholder="ex: A3BC"
+          maxLength={4}
+          autoCapitalize="characters"
+          className="w-full px-4 py-4 rounded-xl border-2 border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none text-3xl font-black text-center tracking-[0.5em] text-slate-900 bg-white uppercase"
         />
       </div>
+
       <div>
         <label className="block text-sm font-semibold text-slate-700 mb-1.5">
           Număr real de sticle{" "}
@@ -266,11 +295,13 @@ function QRScanner({
           className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none text-sm bg-white"
         />
       </div>
+
       {error && <p className="text-red-500 text-sm font-semibold">{error}</p>}
+
       <button
-        onClick={handleScan}
-        disabled={loading}
-        className="w-full flex items-center justify-center gap-2 py-3 rounded-full bg-lime-400 text-black font-bold text-sm hover:bg-lime-300 transition-all disabled:opacity-40 cursor-pointer"
+        onClick={handleSubmit}
+        disabled={loading || code.length !== 4}
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-full bg-lime-400 text-black font-bold text-sm hover:bg-lime-300 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
       >
         {loading ? (
           <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
@@ -283,7 +314,7 @@ function QRScanner({
   );
 }
 
-// ─── Cancel confirmation modal ────────────────────────────────────────────────
+// ─── Cancel Modal ─────────────────────────────────────────────────────────────
 
 function CancelModal({
   onConfirm,
@@ -311,10 +342,12 @@ function CancelModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[1002] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
         <div className="flex items-center justify-between mb-4">
-          <p className="text-slate-900 max-w-[80%]">{getMessage()}</p>
+          <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+            <AlertTriangle className="w-5 h-5 text-red-500" />
+          </div>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 cursor-pointer"
@@ -322,7 +355,8 @@ function CancelModal({
             <X className="w-4 h-4 text-slate-600" />
           </button>
         </div>
-
+        <h3 className="font-bold text-slate-900 mb-2">Confirmare anulare</h3>
+        <p className="text-sm text-slate-600 mb-4">{getMessage()}</p>
         <textarea
           value={reason}
           onChange={(e) => setReason(e.target.value)}
@@ -350,7 +384,7 @@ function CancelModal({
   );
 }
 
-// ─── Review form ──────────────────────────────────────────────────────────────
+// ─── Review Form ──────────────────────────────────────────────────────────────
 
 function ReviewForm({
   postId,
@@ -451,7 +485,7 @@ function ReviewForm({
   );
 }
 
-// ─── User card ────────────────────────────────────────────────────────────────
+// ─── User Card ────────────────────────────────────────────────────────────────
 
 function UserCard({
   user,
@@ -509,7 +543,7 @@ function UserCard({
   );
 }
 
-// ─── Status badge ─────────────────────────────────────────────────────────────
+// ─── Status Config ────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<
   PostStatus,
@@ -547,6 +581,29 @@ const STATUS_CONFIG: Record<
   },
 };
 
+// ─── Summary Row ──────────────────────────────────────────────────────────────
+
+function SummaryRow({
+  label,
+  value,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between py-1.5 border-b border-lime-200 last:border-0">
+      <span className="text-sm text-lime-700">{label}</span>
+      <span
+        className={`text-sm font-bold ${highlight ? "text-lime-700 text-lg" : "text-lime-800"}`}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function ActivePostClient({
@@ -557,12 +614,11 @@ export default function ActivePostClient({
   userId: string;
 }) {
   const [showCancel, setShowCancel] = useState(false);
-  const [showQR, setShowQR] = useState(false);
+  const [showCode, setShowCode] = useState(false);
   const [reviewDone, setReviewDone] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState("");
 
-  // Poll actively when IN_PROGRESS or CLAIMED
   const { data: post, mutate } = useSWR<Post>(
     `/api/v1/posts/${postId}`,
     fetcher,
@@ -668,7 +724,7 @@ export default function ActivePostClient({
     : (post.author.name ?? "Posterul");
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-6 space-y-4 min-h-[100dvh]">
+    <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
       {/* Header */}
       <div className="flex items-center gap-3">
         <Link
@@ -689,7 +745,7 @@ export default function ActivePostClient({
         </div>
       </div>
 
-      {/* ── CLAIMED: Approve/Deny (poster only) ─────────────────────────────── */}
+      {/* ── CLAIMED: Approve/Deny (poster only) ───────────────────────────── */}
       {post.status === "CLAIMED" && isAuthor && post.collector && (
         <div className="p-5 bg-blue-50 rounded-3xl border-2 border-blue-200">
           <h2 className="font-extrabold text-blue-900 text-base mb-1">
@@ -727,7 +783,7 @@ export default function ActivePostClient({
         </div>
       )}
 
-      {/* ── CLAIMED: Waiting (collector only) ──────────────────────────────── */}
+      {/* ── CLAIMED: Waiting (collector only) ─────────────────────────────── */}
       {post.status === "CLAIMED" && isCollector && (
         <div className="p-5 bg-blue-50 rounded-3xl border-2 border-blue-200 text-center">
           <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-3">
@@ -740,46 +796,45 @@ export default function ActivePostClient({
         </div>
       )}
 
-      {/* ── IN_PROGRESS: Active collection ─────────────────────────────────── */}
+      {/* ── IN_PROGRESS: Active collection ────────────────────────────────── */}
       {post.status === "IN_PROGRESS" && post.expiresAt && (
         <>
           <CountdownTimer deadline={post.expiresAt} />
 
-          {/* QR Section */}
+          {/* Code section */}
           <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden">
             <div className="p-4 border-b border-slate-100 flex items-center gap-2">
-              <QrCode className="w-5 h-5 text-[#123424]" />
+              <span className="text-lg">🔑</span>
               <h2 className="font-bold text-slate-900">
-                {isAuthor ? "Codul tău QR" : "Scanează codul QR"}
+                {isAuthor ? "Codul tău de confirmare" : "Introduci codul"}
               </h2>
             </div>
             <div className="p-4">
               {isAuthor ? (
                 <>
                   <p className="text-sm text-slate-600 mb-3">
-                    Arată acest cod colectorului când ajunge la tine pentru a
-                    finaliza schimbul.
+                    Arată acest cod colectorului când ajunge la tine.
                   </p>
-                  {showQR ? (
-                    <QRDisplay postId={postId} />
+                  {showCode ? (
+                    <CodeDisplay postId={postId} />
                   ) : (
                     <button
-                      onClick={() => setShowQR(true)}
-                      className="w-full py-3 rounded-full bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all cursor-pointer flex items-center justify-center gap-2"
+                      onClick={() => setShowCode(true)}
+                      className="w-full py-3 rounded-full bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all cursor-pointer"
                     >
-                      <QrCode className="w-4 h-4" /> Afișează codul QR
+                      Afișează codul
                     </button>
                   )}
                 </>
               ) : (
-                <QRScanner postId={postId} onComplete={() => mutate()} />
+                <CodeEntry postId={postId} onComplete={() => mutate()} />
               )}
             </div>
           </div>
         </>
       )}
 
-      {/* ── COMPLETED: Transaction summary ─────────────────────────────────── */}
+      {/* ── COMPLETED: Transaction summary ────────────────────────────────── */}
       {post.status === "COMPLETED" && post.transaction && (
         <div className="p-5 bg-lime-50 rounded-3xl border-2 border-lime-300">
           <div className="flex items-center gap-2 mb-4">
@@ -791,7 +846,7 @@ export default function ActivePostClient({
           <div className="space-y-2">
             <SummaryRow
               label="Sticle colectate"
-              value={`${(post.transaction.actualValue / 0.5) | 0} buc`}
+              value={`${Math.round(post.transaction.actualValue / 0.5)} buc`}
             />
             <SummaryRow
               label="Valoare totală"
@@ -806,7 +861,7 @@ export default function ActivePostClient({
         </div>
       )}
 
-      {/* ── Review section (after completion) ──────────────────────────────── */}
+      {/* ── Review section ────────────────────────────────────────────────── */}
       {post.status === "COMPLETED" && (isAuthor || isCollector) && (
         <div className="bg-white rounded-3xl border border-slate-200 p-5">
           <h2 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
@@ -838,7 +893,6 @@ export default function ActivePostClient({
       <div className="bg-white rounded-3xl border border-slate-200 p-5 space-y-3">
         <h2 className="font-bold text-slate-900 text-base">Detalii anunț</h2>
 
-        {/* Participants */}
         <UserCard
           user={post.author}
           role="Poster"
@@ -903,7 +957,7 @@ export default function ActivePostClient({
           </button>
         )}
 
-      {/* Map link */}
+      {/* Maps link */}
       <Link
         href={`https://www.google.com/maps?q=${post.latitude},${post.longitude}`}
         target="_blank"
@@ -922,27 +976,6 @@ export default function ActivePostClient({
           status={post.status}
         />
       )}
-    </div>
-  );
-}
-
-function SummaryRow({
-  label,
-  value,
-  highlight,
-}: {
-  label: string;
-  value: string;
-  highlight?: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between py-1.5 border-b border-lime-200 last:border-0">
-      <span className="text-sm text-lime-700">{label}</span>
-      <span
-        className={`text-sm font-bold ${highlight ? "text-lime-700 text-lg" : "text-lime-800"}`}
-      >
-        {value}
-      </span>
     </div>
   );
 }

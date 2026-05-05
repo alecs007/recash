@@ -56,10 +56,7 @@ export async function POST(
       );
     }
 
-    // ── Scenarios ────────────────────────────────────────────────────────────
-
     if (post.status === "OPEN") {
-      // Only author can cancel an open post
       if (!isAuthor) {
         return NextResponse.json({ error: "Acces interzis" }, { status: 403 });
       }
@@ -72,7 +69,6 @@ export async function POST(
 
     if (post.status === "CLAIMED") {
       if (isAuthor) {
-        // Poster changes their mind → reset to OPEN (remove collector claim)
         await prisma.post.update({
           where: { id },
           data: { status: "OPEN", collectorId: null, claimedAt: null },
@@ -82,7 +78,6 @@ export async function POST(
         }
         return NextResponse.json({ success: true, status: "OPEN" });
       } else {
-        // Collector withdraws claim → reset to OPEN
         await prisma.post.update({
           where: { id },
           data: { status: "OPEN", collectorId: null, claimedAt: null },
@@ -92,15 +87,13 @@ export async function POST(
     }
 
     if (post.status === "IN_PROGRESS") {
-      // Either party cancels an active collection → CANCELLED for the session
-      // Poster keeps the post visible but marked cancelled
       await prisma.post.update({
         where: { id },
         data: { status: "CANCELLED" },
       });
 
-      // Clean up QR token
-      await redis.del(`qr:${id}`).catch(() => null);
+      // Clean up the 4-char code
+      await redis.del(`code:${id}`).catch(() => null);
 
       const cancelledBy = isAuthor ? "poster" : "collector";
 

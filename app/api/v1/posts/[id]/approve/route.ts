@@ -5,9 +5,16 @@ import { rateLimit, RL } from "@/lib/rate-limit";
 import { approveClaimSchema } from "@/lib/validations/post";
 import { notifyClaimApproved, notifyClaimDenied } from "@/lib/notifications";
 import { redis } from "@/lib/redis";
-import { randomBytes } from "crypto";
 
 const COLLECTION_WINDOW_MINUTES = 30;
+const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no confusable chars (0/O, 1/I)
+
+function generateCode(): string {
+  return Array.from(
+    { length: 4 },
+    () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)],
+  ).join("");
+}
 
 export async function POST(
   req: Request,
@@ -50,7 +57,6 @@ export async function POST(
       return NextResponse.json({ error: "Anunț negăsit" }, { status: 404 });
     }
 
-    // Only the poster can approve/deny
     if (post.authorId !== session.user.id) {
       return NextResponse.json({ error: "Acces interzis" }, { status: 403 });
     }
@@ -74,16 +80,15 @@ export async function POST(
         Date.now() + COLLECTION_WINDOW_MINUTES * 60 * 1000,
       );
 
-      // Generate QR token and store in Redis (TTL = collection window + 5min buffer)
-      const qrToken = randomBytes(32).toString("hex");
+      // Generate 4-char code and store in Redis (TTL = collection window + 5min buffer)
+      const code = generateCode();
       const ttlSeconds = COLLECTION_WINDOW_MINUTES * 60 + 300;
-      await redis.set(`qr:${id}`, qrToken, "EX", ttlSeconds);
+      await redis.set(`code:${id}`, code, "EX", ttlSeconds);
 
       await prisma.post.update({
         where: { id },
         data: {
           status: "IN_PROGRESS",
-          // Store deadline in expiresAt (repurpose for active collection)
           expiresAt: collectionDeadline,
         },
       });
@@ -103,11 +108,7 @@ export async function POST(
       // Deny: reset post to OPEN
       await prisma.post.update({
         where: { id },
-        data: {
-          status: "OPEN",
-          collectorId: null,
-          claimedAt: null,
-        },
+        data: { status: "OPEN", collectorId: null, claimedAt: null },
       });
 
       await notifyClaimDenied(

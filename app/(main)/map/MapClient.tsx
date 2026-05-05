@@ -1004,9 +1004,9 @@ export default function MapPage() {
               </span>
               <Link
                 href={`/post/${activeData.activeCollection.id}`}
-                className="flex items-center gap-0.5 text-xs font-bold text-amber-700 hover:underline"
+                className="flex items-center gap-0.5 text-xs font-bold text-amber-700"
               >
-                Vezi <ChevronRight className="w-3 h-3" />
+                Vezi <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
           </div>

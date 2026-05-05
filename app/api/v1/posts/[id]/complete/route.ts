@@ -5,7 +5,8 @@ import { rateLimit, RL } from "@/lib/rate-limit";
 import { redis } from "@/lib/redis";
 import { notifyPostCompleted } from "@/lib/notifications";
 import { invalidate, CacheKey } from "@/lib/cache";
-import { checkTransactionBadges } from "@/lib/badges";
+import { BadgeType } from "@prisma/client";
+import { checkPostBadges, checkTransactionBadges } from "@/lib/badges";
 
 const SGR_VALUE_PER_BOTTLE = 0.5; // RON
 
@@ -23,15 +24,18 @@ export async function POST(
 
   const { id } = await params;
 
-  let body: { token?: string; actualBottleCount?: number } = {};
+  let body: { code?: string; actualBottleCount?: number } = {};
   try {
     body = await req.json();
   } catch {
     body = {};
   }
 
-  if (!body.token) {
-    return NextResponse.json({ error: "Token QR lipsă" }, { status: 400 });
+  if (!body.code?.trim()) {
+    return NextResponse.json(
+      { error: "Cod de confirmare lipsă" },
+      { status: 400 },
+    );
   }
 
   try {
@@ -54,16 +58,18 @@ export async function POST(
       );
     }
 
-    // Only the collector can complete via QR scan
     if (post.collectorId !== session.user.id) {
       return NextResponse.json({ error: "Acces interzis" }, { status: 403 });
     }
 
-    // Validate QR token
-    const storedToken = await redis.get(`qr:${id}`);
-    if (!storedToken || storedToken !== body.token) {
+    // Validate 4-char code (case-insensitive)
+    const storedCode = await redis.get(`code:${id}`);
+    if (
+      !storedCode ||
+      storedCode.toUpperCase() !== body.code.trim().toUpperCase()
+    ) {
       return NextResponse.json(
-        { error: "Token QR invalid sau expirat" },
+        { error: "Cod invalid sau expirat" },
         { status: 400 },
       );
     }
@@ -71,28 +77,24 @@ export async function POST(
     // Check 30-min deadline
     if (post.expiresAt && post.expiresAt < new Date()) {
       await prisma.post.update({ where: { id }, data: { status: "EXPIRED" } });
-      await redis.del(`qr:${id}`);
+      await redis.del(`code:${id}`);
       return NextResponse.json(
         { error: "Fereastra de colectare a expirat" },
         { status: 410 },
       );
     }
 
-    // Use actual count if provided, otherwise use post's bottleCount
     const finalBottleCount = body.actualBottleCount ?? post.bottleCount;
     const actualValue = finalBottleCount * SGR_VALUE_PER_BOTTLE;
     const collectorEarning = (actualValue * post.collectorSharePercent) / 100;
     const posterEarning = actualValue - collectorEarning;
 
-    // Complete within a transaction
     await prisma.$transaction(async (tx) => {
-      // Mark post completed
       await tx.post.update({
         where: { id },
         data: { status: "COMPLETED", completedAt: new Date() },
       });
 
-      // Create transaction record
       await tx.transaction.create({
         data: {
           postId: id,
@@ -105,7 +107,6 @@ export async function POST(
         },
       });
 
-      // Update poster stats
       await tx.user.update({
         where: { id: post.authorId },
         data: {
@@ -115,7 +116,6 @@ export async function POST(
         },
       });
 
-      // Update collector stats
       await tx.user.update({
         where: { id: post.collectorId! },
         data: {
@@ -126,24 +126,19 @@ export async function POST(
       });
     });
 
-    // Clean up QR token
-    await redis.del(`qr:${id}`);
+    await redis.del(`code:${id}`);
 
-    // Award badges via the single centralized path — never block the response.
-    // Pass claimedAt so SPEED_DEMON can be evaluated.
-    checkTransactionBadges(
-      post.authorId,
-      post.collectorId!,
-      post.claimedAt,
-    ).catch((err) => console.error("[complete] badge check error:", err));
+    // Award badges and notify — non-blocking
+    await Promise.all([
+      checkPostBadges(post.authorId),
+      checkTransactionBadges(post.authorId, post.collectorId!, post.claimedAt),
+    ]).catch(console.error);
 
-    // Notify both parties
     await Promise.all([
       notifyPostCompleted(post.authorId, id, posterEarning, "poster"),
       notifyPostCompleted(post.collectorId!, id, collectorEarning, "collector"),
     ]);
 
-    // Invalidate caches
     await Promise.all([
       invalidate(CacheKey.profile(post.authorId)),
       invalidate(CacheKey.profile(post.collectorId!)),
