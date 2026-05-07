@@ -795,11 +795,11 @@ function DetailPanel({
         {/* Back + Status */}
         <div className="flex items-center justify-between mb-7">
           <Link
-            href="/profil/postari"
+            href={`/${isAuthor ? "profil/postari" : "map"}`}
             className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-700 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            {isAuthor ? "Postările mele" : "Colectare"}
+            {isAuthor ? "Postările mele" : "Harta de colectare"}
           </Link>
           <span
             className={`text-xs font-bold px-3 py-1.5 rounded-full ${statusCfg.className}`}
@@ -869,7 +869,7 @@ function DetailPanel({
                 <span className="text-lg text-slate-400 font-light">RON</span>
               </div>
               <p className="text-xs text-slate-400">
-                {theirLabel}: {theirEarning.toFixed(2)} RON din{" "}
+                {theirLabel} {theirEarning.toFixed(2)} RON din{" "}
                 {post.transaction!.actualValue.toFixed(2)} RON
               </p>
             </>
@@ -883,7 +883,7 @@ function DetailPanel({
                 <span className="text-lg text-slate-400 font-light">RON</span>
               </div>
               <p className="text-xs text-slate-400">
-                {theirLabel}: {theirEarning.toFixed(2)} RON din{" "}
+                {theirLabel} {theirEarning.toFixed(2)} RON din{" "}
                 {post.estimatedValue.toFixed(2)} RON
               </p>
             </>

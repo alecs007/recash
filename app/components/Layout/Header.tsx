@@ -78,7 +78,6 @@ function ActiveIndicator({
 
   return (
     <AnimatePresence mode="wait">
-      {/* 1. Both Active: Diagonal Overlap View */}
       {hasPosts && hasCollections ? (
         <motion.div
           key="dual-indicator"
@@ -148,7 +147,6 @@ function ActiveIndicator({
           </AnimatePresence>
         </motion.div>
       ) : hasPosts || hasCollections ? (
-        /* 2. Single Active View */
         <motion.div
           key="single-indicator"
           variants={containerVariants}
@@ -187,7 +185,6 @@ function ActiveIndicator({
     </AnimatePresence>
   );
 }
-// ─── Shimmer ──────────────────────────────────────────────────────────────────
 
 const ProfileShimmer = () => (
   <div className="flex items-center gap-3 pl-1 pr-2 py-1">
@@ -196,8 +193,6 @@ const ProfileShimmer = () => (
     <div className="w-3.5 h-3.5 rounded-full bg-slate-200 animate-pulse" />
   </div>
 );
-
-// ─── Header ───────────────────────────────────────────────────────────────────
 
 export default function Header({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -247,7 +242,6 @@ export default function Header({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-white flex flex-col">
       <header className="sticky top-0 z-[1001] backdrop-blur-md bg-white">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
-          {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <Image
               src="/images/recash-logo.webp"
@@ -260,19 +254,16 @@ export default function Header({ children }: { children: React.ReactNode }) {
             />
           </Link>
 
-          {/* Right side */}
           <div className="flex items-center gap-2 sm:gap-3">
             {isLoading ? (
               <ProfileShimmer />
             ) : isAuthenticated ? (
               <>
-                {/* Active posts / collections indicator */}
                 <ActiveIndicator
                   activePosts={activePosts}
                   activeCollections={activeCollections}
                 />
 
-                {/* Notification bell */}
                 <Link
                   href="/notificari"
                   className="relative grid place-items-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors"
@@ -286,7 +277,6 @@ export default function Header({ children }: { children: React.ReactNode }) {
                   )}
                 </Link>
 
-                {/* Profile dropdown */}
                 <div
                   ref={dropdownRef}
                   className="relative"
@@ -334,37 +324,30 @@ export default function Header({ children }: { children: React.ReactNode }) {
                             <FaRegUser className="w-4 h-4 text-slate-600" />
                             Profilul meu
                           </Link>
-                          <Link
-                            href="/post"
-                            onClick={() => setDropdownOpen(false)}
-                            className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
-                          >
-                            <span className="flex items-center gap-3">
-                              <FaWineBottle className="w-4 h-4 text-slate-600" />
-                              Postează sticle
-                            </span>
-                            {activePosts > 0 && (
-                              <span className="bg-lime-100 text-lime-700 text-[10px] font-black px-1.5 py-0.5 rounded-full">
-                                {activePosts} activ{activePosts > 1 ? "e" : "ă"}
+                          {activePosts == 0 && (
+                            <Link
+                              href="/post"
+                              onClick={() => setDropdownOpen(false)}
+                              className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                            >
+                              <span className="flex items-center gap-3">
+                                <FaWineBottle className="w-4 h-4 text-slate-600" />
+                                Postează sticle
                               </span>
-                            )}
-                          </Link>
-                          <Link
-                            href="/map"
-                            onClick={() => setDropdownOpen(false)}
-                            className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
-                          >
-                            <span className="flex items-center gap-3">
-                              <LuBike className="w-4 h-4 text-slate-600" />
-                              Colectează sticle
-                            </span>
-                            {activeCollections > 0 && (
-                              <span className="bg-blue-100 text-blue-700 text-[10px] font-black px-1.5 py-0.5 rounded-full">
-                                {activeCollections} activ
-                                {activeCollections > 1 ? "e" : "ă"}
+                            </Link>
+                          )}
+                          {activeCollections == 0 && (
+                            <Link
+                              href="/map"
+                              onClick={() => setDropdownOpen(false)}
+                              className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                            >
+                              <span className="flex items-center gap-3">
+                                <LuBike className="w-4 h-4 text-slate-600" />
+                                Colectează sticle
                               </span>
-                            )}
-                          </Link>
+                            </Link>
+                          )}
                           <div className="border-t border-slate-100 mt-1 pt-1">
                             <button
                               onClick={() => {
