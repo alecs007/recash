@@ -1079,7 +1079,9 @@ function DetailPanel({
           </div>
         )}
 
-        <div className="h-px bg-slate-100 mb-7" />
+        {post.status != "CANCELLED" && post.status != "EXPIRED" && (
+          <div className="h-px bg-slate-100 mb-7" />
+        )}
 
         <div className="space-y-4 mb-7">
           <PersonRow
@@ -1105,9 +1107,7 @@ function DetailPanel({
           ) : null}
         </div>
 
-        {post.status != "CANCELLED" && post.status != "EXPIRED" && (
-          <div className="h-px bg-slate-100 mb-7" />
-        )}
+        <div className="h-px bg-slate-100 mb-7" />
 
         <div className="mb-4">
           <NavButtons lat={post.latitude} lng={post.longitude} />
