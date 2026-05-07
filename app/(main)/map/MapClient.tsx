@@ -997,19 +997,19 @@ export default function MapPage() {
 
         {/* Active collection banner */}
         {activeData?.activeCollection && (
-          <div className="max-w-7xl mx-auto mt-2">
-            <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+          <Link
+            href={`/post/${activeData.activeCollection.id}`}
+            className="max-w-7xl mx-auto"
+          >
+            <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-3 py-2  mt-2">
               <span className="text-xs font-semibold text-amber-700">
                 Ai o colectare în desfășurare
               </span>
-              <Link
-                href={`/post/${activeData.activeCollection.id}`}
-                className="flex items-center gap-0.5 text-xs font-bold text-amber-700"
-              >
+              <div className="flex items-center gap-0.5 text-xs font-bold text-amber-700">
                 Vezi <ChevronRight className="w-4 h-4" />
-              </Link>
+              </div>
             </div>
-          </div>
+          </Link>
         )}
 
         {/* Claim error banner */}

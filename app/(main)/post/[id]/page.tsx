@@ -16,7 +16,7 @@ export async function generateMetadata({
   });
   return {
     title: post
-      ? `${post.bottleCount} sticle${post.locationName ? ` — ${post.locationName}` : ""} | Recash`
+      ? `${post.bottleCount} sticle${post.locationName ? ` - ${post.locationName}` : ""} | Recash`
       : "Anunț | Recash",
     description: post?.description ?? "Detalii anunț Recash",
   };

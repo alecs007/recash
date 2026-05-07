@@ -12,7 +12,6 @@ import {
   XCircle,
   Star,
   Phone,
-  AlertTriangle,
   X,
   RefreshCw,
   Loader2,
@@ -287,8 +286,6 @@ function CodeDisplay({ postId }: { postId: string }) {
   );
 }
 
-// ─── Code Entry ───────────────────────────────────────────────────────────────
-
 function CodeEntry({
   postId,
   onComplete,
@@ -431,7 +428,7 @@ function ReviewForm({
     }
   };
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 pt-2">
       <p className="text-sm text-slate-600">
         Cum a decurs experiența cu <strong>{targetName}</strong>?
       </p>
@@ -470,13 +467,9 @@ function ReviewForm({
   );
 }
 
-// ─── Cancel Modal ─────────────────────────────────────────────────────────────
-
 function CancelModal({
   onConfirm,
   onClose,
-  isAuthor,
-  status,
 }: {
   onConfirm: (r: string) => void;
   onClose: () => void;
@@ -484,24 +477,21 @@ function CancelModal({
   status: PostStatus;
 }) {
   const [reason, setReason] = useState("");
-  const msg =
-    status === "IN_PROGRESS"
-      ? isAuthor
-        ? "Colectorul este pe drum. Ești sigur că vrei să anulezi?"
-        : "Colectarea este în desfășurare. Ești sigur?"
-      : status === "CLAIMED" && isAuthor
-        ? "Vrei să respingi cererea? Anunțul devine din nou disponibil."
-        : "Vrei să renunți la colectare?";
+  // const msg =
+  //   status === "IN_PROGRESS"
+  //     ? isAuthor
+  //       ? "Colectorul este pe drum. Ești sigur că vrei să anulezi?"
+  //       : "Colectarea este în desfășurare. Ești sigur?"
+  //     : status === "CLAIMED" && isAuthor
+  //       ? "Vrei să respingi cererea? Anunțul devine din nou disponibil."
+  //       : "Vrei să renunți la colectare?";
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[1002] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
         <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-              <AlertTriangle className="w-4 h-4 text-red-500" />
-            </div>
-            <h3 className="font-bold text-slate-900">Confirmare anulare</h3>
-          </div>
+          <h3 className="font-bold text-slate-900">
+            Ești sigur că vrei să anulezi?
+          </h3>
           <button
             onClick={onClose}
             className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 cursor-pointer"
@@ -509,11 +499,11 @@ function CancelModal({
             <X className="w-3.5 h-3.5 text-slate-600" />
           </button>
         </div>
-        <p className="text-sm text-slate-600 mb-4">{msg}</p>
+
         <textarea
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          placeholder="Motiv (opțional)..."
+          placeholder="Scrie motivul (opțional)..."
           rows={2}
           maxLength={200}
           className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm resize-none outline-none mb-4"
@@ -536,8 +526,6 @@ function CancelModal({
     </div>
   );
 }
-
-// ─── Person Row ───────────────────────────────────────────────────────────────
 
 function PersonRow({
   user,
@@ -594,8 +582,6 @@ function PersonRow({
     </div>
   );
 }
-
-// ─── Expiry text ──────────────────────────────────────────────────────────────
 
 function ExpiryText({ expiresAt }: { expiresAt: string | null }) {
   const [label, setLabel] = useState("");
@@ -663,8 +649,6 @@ function NavButtons({ lat, lng }: { lat: number; lng: number }) {
   );
 }
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-
 function Skeleton() {
   return (
     <div
@@ -693,8 +677,6 @@ function Skeleton() {
   );
 }
 
-// ─── Detail Panel ─────────────────────────────────────────────────────────────
-
 function DetailPanel({
   post,
   isAuthor,
@@ -718,8 +700,30 @@ function DetailPanel({
     (post.estimatedValue * post.collectorSharePercent) / 100;
   const myEarning = isAuthor ? posterEarning : collectorEarning;
   const theirEarning = isAuthor ? collectorEarning : posterEarning;
-  const myLabel = isAuthor ? "Tu primești" : "Tu câștigi";
-  const theirLabel = isAuthor ? "Colectorul primește" : "Autorul primește";
+  const myLabel =
+    post.status === "COMPLETED"
+      ? isAuthor
+        ? "Tu ai primit"
+        : "Tu ai câștigat"
+      : post.status === "EXPIRED" || post.status === "CANCELLED"
+        ? isAuthor
+          ? "Tu ai fi primit"
+          : "Tu ai fi câștigat"
+        : isAuthor
+          ? "Tu primești"
+          : "Tu câștigi";
+  // const theirLabel =
+  //   post.status === "COMPLETED"
+  //     ? isAuthor
+  //       ? "Colectorul a primit"
+  //       : "Autorul a primit"
+  //     : post.status === "EXPIRED" || post.status === "CANCELLED"
+  //       ? isAuthor
+  //         ? "Colectorul ar fi primit"
+  //         : "Autorul ar fi primit"
+  //       : isAuthor
+  //         ? "Colectorul primește"
+  //         : "Autorul primește";
   const myActualEarning = post.transaction
     ? isAuthor
       ? post.transaction.posterEarning
@@ -791,7 +795,6 @@ function DetailPanel({
   return (
     <div className="h-full overflow-y-auto">
       <div className="px-6 lg:px-10 py-6 lg:py-8 space-y-0 max-w-xl lg:max-w-none">
-        {/* Back + Status */}
         <div className="flex items-center justify-between mb-7">
           <Link
             href={`/${isAuthor ? "profil/postari" : "map"}`}
@@ -807,7 +810,6 @@ function DetailPanel({
           </span>
         </div>
 
-        {/* Title */}
         <div className="mb-7">
           <div className="flex items-baseline gap-3 mb-1.5">
             <h1 className="text-5xl font-black text-[#123424] tabular-nums leading-none">
@@ -856,7 +858,6 @@ function DetailPanel({
 
         <div className="h-px bg-slate-100 mb-7" />
 
-        {/* Earnings */}
         <div className="mb-7">
           {post.status === "COMPLETED" && myActualEarning !== null ? (
             <>
@@ -868,7 +869,7 @@ function DetailPanel({
                 <span className="text-lg text-slate-400 font-light">RON</span>
               </div>
               <p className="text-xs text-slate-400">
-                {theirLabel} {theirEarning.toFixed(2)} RON din{" "}
+                din valoarea totală de{" "}
                 {post.transaction!.actualValue.toFixed(2)} RON
               </p>
             </>
@@ -877,13 +878,12 @@ function DetailPanel({
               <div className="flex items-baseline gap-2 mb-1">
                 <span className="text-sm text-slate-500">{myLabel}</span>
                 <span className="text-4xl font-black text-lime-600 leading-none">
-                  ~{myEarning.toFixed(2)}
+                  +{myEarning.toFixed(2)}
                 </span>
                 <span className="text-lg text-slate-400 font-light">RON</span>
               </div>
               <p className="text-xs text-slate-400">
-                {theirLabel} {theirEarning.toFixed(2)} RON din{" "}
-                {post.estimatedValue.toFixed(2)} RON
+                din valoarea totală de {post.estimatedValue.toFixed(2)} RON
               </p>
             </>
           )}
@@ -898,43 +898,18 @@ function DetailPanel({
             />
           </div>
           <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-            <span>Autorul primește {posterPct}%</span>
-            <span>Colectorul primește {post.collectorSharePercent}%</span>
+            <span>
+              Autorul {posterPct}% ({posterEarning.toFixed(2)} RON)
+            </span>
+            <span>
+              Colectorul {post.collectorSharePercent}% (
+              {collectorEarning.toFixed(2)} RON)
+            </span>
           </div>
         </div>
 
         <div className="h-px bg-slate-100 mb-7" />
 
-        {/* Participants */}
-        <div className="space-y-4 mb-7">
-          <PersonRow
-            user={post.author}
-            role="Autor"
-            showPhone={isCollector && post.status === "IN_PROGRESS"}
-          />
-          {showCollector && post.collector ? (
-            <PersonRow
-              user={post.collector}
-              role="Colector"
-              showPhone={isAuthor && post.status === "IN_PROGRESS"}
-            />
-          ) : post.status === "OPEN" ? (
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full border-2 border-dashed border-slate-200 flex items-center justify-center">
-                <span className="text-slate-300 text-base">?</span>
-              </div>
-              <span className="text-sm text-slate-400">
-                Aștepți un colector…
-              </span>
-            </div>
-          ) : null}
-        </div>
-
-        <div className="h-px bg-slate-100 mb-7" />
-
-        {/* ── ACTION AREA ──────────────────────────────────────────────── */}
-
-        {/* OPEN — poster waiting */}
         {post.status === "OPEN" && isAuthor && (
           <div className="mb-7">
             <p className="text-sm text-slate-500 leading-relaxed">
@@ -944,7 +919,6 @@ function DetailPanel({
           </div>
         )}
 
-        {/* CLAIMED — poster approve/deny */}
         {post.status === "CLAIMED" && isAuthor && post.collector && (
           <div className="mb-7 space-y-4">
             <div>
@@ -952,8 +926,7 @@ function DetailPanel({
                 {post.collector.name} vrea să colecteze
               </p>
               <p className="text-xs text-slate-500">
-                Aprobă pentru a porni colectarea. Dacă aprobi, colectorul are 30
-                min să ajungă.
+                Odată aprobat, colectorul are la dispoziție 30 min să ajungă.
               </p>
             </div>
             {actionError && (
@@ -983,7 +956,6 @@ function DetailPanel({
           </div>
         )}
 
-        {/* CLAIMED — collector waiting */}
         {post.status === "CLAIMED" && isCollector && (
           <div className="mb-7 flex items-center gap-3">
             <Clock className="w-5 h-5 text-blue-400 animate-pulse shrink-0" />
@@ -998,7 +970,6 @@ function DetailPanel({
           </div>
         )}
 
-        {/* IN_PROGRESS — timer + code */}
         {post.status === "IN_PROGRESS" && (
           <div className="mb-7 space-y-6">
             {post.expiresAt && <Countdown deadline={post.expiresAt} />}
@@ -1024,7 +995,6 @@ function DetailPanel({
           </div>
         )}
 
-        {/* COMPLETED — summary + review */}
         {post.status === "COMPLETED" && post.transaction && (
           <div className="mb-7 space-y-5">
             <div className="bg-lime-50 border border-lime-200 rounded-2xl p-4 space-y-2.5">
@@ -1065,9 +1035,6 @@ function DetailPanel({
               ))}
             </div>
             <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                Evaluare
-              </p>
               <ReviewForm
                 postId={post.id}
                 targetName={targetName}
@@ -1078,7 +1045,6 @@ function DetailPanel({
           </div>
         )}
 
-        {/* CANCELLED / EXPIRED */}
         {/* {(post.status === "CANCELLED" || post.status === "EXPIRED") && (
           <div className="mb-7">
             <p className="text-sm text-slate-500">
@@ -1100,7 +1066,6 @@ function DetailPanel({
               disabled={actionLoading}
               className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
             >
-              {post.status === "CLAIMED" && isAuthor && "Refuză cererea"}
               {post.status === "IN_PROGRESS" &&
                 isAuthor &&
                 "Anulează colectarea"}
@@ -1109,11 +1074,40 @@ function DetailPanel({
                 "Renunță la colectare"}
               {post.status === "CLAIMED" && isCollector && "Anulează cererea"}
               {isAuthor && post.status === "OPEN" && "Anulează anunțul"}
+              {isAuthor && post.status === "CLAIMED" && "Anulează anunțul"}
             </button>
           </div>
         )}
 
         <div className="h-px bg-slate-100 mb-7" />
+
+        <div className="space-y-4 mb-7">
+          <PersonRow
+            user={post.author}
+            role="Autor"
+            showPhone={isCollector && post.status === "IN_PROGRESS"}
+          />
+          {showCollector && post.collector ? (
+            <PersonRow
+              user={post.collector}
+              role="Colector"
+              showPhone={isAuthor && post.status === "IN_PROGRESS"}
+            />
+          ) : post.status === "OPEN" ? (
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full border-2 border-dashed border-slate-200 flex items-center justify-center">
+                <span className="text-slate-300 text-base">?</span>
+              </div>
+              <span className="text-sm text-slate-400">
+                Aștepți un colector…
+              </span>
+            </div>
+          ) : null}
+        </div>
+
+        {post.status != "CANCELLED" && post.status != "EXPIRED" && (
+          <div className="h-px bg-slate-100 mb-7" />
+        )}
 
         <div className="mb-4">
           <NavButtons lat={post.latitude} lng={post.longitude} />
@@ -1131,8 +1125,6 @@ function DetailPanel({
     </div>
   );
 }
-
-// ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function PostDetailClient({
   postId,
@@ -1171,7 +1163,6 @@ export default function PostDetailClient({
 
   return (
     <>
-      {/* Mobile: map top, panel below */}
       <div className="lg:hidden flex flex-col min-h-[calc(100vh-64px)]">
         <div className="relative h-[260px] shrink-0">
           <PostMap
@@ -1190,7 +1181,6 @@ export default function PostDetailClient({
         </div>
       </div>
 
-      {/* Desktop: map left 55%, panel right 45% */}
       <div className="hidden lg:flex" style={{ height: "calc(100vh - 64px)" }}>
         <div className="w-[55%] relative shrink-0">
           <PostMap

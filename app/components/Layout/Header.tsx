@@ -42,15 +42,21 @@ function useActiveCounts(authenticated: boolean) {
   return {
     activePosts: (data?.activePosts as number) ?? 0,
     activeCollections: (data?.activeCollections as number) ?? 0,
+    activePostId: data?.activePostId as string | null,
+    activeCollectionId: data?.activeCollectionId as string | null,
   };
 }
 
 function ActiveIndicator({
   activePosts,
   activeCollections,
+  activePostId,
+  activeCollectionId,
 }: {
   activePosts: number;
   activeCollections: number;
+  activePostId: string | null;
+  activeCollectionId: string | null;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -75,6 +81,11 @@ function ActiveIndicator({
     animate: { opacity: 1, scale: 1, x: 0 },
     exit: { opacity: 0, scale: 0.8, x: 10, transition: { duration: 0.2 } },
   };
+
+  const postHref = activePostId ? `/post/${activePostId}` : "/profil/postari";
+  const collectionHref = activeCollectionId
+    ? `/post/${activeCollectionId}`
+    : "/map";
 
   return (
     <AnimatePresence mode="wait">
@@ -109,9 +120,9 @@ function ActiveIndicator({
                 className="absolute top-full mt-2 right-0 bg-white border border-slate-200 rounded-2xl p-1.5 flex flex-col gap-1 z-[1002]"
               >
                 <Link
-                  href="/profil/postari?status=active"
+                  href={postHref}
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-3 p-2 hover:bg-lime-50 rounded-xl transition-colors"
+                  className="..."
                 >
                   <div className="relative grid place-items-center w-8.5 h-8.5 rounded-full bg-lime-50 border-2 border-lime-400">
                     <motion.div
@@ -126,7 +137,7 @@ function ActiveIndicator({
                   </span>
                 </Link>
                 <Link
-                  href="/map"
+                  href={collectionHref}
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-3 p-2 hover:bg-blue-50 rounded-xl transition-colors"
                 >
@@ -157,7 +168,7 @@ function ActiveIndicator({
         >
           {hasPosts ? (
             <Link
-              href="/profil/postari?status=active"
+              href={postHref}
               className="relative grid place-items-center w-10 h-10 rounded-full bg-lime-50 border-2 border-lime-400 hover:bg-lime-100 transition-colors group"
             >
               <motion.div
@@ -169,7 +180,7 @@ function ActiveIndicator({
             </Link>
           ) : (
             <Link
-              href="/map"
+              href={collectionHref}
               className="relative grid place-items-center w-10 h-10 rounded-full bg-blue-50 border-2 border-blue-400 hover:bg-blue-100 transition-colors group"
             >
               <motion.div
@@ -207,7 +218,8 @@ export default function Header({ children }: { children: React.ReactNode }) {
   const isLoading = status === "loading";
 
   const unreadCount = useUnreadCount(isAuthenticated);
-  const { activePosts, activeCollections } = useActiveCounts(isAuthenticated);
+  const { activePosts, activeCollections, activePostId, activeCollectionId } =
+    useActiveCounts(isAuthenticated);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -262,6 +274,8 @@ export default function Header({ children }: { children: React.ReactNode }) {
                 <ActiveIndicator
                   activePosts={activePosts}
                   activeCollections={activeCollections}
+                  activePostId={activePostId}
+                  activeCollectionId={activeCollectionId}
                 />
 
                 <Link

@@ -20,23 +20,30 @@ export async function GET() {
 
   try {
     const result = await cached(cacheKey, 30, async () => {
-      const [activePosts, activeCollections] = await Promise.all([
-        // Posts I created that are still active
-        prisma.post.count({
+      const [post, collection] = await Promise.all([
+        prisma.post.findFirst({
           where: {
             authorId: session.user.id,
             status: { in: ACTIVE_STATUSES },
           },
+          select: { id: true },
         }),
-        // Posts I claimed as collector that are still active
-        prisma.post.count({
+
+        prisma.post.findFirst({
           where: {
             collectorId: session.user.id,
             status: { in: ACTIVE_STATUSES },
           },
+          select: { id: true },
         }),
       ]);
-      return { activePosts, activeCollections };
+
+      return {
+        activePosts: post ? 1 : 0,
+        activeCollections: collection ? 1 : 0,
+        activePostId: post?.id || null,
+        activeCollectionId: collection?.id || null,
+      };
     });
 
     return NextResponse.json(result);
