@@ -19,8 +19,7 @@ import {
   Calendar,
   ChevronRight,
 } from "lucide-react";
-import { FaWineBottle, FaWaze } from "react-icons/fa";
-import { size } from "zod";
+import { FaWineBottle } from "react-icons/fa";
 
 type PostStatus =
   | "OPEN"
@@ -990,10 +989,10 @@ function DetailPanel({
             <Clock className="w-5 h-5 text-blue-400 animate-pulse shrink-0" />
             <div>
               <p className="text-sm font-semibold text-slate-800">
-                Cerere trimisă
+                Cererea ta a fost trimisă
               </p>
               <p className="text-xs text-slate-500">
-                Aștepți aprobarea autorului…
+                Se așteaptă aprobarea autorului…
               </p>
             </div>
           </div>
@@ -1101,9 +1100,15 @@ function DetailPanel({
               disabled={actionLoading}
               className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
             >
-              {post.status === "CLAIMED" && isAuthor
-                ? "Refuză cererea"
-                : "Anulează anunțul"}
+              {post.status === "CLAIMED" && isAuthor && "Refuză cererea"}
+              {post.status === "IN_PROGRESS" &&
+                isAuthor &&
+                "Anulează colectarea"}
+              {post.status === "IN_PROGRESS" &&
+                isCollector &&
+                "Renunță la colectare"}
+              {post.status === "CLAIMED" && isCollector && "Anulează cererea"}
+              {isAuthor && post.status === "OPEN" && "Anulează anunțul"}
             </button>
           </div>
         )}
