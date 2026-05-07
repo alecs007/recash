@@ -1099,7 +1099,7 @@ function DetailPanel({
                 <span className="text-slate-300 text-base">?</span>
               </div>
               <span className="text-sm text-slate-400">
-                Aștepți un colector…
+                Se așteaptă un colector...
               </span>
             </div>
           ) : null}
