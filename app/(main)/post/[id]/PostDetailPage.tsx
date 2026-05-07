@@ -823,12 +823,6 @@ function DetailPanel({
               <span className="text-sm">{post.locationName}</span>
             </div>
           )}
-          {post.status === "OPEN" && post.expiresAt && (
-            <div className="flex items-center gap-1.5 text-slate-400">
-              <Clock className="w-3 h-3" />
-              <ExpiryText expiresAt={post.expiresAt} />
-            </div>
-          )}
           {post.description && (
             <p className="text-sm text-slate-600 mt-4 whitespace-pre-wrap">
               {post.description}
@@ -842,7 +836,13 @@ function DetailPanel({
                 month: "long",
                 year: "numeric",
               })}
-            </span>
+            </span>{" "}
+            {post.status === "OPEN" && post.expiresAt && (
+              <div className="flex items-center gap-1.5 text-slate-400">
+                <Clock className="w-3 h-3" />
+                <ExpiryText expiresAt={post.expiresAt} />
+              </div>
+            )}
             {post.completedAt && (
               <span className="flex items-center gap-1">
                 <CheckCircle className="w-3 h-3 text-lime-400" />
