@@ -1,4 +1,3 @@
-// placeholder
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -413,7 +412,7 @@ function ReviewForm({
   return (
     <div className="space-y-3">
       <p className="text-sm text-slate-600">
-        Cum a decurs cu <strong>{targetName}</strong>?
+        Cum a decurs experiența cu <strong>{targetName}</strong>?
       </p>
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((s) => (
@@ -691,8 +690,8 @@ function DetailPanel({
     (post.estimatedValue * post.collectorSharePercent) / 100;
   const myEarning = isAuthor ? posterEarning : collectorEarning;
   const theirEarning = isAuthor ? collectorEarning : posterEarning;
-  const myLabel = isAuthor ? "Tu primești" : "Tu câștigezi";
-  const theirLabel = isAuthor ? "Colectorul primește" : "Posterul primește";
+  const myLabel = isAuthor ? "Tu primești" : "Tu câștigi";
+  const theirLabel = isAuthor ? "Colectorul primește" : "Autorul primește";
   const myActualEarning = post.transaction
     ? isAuthor
       ? post.transaction.posterEarning
@@ -700,7 +699,7 @@ function DetailPanel({
     : null;
   const targetName = isAuthor
     ? (post.collector?.name ?? "Colectorul")
-    : (post.author.name ?? "Posterul");
+    : (post.author.name ?? "Autorul");
   const myRating = isAuthor
     ? post.transaction?.posterRating
     : post.transaction?.collectorRating;
@@ -816,7 +815,7 @@ function DetailPanel({
                 <span className="text-lg text-slate-400 font-light">RON</span>
               </div>
               <p className="text-xs text-slate-400">
-                {theirLabel}: {theirEarning.toFixed(2)} RON · Total:{" "}
+                {theirLabel}: {theirEarning.toFixed(2)} RON din{" "}
                 {post.transaction!.actualValue.toFixed(2)} RON
               </p>
             </>
@@ -824,18 +823,18 @@ function DetailPanel({
             <>
               <div className="flex items-baseline gap-2 mb-1">
                 <span className="text-sm text-slate-500">{myLabel}</span>
-                <span className="text-4xl font-black text-[#123424] leading-none">
+                <span className="text-4xl font-black text-lime-600 leading-none">
                   ~{myEarning.toFixed(2)}
                 </span>
                 <span className="text-lg text-slate-400 font-light">RON</span>
               </div>
               <p className="text-xs text-slate-400">
-                {theirLabel}: {theirEarning.toFixed(2)} RON · Total:{" "}
+                {theirLabel}: {theirEarning.toFixed(2)} RON din{" "}
                 {post.estimatedValue.toFixed(2)} RON
               </p>
             </>
           )}
-          <div className="mt-3 h-1.5 bg-slate-100 rounded-full overflow-hidden flex">
+          <div className="mt-3 h-2.5 bg-slate-100 rounded-full overflow-hidden flex">
             <div
               className="h-full bg-[#123424] rounded-l-full"
               style={{ width: `${posterPct}%` }}
@@ -846,8 +845,8 @@ function DetailPanel({
             />
           </div>
           <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-            <span>Poster {posterPct}%</span>
-            <span>Colector {post.collectorSharePercent}%</span>
+            <span>Autorul primește {posterPct}%</span>
+            <span>Colectorul primește {post.collectorSharePercent}%</span>
           </div>
         </div>
 
@@ -940,7 +939,7 @@ function DetailPanel({
                 Cerere trimisă
               </p>
               <p className="text-xs text-slate-500">
-                Aștepți aprobarea posterului…
+                Aștepți aprobarea autorului…
               </p>
             </div>
           </div>
@@ -976,7 +975,7 @@ function DetailPanel({
         {post.status === "COMPLETED" && post.transaction && (
           <div className="mb-7 space-y-5">
             <div className="bg-lime-50 border border-lime-200 rounded-2xl p-4 space-y-2.5">
-              <div className="flex items-center gap-2 mb-0.5">
+              <div className="flex items-center gap-2 mb-3">
                 <CheckCircle className="w-4 h-4 text-lime-600" />
                 <span className="text-sm font-bold text-lime-800">
                   Tranzacție finalizată
