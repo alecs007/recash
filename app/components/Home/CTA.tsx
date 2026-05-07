@@ -5,7 +5,7 @@ import { LuBike } from "react-icons/lu";
 
 export const CTA = () => {
   return (
-    <section className="relative bg-white rounded-[2rem] lg:rounded-[3rem] overflow-hidden mt-12 mb-12">
+    <section className="relative bg-white rounded-[2rem] lg:rounded-[3rem] overflow-hidden mt-12 mb-24">
       <div className="relative z-10 max-w-6xl mx-auto text-center">
         <h2 className="font-sans font-extrabold text-slate-900 text-[2.5rem] lg:text-6xl leading-tight tracking-tight sm:text-nowrap">
           <span className="text-nowrap">Bani din reciclare,</span>
