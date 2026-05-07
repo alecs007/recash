@@ -1000,7 +1000,7 @@ export default function MapPage() {
           <div className="max-w-7xl mx-auto mt-2">
             <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
               <span className="text-xs font-semibold text-amber-700">
-                Ai o colectare activă în desfășurare
+                Ai o colectare în desfășurare
               </span>
               <Link
                 href={`/post/${activeData.activeCollection.id}`}
