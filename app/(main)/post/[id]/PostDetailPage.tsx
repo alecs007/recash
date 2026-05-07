@@ -19,7 +19,8 @@ import {
   Calendar,
   ChevronRight,
 } from "lucide-react";
-import { FaWineBottle } from "react-icons/fa";
+import { FaWineBottle, FaWaze } from "react-icons/fa";
+import { size } from "zod";
 
 type PostStatus =
   | "OPEN"
@@ -145,15 +146,38 @@ function PostMap({
     }).addTo(map);
     L.control.zoom({ position: "bottomright" }).addTo(map);
     const icon = L.divIcon({
-      className: "",
-      html: `<div style="width:44px;height:44px;background:#123424;border-radius:50% 50% 50% 0;border:3px solid white;box-shadow:0 4px 20px rgba(0,0,0,0.3);transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;"><span style="transform:rotate(45deg);font-size:18px;line-height:1">🍾</span></div>`,
-      iconSize: [44, 44],
-      iconAnchor: [22, 44],
+      className: "custom-map-pin",
+      html: `
+    <div style="
+      position: relative;
+      width: 32px;
+      height: 32px;
+      background-color: #f73138;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      box-shadow: 0 3px 5px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    ">
+      <div style="
+        width: 14px;
+        height: 14px;
+        background-color: #ffffff;
+        border-radius: 50%;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(45deg);
+      "></div>
+    </div>`,
+      iconSize: [32, 44], // W x H including the point
+      iconAnchor: [16, 44], // Bottom-center point is the anchor
     });
     L.marker([lat, lng], { icon })
       .addTo(map)
-      .bindPopup(`<strong>${locationName ?? "Locația sticlelor"}</strong>`)
-      .openPopup();
+      .bindPopup(`<strong>${locationName ?? "Locația sticlelor"}</strong>`);
+
     mapRef.current = map;
     return () => {
       map.remove();
@@ -213,8 +237,6 @@ function Countdown({ deadline }: { deadline: string }) {
     </div>
   );
 }
-
-// ─── Code Display ─────────────────────────────────────────────────────────────
 
 function CodeDisplay({ postId }: { postId: string }) {
   const { data, error, isLoading, mutate } = useSWR(
@@ -598,25 +620,26 @@ function ExpiryText({ expiresAt }: { expiresAt: string | null }) {
   return <span className="text-xs text-slate-400">{label}</span>;
 }
 
-// ─── Nav buttons ──────────────────────────────────────────────────────────────
-
 function NavButtons({ lat, lng }: { lat: number; lng: number }) {
   return (
     <div className="grid grid-cols-3 gap-2">
       {[
         {
           label: "Google Maps",
-          emoji: "🗺️",
+          icon: "/images/icons/google-maps.svg",
+          color: "#4285F4",
           url: `https://www.google.com/maps?q=${lat},${lng}`,
         },
         {
           label: "Waze",
-          emoji: "🚗",
+          icon: "/images/icons/waze-icon.svg",
+          color: "#FF0000",
           url: `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`,
         },
         {
           label: "Apple Maps",
-          emoji: "🍎",
+          icon: "/images/icons/apple-maps-icon.svg",
+          color: "#000000",
           url: `https://maps.apple.com/?q=${lat},${lng}`,
         },
       ].map((b) => (
@@ -625,9 +648,15 @@ function NavButtons({ lat, lng }: { lat: number; lng: number }) {
           href={b.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all text-xs font-medium text-slate-600"
+          className="flex flex-col items-center gap-1 p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all text-xs font-medium text-slate-600"
         >
-          <span className="text-base">{b.emoji}</span>
+          <Image
+            src={b.icon}
+            alt={b.label}
+            width={20}
+            height={20}
+            className="w-9 aspect-square object-contain"
+          />
           {b.label}
         </a>
       ))}
@@ -799,6 +828,31 @@ function DetailPanel({
               <ExpiryText expiresAt={post.expiresAt} />
             </div>
           )}
+          {post.description && (
+            <p className="text-sm text-slate-600 mt-4 whitespace-pre-wrap">
+              {post.description}
+            </p>
+          )}{" "}
+          <div className="flex items-center gap-4 text-xs text-slate-400 mt-4">
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" /> Publicat la{" "}
+              {new Date(post.createdAt).toLocaleDateString("ro-RO", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
+            </span>
+            {post.completedAt && (
+              <span className="flex items-center gap-1">
+                <CheckCircle className="w-3 h-3 text-lime-400" />
+                Finalizat la{" "}
+                {new Date(post.completedAt).toLocaleDateString("ro-RO", {
+                  day: "numeric",
+                  month: "short",
+                })}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="h-px bg-slate-100 mb-7" />
@@ -856,7 +910,7 @@ function DetailPanel({
         <div className="space-y-4 mb-7">
           <PersonRow
             user={post.author}
-            role="Poster"
+            role="Autor"
             showPhone={isCollector && post.status === "IN_PROGRESS"}
           />
           {showCollector && post.collector ? (
@@ -1026,7 +1080,7 @@ function DetailPanel({
         )}
 
         {/* CANCELLED / EXPIRED */}
-        {(post.status === "CANCELLED" || post.status === "EXPIRED") && (
+        {/* {(post.status === "CANCELLED" || post.status === "EXPIRED") && (
           <div className="mb-7">
             <p className="text-sm text-slate-500">
               {post.status === "CANCELLED"
@@ -1034,7 +1088,7 @@ function DetailPanel({
                 : "Anunțul a expirat."}
             </p>
           </div>
-        )}
+        )} */}
 
         {actionError && !["CLAIMED"].includes(post.status) && (
           <p className="text-sm text-red-500 font-medium mb-5">{actionError}</p>
@@ -1056,50 +1110,7 @@ function DetailPanel({
 
         <div className="h-px bg-slate-100 mb-7" />
 
-        {/* Description + meta */}
-        {(post.description || post.address) && (
-          <div className="mb-7 space-y-2">
-            {post.description && (
-              <p className="text-sm text-slate-600 leading-relaxed">
-                &ldquo;{post.description}&rdquo;
-              </p>
-            )}
-            {post.address && (
-              <p className="text-xs text-slate-400 leading-relaxed">
-                {post.address}
-              </p>
-            )}
-          </div>
-        )}
-
-        <div className="flex items-center gap-4 text-xs text-slate-400 mb-7">
-          <span className="flex items-center gap-1">
-            <Calendar className="w-3 h-3" />
-            {new Date(post.createdAt).toLocaleDateString("ro-RO", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
-          </span>
-          {post.completedAt && (
-            <span className="flex items-center gap-1">
-              <CheckCircle className="w-3 h-3 text-lime-400" />
-              Finalizat{" "}
-              {new Date(post.completedAt).toLocaleDateString("ro-RO", {
-                day: "numeric",
-                month: "short",
-              })}
-            </span>
-          )}
-        </div>
-
-        <div className="h-px bg-slate-100 mb-7" />
-
-        {/* Nav buttons */}
         <div className="mb-4">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-            Navighează spre locație
-          </p>
           <NavButtons lat={post.latitude} lng={post.longitude} />
         </div>
       </div>

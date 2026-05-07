@@ -1,0 +1,52 @@
+<svg version="1.2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 514 514" width="514" height="514">
+	<defs>
+		<clipPath clipPathUnits="userSpaceOnUse" id="cp1">
+			<path d="m113 2h288c61.86 0 112 50.14 112 112v288c0 61.86-50.14 112-112 112h-288c-61.86 0-112-50.14-112-112v-288c0-61.86 50.14-112 112-112z"/>
+		</clipPath>
+		<linearGradient id="g1" x2="1" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0,389,-512,0,257,2)">
+			<stop offset="0" stop-color="#7fed7d"/>
+			<stop offset="1" stop-color="#2ed058"/>
+		</linearGradient>
+		<clipPath clipPathUnits="userSpaceOnUse" id="cp2">
+			<path d="m315 2h198v205h-198z"/>
+		</clipPath>
+		<linearGradient id="g2" x2="1" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0,271,-108,0,195,-13)">
+			<stop offset="0" stop-color="#0c91ff"/>
+			<stop offset="1" stop-color="#0077f7"/>
+		</linearGradient>
+		<linearGradient id="g3" x2="1" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0,258,-258,0,194,190)">
+			<stop offset="0" stop-color="#0c91ff"/>
+			<stop offset="1" stop-color="#017aff"/>
+		</linearGradient>
+	</defs>
+	<style>
+		.s0 { fill: #ffcc00 } 
+		.s1 { fill: url(#g1) } 
+		.s2 { fill: #f082ca } 
+		.s3 { fill: none;stroke: #ffffff;stroke-width: 86 } 
+		.s4 { fill: #d2d1d6 } 
+		.s5 { fill: #f2f1f6 } 
+		.s6 { fill: url(#g2) } 
+		.s7 { fill: #eef0f6 } 
+		.s8 { fill: url(#g3);stroke: #ffffff;stroke-width: 20 } 
+		.s9 { fill: #ffffff } 
+	</style>
+	<g id="Clip-Path" clip-path="url(#cp1)">
+		<g>
+			<path fill-rule="evenodd" class="s0" d="m260 391h253v123h-253z"/>
+			<path fill-rule="evenodd" class="s1" d="m1 2h512v389h-512z"/>
+			<path fill-rule="evenodd" class="s2" d="m1 190h132v324h-132z"/>
+			<g id="Clip-Path" clip-path="url(#cp2)">
+				<g>
+					<path fill-rule="evenodd" class="s3" d="m519.5 156c-89.31 0-161.5-72.19-161.5-161.5 0-89.31 72.19-161.5 161.5-161.5 89.31 0 161.5 72.19 161.5 161.5 0 89.31-72.19 161.5-161.5 161.5z"/>
+					<path fill-rule="evenodd" class="s4" d="m325-5.5c0-107.42 87.08-194.5 194.5-194.5 107.42 0 194.5 87.08 194.5 194.5 0 107.42-87.08 194.5-194.5 194.5-107.42 0-194.5-87.08-194.5-194.5zm194.5 128.82c71.15 0 128.83-57.68 128.83-128.83 0-71.15-57.68-128.82-128.83-128.82-71.15 0-128.83 57.68-128.83 128.82 0 71.14 57.68 128.83 128.83 128.83z"/>
+				</g>
+			</g>
+			<path class="s5" d="m272.8-5h-157v117.71c0 6.29-6.92 10.12-12.25 6.78l-100.29-62.78-69.26 103.05 546.85 362.66 69.26-106.05-277.32-185.96v-235.4z"/>
+			<path class="s6" d="m141-13h108v271h-108z"/>
+			<path class="s7" d="m119 258h153v256h-153z"/>
+			<path fill-rule="evenodd" class="s8" d="m194 438c-65.81 0-119-53.19-119-119 0-65.81 53.19-119 119-119 65.81 0 119 53.19 119 119 0 65.81-53.19 119-119 119z"/>
+			<path class="s9" d="m206.22 248.17c-4.15-10.9-20.29-10.9-24.44 0l-45.84 125.2c-2.92 7.97 6.96 14.4 13.07 8.51l42.21-40.71c1.55-1.49 4-1.49 5.55 0l42.21 40.71c6.11 5.89 15.98-0.54 13.07-8.51 0 0-45.84-125.2-45.83-125.2z"/>
+		</g>
+	</g>
+</svg>
