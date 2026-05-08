@@ -650,15 +650,15 @@ function DetailPanel({
   const myLabel =
     post.status === "COMPLETED"
       ? isAuthor
-        ? "Tu ai primit"
-        : "Tu ai câștigat"
+        ? "Ai primit"
+        : "Ai câștigat"
       : post.status === "EXPIRED" || post.status === "CANCELLED"
         ? isAuthor
-          ? "Tu ai fi primit"
-          : "Tu ai fi câștigat"
+          ? "Ai fi primit"
+          : "Ai fi câștigat"
         : isAuthor
-          ? "Tu primești"
-          : "Tu câștigi";
+          ? "Primești"
+          : "Câștigi";
 
   const myActualEarning = post.transaction
     ? isAuthor
@@ -748,7 +748,7 @@ function DetailPanel({
   );
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto" data-lenis-prevent>
       <div className="px-6 lg:px-10 py-6 lg:py-8 space-y-0 max-w-xl lg:max-w-none">
         <div className="flex items-center justify-between mb-7">
           <Link
@@ -823,10 +823,10 @@ function DetailPanel({
                 </span>
                 <span className="text-lg text-slate-400 font-light">RON</span>
               </div>
-              <p className="text-xs text-slate-400">
+              {/* <p className="text-xs text-slate-400">
                 din valoarea totală de{" "}
                 {post.transaction!.actualValue.toFixed(2)} RON
-              </p>
+              </p> */}
             </>
           ) : (
             <>
@@ -837,9 +837,9 @@ function DetailPanel({
                 </span>
                 <span className="text-lg text-slate-400 font-light">RON</span>
               </div>
-              <p className="text-xs text-slate-400">
+              {/* <p className="text-xs text-slate-400">
                 din valoarea totală de {post.estimatedValue.toFixed(2)} RON
-              </p>
+              </p> */}
             </>
           )}
           <div className="mt-3 h-2.5 bg-slate-100 rounded-full overflow-hidden flex">
@@ -979,7 +979,7 @@ function DetailPanel({
                   `${post.transaction.actualValue.toFixed(2)} RON`,
                 ],
                 [
-                  isAuthor ? "Tu ai primit" : "Tu ai câștigat",
+                  isAuthor ? "Ai primit" : "Ai câștigat",
                   `+${myActualEarning?.toFixed(2)} RON`,
                 ],
               ].map(([label, value], i) => (
