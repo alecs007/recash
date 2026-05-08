@@ -19,63 +19,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { FaWineBottle } from "react-icons/fa";
-
-type PostStatus =
-  | "OPEN"
-  | "CLAIMED"
-  | "IN_PROGRESS"
-  | "COMPLETED"
-  | "CANCELLED"
-  | "EXPIRED";
-
-interface Post {
-  id: string;
-  status: PostStatus;
-  description: string;
-  bottleCount: number;
-  estimatedValue: number;
-  collectorSharePercent: number;
-  latitude: number;
-  longitude: number;
-  locationName: string | null;
-  address: string | null;
-  images: string[];
-  createdAt: string;
-  expiresAt: string | null;
-  claimedAt: string | null;
-  completedAt: string | null;
-  isAuthor?: boolean;
-  isCollector?: boolean;
-  author: {
-    id: string;
-    name: string | null;
-    image: string | null;
-    reputationScore: number;
-    ratingCount: number;
-    phone: string | null;
-  };
-  collector: {
-    id: string;
-    name: string | null;
-    image: string | null;
-    reputationScore: number;
-    ratingCount: number;
-    phone: string | null;
-  } | null;
-  transaction: {
-    id: string;
-    actualValue: number;
-    collectorEarning: number;
-    posterEarning: number;
-    collectorRating: number | null;
-    posterRating: number | null;
-    collectorReview: string | null;
-    posterReview: string | null;
-    completedAt: string;
-    posterRatedAt: string | null;
-    collectorRatedAt: string | null;
-  } | null;
-}
+import { PostStatus, Post } from "@/types";
+import L from "leaflet";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -105,21 +50,24 @@ function PostMap({
   locationName: string | null;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
+  const mapRef = useRef<L.Map | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if ((window as any).L) {
-      setReady(true);
-      return;
+
+    if (window.L) {
+      const frame = requestAnimationFrame(() => setReady(true));
+      return () => cancelAnimationFrame(frame);
     }
+
     if (!document.querySelector('link[href*="leaflet.css"]')) {
       const css = document.createElement("link");
       css.rel = "stylesheet";
       css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
       document.head.appendChild(css);
     }
+
     const s = document.createElement("script");
     s.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
     s.async = true;
@@ -129,7 +77,7 @@ function PostMap({
 
   useEffect(() => {
     if (!ready || !ref.current || mapRef.current) return;
-    const L = (window as any).L;
+    const L = window.L;
     const map = L.map(ref.current, {
       center: [lat, lng],
       zoom: 15,
@@ -167,8 +115,8 @@ function PostMap({
         transform: translate(-50%, -50%) rotate(45deg);
       "></div>
     </div>`,
-      iconSize: [32, 44], // W x H including the point
-      iconAnchor: [16, 44], // Bottom-center point is the anchor
+      iconSize: [32, 44],
+      iconAnchor: [16, 44],
     });
     L.marker([lat, lng], { icon })
       .addTo(map)
@@ -191,8 +139,6 @@ function PostMap({
     </div>
   );
 }
-
-// ─── Countdown ────────────────────────────────────────────────────────────────
 
 function Countdown({ deadline }: { deadline: string }) {
   const [ms, setMs] = useState(0);
@@ -439,7 +385,7 @@ function ReviewForm({
             className="cursor-pointer transition-transform hover:scale-110"
           >
             <Star
-              className={`w-7 h-7 transition-colors ${s <= (hover || rating) ? "text-lime-400 fill-lime-400" : "text-slate-200"}`}
+              className={`w-7 h-7 transition-colors ${s <= (hover || rating) ? "text-[#FFDF00] fill-[#FFDF00]" : "text-slate-200"}`}
             />
           </button>
         ))}
@@ -542,6 +488,8 @@ function PersonRow({
             alt=""
             width={40}
             height={40}
+            priority
+            draggable={false}
             className="object-cover w-full h-full"
           />
         ) : (
@@ -560,7 +508,7 @@ function PersonRow({
           </span>
         </div>
         <div className="flex items-center gap-1 mt-0.5">
-          <Star className="w-3 h-3 text-lime-400 fill-lime-400" />
+          <Star className="w-3 h-3 text-[#FFDF00] fill-[#FFDF00]" />
           <span className="text-xs text-slate-500">
             {user.reputationScore.toFixed(1)}{" "}
             <span className="text-slate-400">({user.ratingCount})</span>
@@ -637,6 +585,7 @@ function NavButtons({ lat, lng }: { lat: number; lng: number }) {
             alt={b.label}
             width={20}
             height={20}
+            draggable={false}
             className="w-9 aspect-square object-contain"
           />
           {b.label}
@@ -690,13 +639,14 @@ function DetailPanel({
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState("");
 
+  const [justReviewed, setJustReviewed] = useState(false);
+
   const statusCfg = STATUS_CONFIG[post.status];
   const posterPct = 100 - post.collectorSharePercent;
   const posterEarning = (post.estimatedValue * posterPct) / 100;
   const collectorEarning =
     (post.estimatedValue * post.collectorSharePercent) / 100;
   const myEarning = isAuthor ? posterEarning : collectorEarning;
-  const theirEarning = isAuthor ? collectorEarning : posterEarning;
   const myLabel =
     post.status === "COMPLETED"
       ? isAuthor
@@ -709,18 +659,7 @@ function DetailPanel({
         : isAuthor
           ? "Tu primești"
           : "Tu câștigi";
-  // const theirLabel =
-  //   post.status === "COMPLETED"
-  //     ? isAuthor
-  //       ? "Colectorul a primit"
-  //       : "Autorul a primit"
-  //     : post.status === "EXPIRED" || post.status === "CANCELLED"
-  //       ? isAuthor
-  //         ? "Colectorul ar fi primit"
-  //         : "Autorul ar fi primit"
-  //       : isAuthor
-  //         ? "Colectorul primește"
-  //         : "Autorul primește";
+
   const myActualEarning = post.transaction
     ? isAuthor
       ? post.transaction.posterEarning
@@ -729,6 +668,7 @@ function DetailPanel({
   const targetName = isAuthor
     ? (post.collector?.name ?? "Colectorul")
     : (post.author.name ?? "Autorul");
+
   const ratingIGave = isAuthor
     ? post.transaction?.posterRating
     : post.transaction?.collectorRating;
@@ -737,7 +677,13 @@ function DetailPanel({
     ? post.transaction?.collectorRating
     : post.transaction?.posterRating;
 
-  const myRating = ratingIGave;
+  const reviewIGave = isAuthor
+    ? post.transaction?.posterReview
+    : post.transaction?.collectorReview;
+
+  const reviewIReceived = isAuthor
+    ? post.transaction?.collectorReview
+    : post.transaction?.posterReview;
 
   const showCollector =
     post.collector &&
@@ -749,6 +695,12 @@ function DetailPanel({
   const canCancel =
     ["OPEN", "CLAIMED", "IN_PROGRESS"].includes(post.status) &&
     (isAuthor || isCollector);
+
+  // Funcție apelată de ReviewForm la finalizarea trimiterii
+  const handleReviewDone = () => {
+    setJustReviewed(true);
+    mutate();
+  };
 
   const handleApprove = useCallback(
     async (action: "approve" | "deny") => {
@@ -1042,73 +994,110 @@ function DetailPanel({
               ))}
             </div>
 
-            {(ratingIGave || ratingIReceived) && (
-              <div className="bg-white border border-slate-100 rounded-2xl p-4 space-y-3">
-                {ratingIGave && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-600">
-                      Ratingul tău pentru{" "}
-                      <span className="font-semibold text-slate-800">
-                        {targetName}
+            <div className="space-y-4">
+              {ratingIReceived && (
+                <div className="bg-white border border-slate-100 rounded-2xl p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-600">
+                        Rating-ul primit de la{" "}
+                        <span className="font-semibold text-slate-800">
+                          {targetName}
+                        </span>
                       </span>
-                    </span>
-                    <div className="flex items-center gap-0.5">
-                      {[1, 2, 3, 4, 5].map((i) => (
-                        <svg key={i} className="w-4 h-4" viewBox="0 0 20 20">
-                          <path
-                            fill={i <= ratingIGave ? "#a3e635" : "#e2e8f0"}
-                            d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-                          />
-                        </svg>
-                      ))}
+                      <div className="flex items-center gap-0.5">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <svg key={i} className="w-4 h-4" viewBox="0 0 20 20">
+                            <path
+                              fill={
+                                i <= ratingIReceived ? "#FFDF00" : "#e2e8f0"
+                              }
+                              d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+                            />
+                          </svg>
+                        ))}
+                      </div>
                     </div>
+                    {reviewIReceived && (
+                      <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 italic text-slate-700 text-sm">
+                        &quot;{reviewIReceived}&quot;
+                      </div>
+                    )}
                   </div>
-                )}
-                {ratingIReceived && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-600">
-                      Ratingul primit de la{" "}
-                      <span className="font-semibold text-slate-800">
-                        {targetName}
-                      </span>
-                    </span>
-                    <div className="flex items-center gap-0.5">
-                      {[1, 2, 3, 4, 5].map((i) => (
-                        <svg key={i} className="w-4 h-4" viewBox="0 0 20 20">
-                          <path
-                            fill={i <= ratingIReceived ? "#a3e635" : "#e2e8f0"}
-                            d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-                          />
-                        </svg>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+                </div>
+              )}
 
-            {!ratingIGave && (
-              <div>
-                <ReviewForm
-                  postId={post.id}
-                  targetName={targetName}
-                  alreadyReviewed={false}
-                  onDone={() => mutate()}
-                />
+              <div className="relative">
+                {!ratingIGave && !justReviewed ? (
+                  <div className="transition-all duration-500 ease-in-out opacity-100 translate-y-0">
+                    <ReviewForm
+                      postId={post.id}
+                      targetName={targetName}
+                      alreadyReviewed={false}
+                      onDone={handleReviewDone}
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className={`bg-white border border-slate-100 rounded-2xl p-4 transition-[opacity,transform] duration-700 ease-out ${
+                      ratingIGave || justReviewed
+                        ? "opacity-100 translate-y-0"
+                        : "opacity-0 translate-y-4 pointer-events-none"
+                    }`}
+                    style={{
+                      position:
+                        ratingIGave || justReviewed ? "relative" : "absolute",
+                      visibility:
+                        ratingIGave || justReviewed ? "visible" : "hidden",
+                    }}
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600">
+                          Rating-ul tău pentru{" "}
+                          <span className="font-semibold text-slate-800">
+                            {targetName}
+                          </span>
+                        </span>
+                        <div className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map((i) => (
+                            <svg
+                              key={i}
+                              className="w-4 h-4"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fill={
+                                  i <= (ratingIGave || 0)
+                                    ? "#FFDF00"
+                                    : "#e2e8f0"
+                                }
+                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+                              />
+                            </svg>
+                          ))}
+                        </div>
+                      </div>
+
+                      {reviewIGave && (
+                        <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 italic text-slate-700 text-sm">
+                          &quot;{reviewIGave}&quot;
+                        </div>
+                      )}
+
+                      {justReviewed && (
+                        <div className="flex items-center gap-2 text-[11px] text-lime-600 font-medium bg-lime-50 w-fit px-2 py-1 rounded-lg">
+                          <CheckCircle className="w-3 h-3" />
+                          Feedback trimis cu succes
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         )}
-
-        {/* {(post.status === "CANCELLED" || post.status === "EXPIRED") && (
-          <div className="mb-7">
-            <p className="text-sm text-slate-500">
-              {post.status === "CANCELLED"
-                ? "Anunțul a fost anulat."
-                : "Anunțul a expirat."}
-            </p>
-          </div>
-        )} */}
 
         {actionError && !["CLAIMED"].includes(post.status) && (
           <p className="text-sm text-red-500 font-medium mb-5">{actionError}</p>

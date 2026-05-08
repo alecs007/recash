@@ -66,15 +66,13 @@ export async function POST(
       return NextResponse.json({ error: "Acces interzis" }, { status: 403 });
     }
 
-    // Poster rates the collector => field: collectorRating
-    // Collector rates the poster => field: posterRating
-    if (isPoster && post.transaction.collectorRating !== null) {
+    if (isPoster && post.transaction.posterRating !== null) {
       return NextResponse.json(
         { error: "Ai acordat deja un rating" },
         { status: 409 },
       );
     }
-    if (isCollector && post.transaction.posterRating !== null) {
+    if (isCollector && post.transaction.collectorRating !== null) {
       return NextResponse.json(
         { error: "Ai acordat deja un rating" },
         { status: 409 },
@@ -88,19 +86,18 @@ export async function POST(
     const reviewedUserId = isPoster ? post.collectorId! : post.authorId;
 
     await prisma.$transaction(async (tx) => {
-      // Write to the correct field
       await tx.transaction.update({
         where: { id: post.transaction!.id },
         data: isPoster
           ? {
-              collectorRating: rating,
-              collectorReview: review ?? null,
-              collectorRatedAt: new Date(),
-            }
-          : {
               posterRating: rating,
               posterReview: review ?? null,
               posterRatedAt: new Date(),
+            }
+          : {
+              collectorRating: rating,
+              collectorReview: review ?? null,
+              collectorRatedAt: new Date(),
             },
       });
 

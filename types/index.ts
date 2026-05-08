@@ -25,23 +25,62 @@ export type ProfileSummary = {
   hasUnseenBadges: boolean;
 };
 
-export type Post = {
+export type PostStatus =
+  | "OPEN"
+  | "CLAIMED"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "EXPIRED";
+
+export interface Post {
   id: string;
-  status: string;
+  status: PostStatus;
   description: string;
   bottleCount: number;
   estimatedValue: number;
   collectorSharePercent: number;
+  latitude: number;
+  longitude: number;
   locationName: string | null;
-  createdAt: Date;
-  collector?: { id: string; name: string | null; image: string | null } | null;
-  transaction?: {
-    actualValue: number;
-    posterEarning: number;
-    posterRating: number | null;
-    collectorRating: number | null;
+  address: string | null;
+  images: string[];
+  createdAt: string;
+  expiresAt: string | null;
+  claimedAt: string | null;
+  completedAt: string | null;
+  isAuthor?: boolean;
+  isCollector?: boolean;
+  author: {
+    id: string;
+    name: string | null;
+    image: string | null;
+    reputationScore: number;
+    ratingCount: number;
+    phone: string | null;
+  };
+  collector: {
+    id: string;
+    name: string | null;
+    image: string | null;
+    reputationScore: number;
+    ratingCount: number;
+    phone: string | null;
   } | null;
-};
+  transaction: {
+    id: string;
+    actualValue: number;
+    collectorEarning: number;
+    posterEarning: number;
+    collectorRating: number | null;
+    posterRating: number | null;
+    collectorReview: string | null;
+    posterReview: string | null;
+    completedAt: string;
+    posterRatedAt: string | null;
+    collectorRatedAt: string | null;
+  } | null;
+}
 
 export type Transaction = {
   id: string;

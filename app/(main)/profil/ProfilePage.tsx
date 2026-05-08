@@ -39,6 +39,8 @@ export function ProfilePage({ summary }: { summary: ProfileSummary }) {
                   src={user.image}
                   alt="Profile"
                   fill
+                  sizes={"(min-width: 640px) 7rem, 4.5rem"}
+                  priority
                   className="rounded-full object-cover border-3 border-lime-400/70 shadow-lg z-10"
                 />
               </div>

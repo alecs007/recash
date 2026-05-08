@@ -37,6 +37,31 @@ export async function GET() {
             _count: {
               select: { posts: true, claimedPosts: true, badges: true },
             },
+            posts: {
+              take: 3,
+              orderBy: { createdAt: "desc" },
+              select: {
+                id: true,
+                description: true,
+                status: true,
+                createdAt: true,
+                bottleCount: true,
+                estimatedValue: true,
+                locationName: true,
+                collector: {
+                  select: { id: true, name: true, image: true },
+                },
+                transaction: {
+                  select: {
+                    actualValue: true,
+                    collectorEarning: true,
+                    posterEarning: true,
+                    collectorRating: true,
+                    posterRating: true,
+                  },
+                },
+              },
+            },
           },
         }),
     );

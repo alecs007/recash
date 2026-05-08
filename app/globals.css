@@ -26,6 +26,14 @@ textarea,
   -moz-user-select: text;
   -ms-user-select: text;
   user-select: text;
+  caret-color: #a3e635;
+}
+
+input:focus,
+textarea:focus,
+[contenteditable="true"]:focus {
+  outline: none;
+  border-color: #a3e635;
 }
 
 ::-moz-selection {

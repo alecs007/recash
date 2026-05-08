@@ -59,8 +59,6 @@ const INITIAL: FormData = {
   expiresInHours: 48,
 };
 
-// ─── Leaflet loader ───────────────────────────────────────────────────────────
-
 function useLeaflet() {
   const [ready, setReady] = useState(false);
   useEffect(() => {
@@ -84,8 +82,6 @@ function useLeaflet() {
   }, []);
   return ready;
 }
-
-// ─── Step indicator ───────────────────────────────────────────────────────────
 
 const STEPS = [
   { label: "Sticle", Icon: FaWineBottle },

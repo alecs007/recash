@@ -10,7 +10,7 @@ function MiniStars({ rating }: { rating: number }) {
       {[1, 2, 3, 4, 5].map((i) => (
         <svg key={i} className="w-2.5 h-2.5" viewBox="0 0 20 20">
           <path
-            fill={i <= rating ? "#a3e635" : "#e2e8f0"}
+            fill={i <= rating ? "#FFDF00" : "#e2e8f0"}
             d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
           />
         </svg>
@@ -56,11 +56,11 @@ export function PostCard({ post }: { post: Post }) {
           )}
 
           {post.status === "COMPLETED" && (ratingReceived || ratingGiven) && (
-            <div className="flex items-center gap-3 mt-2">
+            <div className="flex items-center flex-wrap gap-1 sm:gap-2 mt-2">
               {ratingReceived && (
                 <div className="flex items-center gap-1">
                   <span className="text-[9px] text-slate-400 font-medium">
-                    Primit
+                    Rating-ul primit
                   </span>
                   <MiniStars rating={ratingReceived} />
                 </div>
@@ -68,7 +68,7 @@ export function PostCard({ post }: { post: Post }) {
               {ratingGiven && (
                 <div className="flex items-center gap-1">
                   <span className="text-[9px] text-slate-400 font-medium">
-                    Dat
+                    Rating-ul tău
                   </span>
                   <MiniStars rating={ratingGiven} />
                 </div>
