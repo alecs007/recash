@@ -4,9 +4,27 @@ import Link from "next/link";
 import { Post } from "@/types";
 import { POST_STATUS_CONFIG } from "@/lib/constants/posts";
 
+function MiniStars({ rating }: { rating: number }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <svg key={i} className="w-2.5 h-2.5" viewBox="0 0 20 20">
+          <path
+            fill={i <= rating ? "#a3e635" : "#e2e8f0"}
+            d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+          />
+        </svg>
+      ))}
+    </div>
+  );
+}
+
 export function PostCard({ post }: { post: Post }) {
   const cfg = POST_STATUS_CONFIG[post.status] ?? POST_STATUS_CONFIG.OPEN;
   const Icon = cfg.Icon;
+  const ratingReceived = post.transaction?.collectorRating ?? null;
+  const ratingGiven = post.transaction?.posterRating ?? null;
+
   return (
     <div className="bg-white rounded-2xl border border-slate-100 hover:border-lime-200 hover:shadow-sm transition-all">
       <Link
@@ -34,6 +52,27 @@ export function PostCard({ post }: { post: Post }) {
               <span className="text-xs text-slate-500">
                 {post.locationName}
               </span>
+            </div>
+          )}
+
+          {post.status === "COMPLETED" && (ratingReceived || ratingGiven) && (
+            <div className="flex items-center gap-3 mt-2">
+              {ratingReceived && (
+                <div className="flex items-center gap-1">
+                  <span className="text-[9px] text-slate-400 font-medium">
+                    Primit
+                  </span>
+                  <MiniStars rating={ratingReceived} />
+                </div>
+              )}
+              {ratingGiven && (
+                <div className="flex items-center gap-1">
+                  <span className="text-[9px] text-slate-400 font-medium">
+                    Dat
+                  </span>
+                  <MiniStars rating={ratingGiven} />
+                </div>
+              )}
             </div>
           )}
         </div>

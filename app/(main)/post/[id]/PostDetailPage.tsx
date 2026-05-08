@@ -95,8 +95,6 @@ const STATUS_CONFIG: Record<PostStatus, { label: string; className: string }> =
     EXPIRED: { label: "Expirat", className: "bg-slate-100 text-slate-500" },
   };
 
-// ─── Map ──────────────────────────────────────────────────────────────────────
-
 function PostMap({
   lat,
   lng,
@@ -373,8 +371,6 @@ function CodeEntry({
   );
 }
 
-// ─── Review Form ──────────────────────────────────────────────────────────────
-
 function ReviewForm({
   postId,
   targetName,
@@ -393,14 +389,15 @@ function ReviewForm({
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
   if (alreadyReviewed || done)
-    return (
-      <div className="flex items-center gap-2 py-1">
-        <CheckCircle className="w-4 h-4 text-lime-500" />
-        <span className="text-sm font-medium text-slate-600">
-          Ai acordat deja un rating
-        </span>
-      </div>
-    );
+    // return (
+    //   <div className="flex items-center gap-2 py-1">
+    //     <CheckCircle className="w-4 h-4 text-lime-500" />
+    //     <span className="text-sm font-medium text-slate-600">
+    //       Ai acordat deja un rating
+    //     </span>
+    //   </div>
+    // );
+    return;
   const submit = async () => {
     if (!rating) {
       setError("Alege un rating");
@@ -732,9 +729,15 @@ function DetailPanel({
   const targetName = isAuthor
     ? (post.collector?.name ?? "Colectorul")
     : (post.author.name ?? "Autorul");
-  const myRating = isAuthor
+  const ratingIGave = isAuthor
     ? post.transaction?.posterRating
     : post.transaction?.collectorRating;
+
+  const ratingIReceived = isAuthor
+    ? post.transaction?.collectorRating
+    : post.transaction?.posterRating;
+
+  const myRating = ratingIGave;
 
   const showCollector =
     post.collector &&
@@ -1006,7 +1009,11 @@ function DetailPanel({
                 <span className="text-xs text-lime-500 ml-auto">
                   {new Date(post.transaction.completedAt).toLocaleDateString(
                     "ro-RO",
-                    { day: "numeric", month: "short", year: "numeric" },
+                    {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    },
                   )}
                 </span>
               </div>
@@ -1034,14 +1041,62 @@ function DetailPanel({
                 </div>
               ))}
             </div>
-            <div>
-              <ReviewForm
-                postId={post.id}
-                targetName={targetName}
-                alreadyReviewed={!!myRating}
-                onDone={() => mutate()}
-              />
-            </div>
+
+            {(ratingIGave || ratingIReceived) && (
+              <div className="bg-white border border-slate-100 rounded-2xl p-4 space-y-3">
+                {ratingIGave && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600">
+                      Ratingul tău pentru{" "}
+                      <span className="font-semibold text-slate-800">
+                        {targetName}
+                      </span>
+                    </span>
+                    <div className="flex items-center gap-0.5">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <svg key={i} className="w-4 h-4" viewBox="0 0 20 20">
+                          <path
+                            fill={i <= ratingIGave ? "#a3e635" : "#e2e8f0"}
+                            d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+                          />
+                        </svg>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {ratingIReceived && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600">
+                      Ratingul primit de la{" "}
+                      <span className="font-semibold text-slate-800">
+                        {targetName}
+                      </span>
+                    </span>
+                    <div className="flex items-center gap-0.5">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <svg key={i} className="w-4 h-4" viewBox="0 0 20 20">
+                          <path
+                            fill={i <= ratingIReceived ? "#a3e635" : "#e2e8f0"}
+                            d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+                          />
+                        </svg>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!ratingIGave && (
+              <div>
+                <ReviewForm
+                  postId={post.id}
+                  targetName={targetName}
+                  alreadyReviewed={false}
+                  onDone={() => mutate()}
+                />
+              </div>
+            )}
           </div>
         )}
 

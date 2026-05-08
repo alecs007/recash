@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, MapPin } from "lucide-react";
+import { ArrowLeft, MapPin, ChevronRight } from "lucide-react";
 import useSWR from "swr";
 
 type Transaction = {
@@ -28,6 +28,21 @@ const ROLE_FILTERS = [
   { value: "poster", label: "Ca poster" },
   { value: "collector", label: "Ca colector" },
 ];
+
+function Stars({ rating }: { rating: number }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <svg key={i} className="w-2.5 h-2.5" viewBox="0 0 20 20">
+          <path
+            fill={i <= rating ? "#a3e635" : "#e2e8f0"}
+            d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+          />
+        </svg>
+      ))}
+    </div>
+  );
+}
 
 function Skeleton() {
   return (
@@ -107,7 +122,6 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 min-h-[100dvh]">
-      {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <Link
           href="/profil"
@@ -122,7 +136,6 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
         </div>
       </div>
 
-      {/* Role filter pills */}
       <div className="flex gap-2 mb-5">
         {ROLE_FILTERS.map((f) => (
           <button
@@ -139,7 +152,6 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
         ))}
       </div>
 
-      {/* Content */}
       {isLoading ? (
         <Skeleton />
       ) : transactions.length === 0 ? (
@@ -156,7 +168,7 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
             Nicio tranzacție găsită
           </p>
           <p className="text-slate-500 text-sm">
-            {roleFilter == "all" &&
+            {roleFilter === "all" &&
               "Tranzacțiile vor apărea după finalizarea primului schimb."}
           </p>
         </div>
@@ -166,12 +178,17 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
             const isPoster = t.posterId === userId;
             const other = isPoster ? t.collector : t.poster;
             const earning = isPoster ? t.posterEarning : t.collectorEarning;
-            const myRating = isPoster ? t.collectorRating : t.posterRating;
+
+            const ratingIGave = isPoster ? t.posterRating : t.collectorRating;
+            const ratingIReceived = isPoster
+              ? t.collectorRating
+              : t.posterRating;
 
             return (
-              <div
+              <Link
                 key={t.id}
-                className="bg-white rounded-2xl border border-slate-100 p-4 hover:border-lime-200 hover:shadow-sm transition-all"
+                href={`/post/${t.post.id}`}
+                className="block bg-white rounded-2xl border border-slate-100 p-4 hover:border-lime-200 hover:shadow-sm transition-all"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
@@ -207,6 +224,7 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
                       </div>
                     </div>
                   </div>
+
                   <div className="text-right shrink-0">
                     <div className="text-lg font-black text-lime-600">
                       +{earning.toFixed(2)} RON
@@ -215,24 +233,36 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
                       {t.bottleCount} sticle · {t.actualValue.toFixed(2)} RON
                       total
                     </div>
-                    {myRating && (
-                      <div className="flex items-center justify-end gap-0.5 mt-1">
-                        {[1, 2, 3, 4, 5].map((i) => (
-                          <svg key={i} className="w-3 h-3" viewBox="0 0 20 20">
-                            <path
-                              fill={i <= myRating ? "#a3e635" : "#e2e8f0"}
-                              d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-                            />
-                          </svg>
-                        ))}
-                      </div>
-                    )}
+
+                    <div className="flex flex-col items-end gap-1 mt-1.5">
+                      {ratingIGave !== null && ratingIGave !== undefined && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-[9px] text-slate-400 font-medium">
+                            Eu am dat
+                          </span>
+                          <Stars rating={ratingIGave} />
+                        </div>
+                      )}
+                      {ratingIReceived !== null &&
+                        ratingIReceived !== undefined && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-[9px] text-slate-400 font-medium">
+                              Am primit
+                            </span>
+                            <Stars rating={ratingIReceived} />
+                          </div>
+                        )}
+                    </div>
                   </div>
                 </div>
-                <p className="text-xs text-slate-500 italic truncate mt-2 px-1">
-                  &quot;{t.post.description}&quot;
-                </p>
-              </div>
+
+                <div className="flex items-center justify-between mt-2 px-1">
+                  <p className="text-xs text-slate-500 italic truncate flex-1">
+                    &quot;{t.post.description}&quot;
+                  </p>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0 ml-2" />
+                </div>
+              </Link>
             );
           })}
           {totalPages > 1 && (

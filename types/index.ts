@@ -35,7 +35,12 @@ export type Post = {
   locationName: string | null;
   createdAt: Date;
   collector?: { id: string; name: string | null; image: string | null } | null;
-  transaction?: { actualValue: number; posterEarning: number } | null;
+  transaction?: {
+    actualValue: number;
+    posterEarning: number;
+    posterRating: number | null;
+    collectorRating: number | null;
+  } | null;
 };
 
 export type Transaction = {

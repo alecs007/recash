@@ -5,6 +5,7 @@ import { rateLimit, RL } from "@/lib/rate-limit";
 import { reviewSchema } from "@/lib/validations/post";
 import { notifyRatingReceived } from "@/lib/notifications";
 import { invalidate, CacheKey } from "@/lib/cache";
+import { awardBadge } from "@/lib/badges";
 
 export async function POST(
   req: Request,
@@ -65,14 +66,15 @@ export async function POST(
       return NextResponse.json({ error: "Acces interzis" }, { status: 403 });
     }
 
-    // Check if already reviewed
-    if (isPoster && post.transaction.posterRating !== null) {
+    // Poster rates the collector => field: collectorRating
+    // Collector rates the poster => field: posterRating
+    if (isPoster && post.transaction.collectorRating !== null) {
       return NextResponse.json(
         { error: "Ai acordat deja un rating" },
         { status: 409 },
       );
     }
-    if (isCollector && post.transaction.collectorRating) {
+    if (isCollector && post.transaction.posterRating !== null) {
       return NextResponse.json(
         { error: "Ai acordat deja un rating" },
         { status: 409 },
@@ -85,75 +87,78 @@ export async function POST(
 
     const reviewedUserId = isPoster ? post.collectorId! : post.authorId;
 
-    // Update transaction and recalculate reputation in one go
     await prisma.$transaction(async (tx) => {
+      // Write to the correct field
       await tx.transaction.update({
         where: { id: post.transaction!.id },
         data: isPoster
           ? {
-              posterRating: rating,
-              posterReview: review ?? null,
-              posterRatedAt: new Date(),
-            }
-          : {
               collectorRating: rating,
               collectorReview: review ?? null,
               collectorRatedAt: new Date(),
+            }
+          : {
+              posterRating: rating,
+              posterReview: review ?? null,
+              posterRatedAt: new Date(),
             },
       });
 
-      let ratings: number[] = [];
-
-      if (isPoster) {
-        const allRatings = await tx.transaction.findMany({
+      const [posterAgg, collectorAgg] = await Promise.all([
+        tx.transaction.aggregate({
+          where: { posterId: reviewedUserId, posterRating: { not: null } },
+          _avg: { posterRating: true },
+          _count: { posterRating: true },
+        }),
+        tx.transaction.aggregate({
           where: {
             collectorId: reviewedUserId,
             collectorRating: { not: null },
           },
-          select: { collectorRating: true },
-        });
+          _avg: { collectorRating: true },
+          _count: { collectorRating: true },
+        }),
+      ]);
 
-        ratings = allRatings.map((r) => r.collectorRating!);
-      } else {
-        const allRatings = await tx.transaction.findMany({
-          where: {
-            posterId: reviewedUserId,
-            posterRating: { not: null },
-          },
-          select: { posterRating: true },
-        });
+      const posterCount = posterAgg._count.posterRating ?? 0;
+      const collectorCount = collectorAgg._count.collectorRating ?? 0;
+      const totalCount = posterCount + collectorCount;
 
-        ratings = allRatings.map((r) => r.posterRating!);
+      if (totalCount > 0) {
+        const weightedSum =
+          (posterAgg._avg.posterRating ?? 0) * posterCount +
+          (collectorAgg._avg.collectorRating ?? 0) * collectorCount;
+        const newScore = Math.round((weightedSum / totalCount) * 100) / 100;
+
+        await tx.user.update({
+          where: { id: reviewedUserId },
+          data: { reputationScore: newScore, ratingCount: totalCount },
+        });
       }
-
-      const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length;
-
-      await tx.user.update({
-        where: { id: reviewedUserId },
-        data: {
-          reputationScore: Math.round(avg * 100) / 100,
-          ratingCount: ratings.length,
-        },
-      });
     });
 
-    // Check perfect rating badge (avg 5.0 after ≥10 ratings)
-    const updatedUser = await prisma.user.findUnique({
-      where: { id: reviewedUserId },
-      select: { reputationScore: true, ratingCount: true },
-    });
-    if (
-      updatedUser &&
-      updatedUser.reputationScore === 5.0 &&
-      updatedUser.ratingCount >= 10
-    ) {
-      await prisma.badge
-        .create({ data: { userId: reviewedUserId, type: "PERFECT_RATING" } })
-        .catch(() => null);
-    }
+    const sideEffects: Promise<unknown>[] = [
+      notifyRatingReceived(reviewedUserId, rating, reviewerName),
+      invalidate(CacheKey.profile(reviewedUserId)),
+    ];
 
-    await notifyRatingReceived(reviewedUserId, rating, reviewerName);
-    await invalidate(CacheKey.profile(reviewedUserId));
+    // Check PERFECT_RATING badge after score is persisted
+    sideEffects.push(
+      prisma.user
+        .findUnique({
+          where: { id: reviewedUserId },
+          select: { reputationScore: true, ratingCount: true },
+        })
+        .then((u) => {
+          if (u && u.ratingCount >= 10 && u.reputationScore >= 5.0) {
+            return awardBadge(reviewedUserId, "PERFECT_RATING");
+          }
+        }),
+    );
+
+    await Promise.all(sideEffects).catch((err) =>
+      console.error("[review] side-effect error:", err),
+    );
 
     return NextResponse.json({ success: true });
   } catch (err) {
