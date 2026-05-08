@@ -103,19 +103,11 @@ export function TransactionsSection({
                     +{earning.toFixed(2)} RON
                   </div>
                   <div className="text-xs text-slate-500">
-                    {t.bottleCount} sticle · {t.actualValue.toFixed(2)} RON
+                    {t.bottleCount} sticle | {t.actualValue.toFixed(2)} RON
                     total
                   </div>
 
                   <div className="flex flex-col items-end gap-1 mt-1.5">
-                    {ratingIGave !== null && ratingIGave !== undefined && (
-                      <div className="flex items-center gap-1">
-                        <span className="text-[9px] text-slate-400 font-medium">
-                          Rating-ul tău
-                        </span>
-                        <Stars rating={ratingIGave} size="xs" />
-                      </div>
-                    )}
                     {ratingIReceived !== null &&
                       ratingIReceived !== undefined && (
                         <div className="flex items-center gap-1">
@@ -124,7 +116,15 @@ export function TransactionsSection({
                           </span>
                           <Stars rating={ratingIReceived} size="xs" />
                         </div>
-                      )}
+                      )}{" "}
+                    {ratingIGave !== null && ratingIGave !== undefined && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-[9px] text-slate-400 font-medium">
+                          Rating-ul tău
+                        </span>
+                        <Stars rating={ratingIGave} size="xs" />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

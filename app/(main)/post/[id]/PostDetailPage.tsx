@@ -785,7 +785,7 @@ function DetailPanel({
           )}{" "}
           <div className="flex items-center gap-4 text-xs text-slate-400 mt-4">
             <span className="flex items-center gap-1">
-              <Calendar className="w-3 h-3" /> Publicat la{" "}
+              <Calendar className="w-3 h-3" /> Publicat în{" "}
               {new Date(post.createdAt).toLocaleDateString("ro-RO", {
                 day: "numeric",
                 month: "long",
@@ -801,7 +801,7 @@ function DetailPanel({
             {post.completedAt && (
               <span className="flex items-center gap-1">
                 <CheckCircle className="w-3 h-3 text-lime-400" />
-                Finalizat la{" "}
+                Finalizat în{" "}
                 {new Date(post.completedAt).toLocaleDateString("ro-RO", {
                   day: "numeric",
                   month: "short",

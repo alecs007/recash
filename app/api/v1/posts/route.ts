@@ -7,9 +7,6 @@ import { checkPostBadges } from "@/lib/badges";
 
 const ACTIVE_STATUSES = ["OPEN", "CLAIMED", "IN_PROGRESS"] as const;
 
-// ─── GET /api/v1/posts ────────────────────────────────────────────────────────
-// Public endpoint — returns open, non-expired posts for the map feed
-
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const limit = Math.min(
@@ -64,8 +61,6 @@ export async function GET(req: Request) {
   }
 }
 
-// ─── POST /api/v1/posts ───────────────────────────────────────────────────────
-
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -97,8 +92,6 @@ export async function POST(req: Request) {
     address,
     images,
   } = body as Record<string, unknown>;
-
-  // ── Validate ────────────────────────────────────────────────────────────────
 
   if (
     typeof description !== "string" ||
@@ -189,8 +182,6 @@ export async function POST(req: Request) {
     }
   }
 
-  // ── Enforce one active post per user ────────────────────────────────────────
-
   const existingActive = await prisma.post.findFirst({
     where: {
       authorId: session.user.id,
@@ -209,8 +200,6 @@ export async function POST(req: Request) {
       { status: 409 },
     );
   }
-
-  // ── Create ───────────────────────────────────────────────────────────────────
 
   try {
     const post = await prisma.post.create({
@@ -231,13 +220,11 @@ export async function POST(req: Request) {
       select: { id: true, status: true, createdAt: true },
     });
 
-    // Invalidate cached post lists for this user
     await invalidate(
       CacheKey.posts(session.user.id, "all"),
       CacheKey.posts(session.user.id, "active"),
     );
 
-    // Award badges asynchronously — never block the response
     checkPostBadges(session.user.id).catch((err) =>
       console.error("[posts] badge check error:", err),
     );

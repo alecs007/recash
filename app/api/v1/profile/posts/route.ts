@@ -23,19 +23,6 @@ const STATUS_ORDER: Record<PostStatus, number> = {
   EXPIRED: 5,
 };
 
-const POST_INCLUDE = {
-  collector: { select: { id: true, name: true, image: true } },
-  transaction: {
-    select: {
-      actualValue: true,
-      collectorEarning: true,
-      posterEarning: true,
-      collectorRating: true,
-      posterRating: true,
-    },
-  },
-} as const;
-
 export async function GET(req: Request) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -74,7 +61,14 @@ export async function GET(req: Request) {
             where,
             orderBy: { createdAt: "desc" },
             take: 200,
-            include: POST_INCLUDE,
+            include: {
+              collector: { select: { id: true, name: true, image: true } },
+              transaction: {
+                select: {
+                  posterEarning: true,
+                },
+              },
+            },
           }),
           prisma.post.count({ where }),
         ]);
@@ -105,7 +99,14 @@ export async function GET(req: Request) {
           orderBy: { createdAt: "desc" },
           skip,
           take: limit,
-          include: POST_INCLUDE,
+          include: {
+            collector: { select: { id: true, name: true, image: true } },
+            transaction: {
+              select: {
+                posterEarning: true,
+              },
+            },
+          },
         }),
         prisma.post.count({ where }),
       ]);
