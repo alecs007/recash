@@ -61,5 +61,5 @@ export const TTL = {
   posts: 30, // mutations happen via separate routes
   transactions: 60,
   badges: 300, // changes very rarely
-  notifications: 15, // short; also invalidated on PATCH
+  notifications: 8, // short; also invalidated on PATCH
 } as const;

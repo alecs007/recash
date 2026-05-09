@@ -1,6 +1,7 @@
 import { prisma } from "./prisma";
 import { Prisma } from "@prisma/client";
 import type { NotificationType } from "@prisma/client";
+import { redis } from "./redis";
 
 interface CreateNotificationParams {
   userId: string;
@@ -11,9 +12,32 @@ interface CreateNotificationParams {
   metadata?: Prisma.InputJsonValue;
 }
 
+async function invalidateNotifCache(userId: string): Promise<void> {
+  const pattern = `profile:${userId}:notif:*`;
+  const keys: string[] = [];
+  let cursor = "0";
+  try {
+    do {
+      const [nextCursor, batch] = await redis.scan(
+        cursor,
+        "MATCH",
+        pattern,
+        "COUNT",
+        50,
+      );
+      cursor = nextCursor;
+      keys.push(...batch);
+    } while (cursor !== "0");
+
+    if (keys.length > 0) await redis.del(...keys);
+  } catch (err) {
+    console.error("[invalidateNotifCache] error:", err);
+  }
+}
+
 export async function createNotification(params: CreateNotificationParams) {
   try {
-    return await prisma.notification.create({
+    const notif = await prisma.notification.create({
       data: {
         userId: params.userId,
         type: params.type,
@@ -23,11 +47,14 @@ export async function createNotification(params: CreateNotificationParams) {
         metadata: params.metadata ?? null,
       },
     });
+
+    await invalidateNotifCache(params.userId);
+
+    return notif;
   } catch (err) {
     console.error("[createNotification] error:", err);
   }
 }
-
 export async function notifyPostClaimed(
   posterId: string,
   postId: string,

@@ -11,6 +11,9 @@ import { FaWineBottle, FaRegUser, FaRegBell, FaRecycle } from "react-icons/fa";
 import { IoChevronDown } from "react-icons/io5";
 import { MdLogout } from "react-icons/md";
 import { LuBike } from "react-icons/lu";
+import { X } from "lucide-react";
+import { NOTIF_CONFIG } from "@/lib/constants/notifications";
+import type { NotificationType } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import useSWR from "swr";
@@ -19,6 +22,7 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 type RawNotification = {
   id: string;
+  type: NotificationType;
   title: string;
   message: string;
   link: string | null;
@@ -38,9 +42,9 @@ function useNotificationBell(authenticated: boolean) {
     authenticated ? "/api/v1/profile/notifications?page=1&limit=1" : null,
     fetcher,
     {
-      refreshInterval: 20_000,
+      refreshInterval: 8_000,
       revalidateOnFocus: true,
-      dedupingInterval: 10_000,
+      dedupingInterval: 5_000,
     },
   );
 
@@ -61,17 +65,51 @@ function useNotificationBell(authenticated: boolean) {
       unreadCount > prevCountRef.current &&
       latest
     ) {
-      toast(latest.title, {
-        description: latest.message,
-        ...(latest.link
-          ? {
-              action: {
-                label: "Deschide",
-                onClick: () => router.push(latest.link!),
-              },
-            }
-          : {}),
-      });
+      const cfg = NOTIF_CONFIG[latest.type] ?? NOTIF_CONFIG.SYSTEM;
+      const Icon = cfg.Icon;
+
+      toast.custom(
+        (id) => (
+          <div
+            style={{ width: 356 }}
+            className={`flex items-start gap-3 bg-white rounded-2xl border ${cfg.border} p-4`}
+          >
+            <div
+              className={`shrink-0 w-9 h-9 rounded-full ${cfg.bg} border ${cfg.border} flex items-center justify-center`}
+            >
+              <Icon className={`w-4 h-4 ${cfg.color}`} />
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-slate-900 leading-snug">
+                {latest.title}
+              </p>
+              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed line-clamp-2">
+                {latest.message}
+              </p>
+              {latest.link && (
+                <button
+                  onClick={() => {
+                    router.push(latest.link!);
+                    toast.dismiss(id);
+                  }}
+                  className="mt-1.5 text-xs font-semibold text-[#123424] hover:underline"
+                >
+                  Deschide →
+                </button>
+              )}
+            </div>
+
+            <button
+              onClick={() => toast.dismiss(id)}
+              className="shrink-0 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+            >
+              <X className="w-3.5 h-3.5 text-slate-400" />
+            </button>
+          </div>
+        ),
+        { duration: 5000, id: latest.id },
+      );
     }
 
     prevCountRef.current = unreadCount;
