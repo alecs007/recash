@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import {
   ArrowLeft,
@@ -334,16 +335,7 @@ function ReviewForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
-  if (alreadyReviewed || done)
-    // return (
-    //   <div className="flex items-center gap-2 py-1">
-    //     <CheckCircle className="w-4 h-4 text-lime-500" />
-    //     <span className="text-sm font-medium text-slate-600">
-    //       Ai acordat deja un rating
-    //     </span>
-    //   </div>
-    // );
-    return;
+  if (alreadyReviewed || done) return;
   const submit = async () => {
     if (!rating) {
       setError("Alege un rating");
@@ -420,14 +412,6 @@ function CancelModal({
   status: PostStatus;
 }) {
   const [reason, setReason] = useState("");
-  // const msg =
-  //   status === "IN_PROGRESS"
-  //     ? isAuthor
-  //       ? "Colectorul este pe drum. Ești sigur că vrei să anulezi?"
-  //       : "Colectarea este în desfășurare. Ești sigur?"
-  //     : status === "CLAIMED" && isAuthor
-  //       ? "Vrei să respingi cererea? Anunțul devine din nou disponibil."
-  //       : "Vrei să renunți la colectare?";
   return (
     <div className="fixed inset-0 z-[1002] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
@@ -623,22 +607,36 @@ function Skeleton() {
   );
 }
 
+function getCancelToastKey(status: PostStatus, isAuthor: boolean): string {
+  if (status === "IN_PROGRESS") {
+    return isAuthor
+      ? "collection_cancelled_poster"
+      : "collection_cancelled_collector";
+  }
+  if (status === "CLAIMED" && !isAuthor) {
+    return "claim_cancelled";
+  }
+
+  return "post_cancelled";
+}
+
 function DetailPanel({
   post,
   isAuthor,
   isCollector,
   mutate,
+  onRedirect,
 }: {
   post: Post;
   isAuthor: boolean;
   isCollector: boolean;
   mutate: () => void;
+  onRedirect: (url: string) => void;
 }) {
   const [showCancel, setShowCancel] = useState(false);
   const [showCode, setShowCode] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState("");
-
   const [justReviewed, setJustReviewed] = useState(false);
 
   const statusCfg = STATUS_CONFIG[post.status];
@@ -696,7 +694,6 @@ function DetailPanel({
     ["OPEN", "CLAIMED", "IN_PROGRESS"].includes(post.status) &&
     (isAuthor || isCollector);
 
-  // Funcție apelată de ReviewForm la finalizarea trimiterii
   const handleReviewDone = () => {
     setJustReviewed(true);
     mutate();
@@ -713,15 +710,21 @@ function DetailPanel({
           body: JSON.stringify({ action }),
         });
         const j = await res.json();
-        if (!res.ok) setActionError(j.error ?? "Eroare");
-        else mutate();
+        if (!res.ok) {
+          setActionError(j.error ?? "Eroare");
+        } else if (action === "deny") {
+          // Redirect to home with toast after denying a claim
+          onRedirect("/?toast=claim_denied");
+        } else {
+          mutate();
+        }
       } catch {
         setActionError("Eroare de rețea.");
       } finally {
         setActionLoading(false);
       }
     },
-    [post.id, mutate],
+    [post.id, mutate, onRedirect],
   );
 
   const handleCancel = useCallback(
@@ -729,6 +732,9 @@ function DetailPanel({
       setShowCancel(false);
       setActionLoading(true);
       setActionError("");
+
+      const toastKey = getCancelToastKey(post.status, isAuthor);
+
       try {
         const res = await fetch(`/api/v1/posts/${post.id}/cancel`, {
           method: "POST",
@@ -736,15 +742,19 @@ function DetailPanel({
           body: JSON.stringify({ reason: reason || null }),
         });
         const j = await res.json();
-        if (!res.ok) setActionError(j.error ?? "Eroare");
-        else mutate();
+        if (!res.ok) {
+          setActionError(j.error ?? "Eroare");
+        } else {
+          // Redirect to home page with the appropriate toast message
+          onRedirect(`/?toast=${toastKey}`);
+        }
       } catch {
         setActionError("Eroare de rețea.");
       } finally {
         setActionLoading(false);
       }
     },
-    [post.id, mutate],
+    [post.id, post.status, isAuthor, onRedirect],
   );
 
   return (
@@ -782,7 +792,7 @@ function DetailPanel({
             <p className="text-sm text-slate-600 mt-4 whitespace-pre-wrap">
               {post.description}
             </p>
-          )}{" "}
+          )}
           <div className="flex items-center gap-4 text-xs text-slate-400 mt-4">
             <span className="flex items-center gap-1">
               <Calendar className="w-3 h-3" /> Publicat în{" "}
@@ -791,7 +801,7 @@ function DetailPanel({
                 month: "long",
                 year: "numeric",
               })}
-            </span>{" "}
+            </span>
             {post.status === "OPEN" && post.expiresAt && (
               <div className="flex items-center gap-1.5 text-slate-400">
                 <Clock className="w-3 h-3" />
@@ -823,10 +833,6 @@ function DetailPanel({
                 </span>
                 <span className="text-lg text-slate-400 font-light">RON</span>
               </div>
-              {/* <p className="text-xs text-slate-400">
-                din valoarea totală de{" "}
-                {post.transaction!.actualValue.toFixed(2)} RON
-              </p> */}
             </>
           ) : (
             <>
@@ -837,9 +843,6 @@ function DetailPanel({
                 </span>
                 <span className="text-lg text-slate-400 font-light">RON</span>
               </div>
-              {/* <p className="text-xs text-slate-400">
-                din valoarea totală de {post.estimatedValue.toFixed(2)} RON
-              </p> */}
             </>
           )}
           <div className="mt-3 h-2.5 bg-slate-100 rounded-full overflow-hidden flex">
@@ -1177,6 +1180,8 @@ export default function PostDetailClient({
   postId: string;
   userId: string;
 }) {
+  const router = useRouter();
+
   const { data: post, mutate } = useSWR<Post>(
     `/api/v1/posts/${postId}`,
     fetcher,
@@ -1205,6 +1210,8 @@ export default function PostDetailClient({
   const isAuthor = post.isAuthor ?? post.author?.id === userId;
   const isCollector = post.isCollector ?? post.collector?.id === userId;
 
+  const handleRedirect = (url: string) => router.push(url);
+
   return (
     <>
       <div className="lg:hidden flex flex-col min-h-[calc(100vh-64px)]">
@@ -1221,6 +1228,7 @@ export default function PostDetailClient({
             isAuthor={!!isAuthor}
             isCollector={!!isCollector}
             mutate={mutate}
+            onRedirect={handleRedirect}
           />
         </div>
       </div>
@@ -1239,6 +1247,7 @@ export default function PostDetailClient({
             isAuthor={!!isAuthor}
             isCollector={!!isCollector}
             mutate={mutate}
+            onRedirect={handleRedirect}
           />
         </div>
       </div>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useState, useRef, useEffect } from "react";
 import { useAuthModal } from "@/context/AuthModalContext";
@@ -12,12 +12,29 @@ import { IoChevronDown } from "react-icons/io5";
 import { MdLogout } from "react-icons/md";
 import { LuBike } from "react-icons/lu";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import useSWR from "swr";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-function useUnreadCount(authenticated: boolean) {
-  const { data } = useSWR(
+type RawNotification = {
+  id: string;
+  title: string;
+  message: string;
+  link: string | null;
+};
+
+type BellData = {
+  notifications: RawNotification[];
+  unreadCount: number;
+};
+
+function useNotificationBell(authenticated: boolean) {
+  const router = useRouter();
+  const prevCountRef = useRef<number | null>(null);
+  const isInitialRef = useRef(true);
+
+  const { data } = useSWR<BellData>(
     authenticated ? "/api/v1/profile/notifications?page=1&limit=1" : null,
     fetcher,
     {
@@ -26,7 +43,41 @@ function useUnreadCount(authenticated: boolean) {
       dedupingInterval: 10_000,
     },
   );
-  return (data?.unreadCount as number) ?? 0;
+
+  const unreadCount = data?.unreadCount ?? 0;
+  const latest = data?.notifications?.[0];
+
+  useEffect(() => {
+    if (!data) return;
+
+    if (isInitialRef.current) {
+      prevCountRef.current = unreadCount;
+      isInitialRef.current = false;
+      return;
+    }
+
+    if (
+      prevCountRef.current !== null &&
+      unreadCount > prevCountRef.current &&
+      latest
+    ) {
+      toast(latest.title, {
+        description: latest.message,
+        ...(latest.link
+          ? {
+              action: {
+                label: "Deschide",
+                onClick: () => router.push(latest.link!),
+              },
+            }
+          : {}),
+      });
+    }
+
+    prevCountRef.current = unreadCount;
+  }, [data, latest, router, unreadCount]);
+
+  return unreadCount;
 }
 
 function useActiveCounts(authenticated: boolean) {
@@ -122,7 +173,7 @@ function ActiveIndicator({
                 <Link
                   href={postHref}
                   onClick={() => setIsOpen(false)}
-                  className="..."
+                  className="flex items-center gap-3 p-2 hover:bg-lime-50 rounded-xl transition-colors"
                 >
                   <div className="relative grid place-items-center w-8.5 h-8.5 rounded-full bg-lime-50 border-2 border-lime-400">
                     <motion.div
@@ -217,7 +268,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
   const isAuthenticated = status === "authenticated" && !!session?.user;
   const isLoading = status === "loading";
 
-  const unreadCount = useUnreadCount(isAuthenticated);
+  const unreadCount = useNotificationBell(isAuthenticated);
   const { activePosts, activeCollections, activePostId, activeCollectionId } =
     useActiveCounts(isAuthenticated);
 

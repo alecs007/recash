@@ -9,6 +9,7 @@ import { AuthModal } from "./components/Auth/AuthModal";
 import { Suspense } from "react";
 import SmoothScroll from "./components/UX/SmoothScroll";
 import { NavigationProgress } from "./components/UX/NavigationProgress";
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -58,6 +59,20 @@ export default async function RootLayout({
             </AuthModalProvider>
           </Suspense>
         </SessionProvider>
+
+        <Toaster
+          position="top-center"
+          richColors
+          closeButton
+          duration={4500}
+          toastOptions={{
+            style: {
+              fontFamily: "var(--font-geist-sans)",
+              borderRadius: "1rem",
+              fontSize: "0.875rem",
+            },
+          }}
+        />
       </body>
     </html>
   );

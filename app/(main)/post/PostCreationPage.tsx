@@ -24,6 +24,7 @@ import {
   Clock,
 } from "lucide-react";
 import { BOTTLE_PRESETS, RON_PER_BOTTLE } from "@/lib/validations/post";
+import { toast } from "sonner";
 import useSWR from "swr";
 
 const API = process.env.NEXT_PUBLIC_API_VERSION ?? "v1";
@@ -301,6 +302,7 @@ function StepBottles({
                       alt={preset.label}
                       fill
                       sizes="50px"
+                      priority
                       className="object-contain"
                     />
                   </div>
@@ -1057,6 +1059,10 @@ export default function PostCreationClient({
           body: JSON.stringify({ phone: newPhone || null }),
         }).catch(() => {});
       }
+
+      toast.success("Anunțul a fost publicat!", {
+        description: "Vei fi notificat când un colector face o cerere.",
+      });
 
       router.push(`/post/${json.id}`);
     } catch {

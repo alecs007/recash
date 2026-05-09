@@ -92,6 +92,7 @@ async function getProfileSummary(userId: string) {
       where: { userId },
       orderBy: { earnedAt: "desc" },
       select: { id: true, type: true, earnedAt: true, seen: true },
+      take: 6,
     }),
   ]);
 

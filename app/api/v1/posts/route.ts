@@ -126,11 +126,11 @@ export async function POST(req: Request) {
   if (
     typeof collectorSharePercent !== "number" ||
     !Number.isInteger(collectorSharePercent) ||
-    collectorSharePercent < 1 ||
-    collectorSharePercent > 99
+    collectorSharePercent < 0 ||
+    collectorSharePercent > 100
   ) {
     return NextResponse.json(
-      { error: "Procentul colectorului trebuie să fie între 1% și 99%" },
+      { error: "Procentul colectorului trebuie să fie între 0% și 100%" },
       { status: 400 },
     );
   }
