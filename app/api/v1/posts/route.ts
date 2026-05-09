@@ -93,13 +93,9 @@ export async function POST(req: Request) {
     images,
   } = body as Record<string, unknown>;
 
-  if (
-    typeof description !== "string" ||
-    description.trim().length === 0 ||
-    description.trim().length > 500
-  ) {
+  if (typeof description !== "string" || description.trim().length > 500) {
     return NextResponse.json(
-      { error: "Descrierea trebuie să aibă între 1 și 500 de caractere" },
+      { error: "Descrierea poate avea maxim 500 de caractere" },
       { status: 400 },
     );
   }

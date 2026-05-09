@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -9,29 +9,27 @@ import {
   FaMapMarkerAlt,
   FaPercent,
   FaCheckCircle,
+  FaRegCompass,
 } from "react-icons/fa";
 import {
   MapPin,
-  Navigation,
   ChevronLeft,
   ChevronRight,
-  Info,
-  Camera,
-  X,
-  Search,
   Loader2,
+  Search,
+  X,
+  Plus,
+  Minus,
   AlertTriangle,
+  Clock,
 } from "lucide-react";
 import { BOTTLE_PRESETS, RON_PER_BOTTLE } from "@/lib/validations/post";
 import useSWR from "swr";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+const API = process.env.NEXT_PUBLIC_API_VERSION ?? "v1";
 
 interface FormData {
-  bottleCount: number | "";
-  customBottleCount: number | "";
-  selectedPreset: number | null;
-  estimatedValue: number;
+  bottleCount: number;
   collectorSharePercent: number;
   description: string;
   latitude: number | null;
@@ -39,15 +37,11 @@ interface FormData {
   locationName: string;
   address: string;
   phone: string;
-  images: string[];
   expiresInHours: number;
 }
 
 const INITIAL: FormData = {
-  bottleCount: "",
-  customBottleCount: "",
-  selectedPreset: null,
-  estimatedValue: 0,
+  bottleCount: 0,
   collectorSharePercent: 30,
   description: "",
   latitude: null,
@@ -55,36 +49,69 @@ const INITIAL: FormData = {
   locationName: "",
   address: "",
   phone: "",
-  images: [],
   expiresInHours: 48,
 };
 
+interface GeocodeResult {
+  lat: string;
+  lon: string;
+  display_name: string;
+  address?: {
+    city?: string;
+    town?: string;
+    village?: string;
+    county?: string;
+    road?: string;
+    neighbourhood?: string;
+    suburb?: string;
+  };
+}
+const PRESETS = BOTTLE_PRESETS.filter((p) => p.value > 0);
+
+const SPLIT_PRESETS = [
+  { pct: 30, label: "Recomandat", accent: false },
+  { pct: 50, label: "Echilibrat", accent: false },
+  { pct: 70, label: "Generos", accent: false },
+  { pct: 100, label: "Donație 🌍", accent: true },
+];
+
+const EXPIRY_OPTIONS = [
+  { h: 12, label: "12h" },
+  { h: 24, label: "1 zi" },
+  { h: 48, label: "2 zile" },
+  { h: 72, label: "3 zile" },
+];
+
 function useLeaflet() {
   const [ready, setReady] = useState(false);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if ((window as any).L) {
-      setReady(true);
-      return;
+
+    if (window.L) {
+      const frame = requestAnimationFrame(() => setReady(true));
+      return () => cancelAnimationFrame(frame);
     }
-    const css = document.createElement("link");
-    css.rel = "stylesheet";
-    css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-    css.integrity = "sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=";
-    css.crossOrigin = "";
-    document.head.appendChild(css);
-    const script = document.createElement("script");
-    script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-    script.integrity = "sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WPaA=";
-    script.crossOrigin = "";
-    script.onload = () => setReady(true);
-    document.head.appendChild(script);
+
+    if (!document.querySelector('link[href*="leaflet.css"]')) {
+      const css = document.createElement("link");
+      css.rel = "stylesheet";
+      css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+      document.head.appendChild(css);
+    }
+
+    const s = document.createElement("script");
+    s.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+    s.async = true;
+    s.onload = () => setReady(true);
+    document.head.appendChild(s);
   }, []);
+
   return ready;
 }
 
 const STEPS = [
-  { label: "Sticle", Icon: FaWineBottle },
+  { label: "Cantitate", Icon: FaWineBottle },
   { label: "Locație", Icon: FaMapMarkerAlt },
   { label: "Detalii", Icon: FaPercent },
   { label: "Confirmare", Icon: FaCheckCircle },
@@ -92,15 +119,16 @@ const STEPS = [
 
 function StepIndicator({ current }: { current: number }) {
   return (
-    <div className="flex items-center justify-center gap-0 mb-8">
+    <div className="flex items-start justify-between w-full mb-8 px-4">
       {STEPS.map((step, idx) => {
         const done = idx < current;
         const active = idx === current;
+
         return (
-          <div key={idx} className="flex items-center">
-            <div className="flex flex-col items-center gap-1">
+          <Fragment key={idx}>
+            <div className="flex flex-col items-center shrink-0 w-16">
               <div
-                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all font-bold text-sm border-2
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all font-bold text-sm border-2 z-10
                   ${done ? "bg-lime-400 border-lime-400 text-black" : ""}
                   ${active ? "bg-[#123424] border-[#123424] text-white scale-110" : ""}
                   ${!done && !active ? "bg-white border-slate-200 text-slate-400" : ""}
@@ -120,25 +148,44 @@ function StepIndicator({ current }: { current: number }) {
                   idx + 1
                 )}
               </div>
+
               <span
-                className={`text-[10px] font-semibold ${active ? "text-[#123424]" : "text-slate-400"}`}
+                className={`mt-2 text-[10px] font-semibold text-center leading-tight transition-all
+                ${active ? "text-[#123424]" : "text-slate-400"}
+              `}
               >
                 {step.label}
               </span>
             </div>
+
             {idx < STEPS.length - 1 && (
-              <div
-                className={`w-12 h-0.5 mb-4 mx-1 transition-all ${done ? "bg-lime-400" : "bg-slate-200"}`}
-              />
+              <div className="flex-1 flex items-center h-9">
+                <div
+                  className={`w-full h-0.5 transition-all ${done ? "bg-lime-400" : "bg-slate-200"}`}
+                />
+              </div>
             )}
-          </div>
+          </Fragment>
         );
       })}
     </div>
   );
 }
 
-// ─── Step 1: Bottle Count ─────────────────────────────────────────────────────
+function FieldLabel({
+  children,
+  hint,
+}: {
+  children: React.ReactNode;
+  hint?: string;
+}) {
+  return (
+    <div className="mb-2.5">
+      <p className="font-bold text-slate-800">{children}</p>
+      {hint && <p className="text-xs text-slate-400 mt-0.5">{hint}</p>}
+    </div>
+  );
+}
 
 function StepBottles({
   data,
@@ -147,134 +194,143 @@ function StepBottles({
   data: FormData;
   onChange: (d: Partial<FormData>) => void;
 }) {
-  const handlePreset = (preset: (typeof BOTTLE_PRESETS)[number]) => {
-    if (preset.value === 0) {
-      onChange({ selectedPreset: 0, bottleCount: "", customBottleCount: "" });
-    } else {
-      const val = preset.value;
-      onChange({
-        selectedPreset: val,
-        bottleCount: val,
-        customBottleCount: "",
-        estimatedValue: parseFloat((val * RON_PER_BOTTLE).toFixed(2)),
-      });
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const estimatedValue = parseFloat(
+    (data.bottleCount * RON_PER_BOTTLE).toFixed(2),
+  );
+
+  const applyCount = (fn: (prev: number) => number) =>
+    onChange({ bottleCount: fn(data.bottleCount) });
+
+  const clamp = (n: number) => Math.max(0, Math.min(10_000, n));
+
+  const startPress = (dir: 1 | -1) => {
+    onChange({ bottleCount: clamp(data.bottleCount + dir) });
+    timeoutRef.current = setTimeout(() => {
+      intervalRef.current = setInterval(() => {
+        applyCount((prev) => clamp(prev + dir));
+      }, 80);
+    }, 350);
+  };
+
+  const stopPress = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
   };
 
-  const handleCustom = (v: string) => {
-    const n = parseInt(v);
-    if (v === "") {
-      onChange({ customBottleCount: "", bottleCount: "", estimatedValue: 0 });
-    } else if (!isNaN(n) && n > 0) {
-      onChange({
-        customBottleCount: n,
-        bottleCount: n,
-        estimatedValue: parseFloat((n * RON_PER_BOTTLE).toFixed(2)),
-      });
-    }
-  };
+  useEffect(() => () => stopPress(), []);
 
   return (
-    <div>
-      <h2 className="text-xl font-extrabold text-slate-900 mb-1">
-        Câte sticle ai?
-      </h2>
-      <p className="text-sm text-slate-500 mb-5">
-        Alege o variantă aproximativă sau introdu numărul exact.
-      </p>
+    <div className="space-y-6">
+      <div>
+        <FieldLabel>Câte sticle vei recicla?</FieldLabel>
+        <div className="flex items-center gap-3 bg-slate-50 rounded-2xl border border-slate-200 p-2">
+          <button
+            type="button"
+            onPointerDown={() => startPress(-1)}
+            onPointerUp={stopPress}
+            onPointerLeave={stopPress}
+            disabled={data.bottleCount <= 0}
+            className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center hover:border-slate-300 active:scale-95 transition-all disabled:opacity-30 cursor-pointer"
+          >
+            <Minus className="w-4 h-4 text-slate-600" />
+          </button>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-        {BOTTLE_PRESETS.map((preset) => {
-          const isSelected =
-            preset.value === 0
-              ? data.selectedPreset === 0
-              : data.selectedPreset === preset.value;
-
-          return (
-            <button
-              key={preset.value}
-              type="button"
-              onClick={() => handlePreset(preset)}
-              className={`relative flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all cursor-pointer text-center
-                ${isSelected ? "border-lime-400 bg-lime-50" : "border-slate-200 bg-white hover:border-lime-300"}`}
-            >
-              {preset.image ? (
-                <div className="w-16 h-16 relative">
-                  <Image
-                    src={preset.image}
-                    alt={preset.label}
-                    fill
-                    sizes="64px"
-                    className="object-contain"
-                  />
-                </div>
-              ) : (
-                <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center">
-                  <FaWineBottle className="w-7 h-7 text-slate-400" />
-                </div>
-              )}
-              <div>
-                <p className="font-bold text-sm text-slate-900">
-                  {preset.label}
-                </p>
-                <p className="text-[11px] text-slate-500">{preset.desc}</p>
-              </div>
-              {isSelected && (
-                <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-lime-400 flex items-center justify-center">
-                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24">
-                    <path
-                      stroke="currentColor"
-                      strokeWidth={3}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </div>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {data.selectedPreset === 0 && (
-        <div className="mt-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
-          <label className="block text-sm font-semibold text-slate-700 mb-2">
-            Număr exact de sticle
-          </label>
           <input
             type="number"
-            min={1}
+            min={0}
             max={10000}
-            value={data.customBottleCount}
-            onChange={(e) => handleCustom(e.target.value)}
-            placeholder="ex: 37"
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none text-lg font-bold text-slate-900 bg-white"
+            value={data.bottleCount || ""}
+            onChange={(e) => {
+              const v = parseInt(e.target.value, 10);
+              onChange({ bottleCount: isNaN(v) ? 0 : clamp(v) });
+            }}
+            placeholder="0"
+            className="flex-1 text-center text-4xl font-black text-[#123424] bg-transparent outline-none tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           />
-        </div>
-      )}
 
-      {(data.bottleCount as number) > 0 && (
-        <div className="mt-4 p-4 bg-[#123424]/5 rounded-2xl border border-[#123424]/10 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-semibold text-slate-700">
-              Valoare estimată SGR
-            </p>
-            <p className="text-xs text-slate-500">
-              {data.bottleCount} sticle × 0,50 RON
-            </p>
-          </div>
-          <p className="text-2xl font-black text-[#123424]">
-            {data.estimatedValue.toFixed(2)}{" "}
-            <span className="text-base font-semibold">RON</span>
-          </p>
+          <button
+            type="button"
+            onPointerDown={() => startPress(1)}
+            onPointerUp={stopPress}
+            onPointerLeave={stopPress}
+            disabled={data.bottleCount >= 10_000}
+            className="w-12 h-12 rounded-xl bg-[#123424] flex items-center justify-center hover:bg-[#1a4d36] active:scale-95 transition-all disabled:opacity-30 cursor-pointer"
+          >
+            <Plus className="w-4 h-4 text-lime-400" />
+          </button>
         </div>
-      )}
+
+        <div className="mt-2 h-9 flex items-center justify-center transition-opacity">
+          <div className="inline-flex items-center gap-1 rounded-full px-4 py-1.5">
+            <span className="text-xs text-slate-500">
+              {data.bottleCount} × 0,50 RON =
+            </span>
+
+            <span className="text-sm font-black text-lime-700">
+              {estimatedValue.toFixed(2)} RON
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div className="grid grid-cols-3 gap-2">
+          {PRESETS.map((preset) => {
+            const isActive = data.bottleCount === preset.value;
+            return (
+              <button
+                key={preset.value}
+                type="button"
+                onClick={() => onChange({ bottleCount: preset.value })}
+                className={`relative flex flex-col items-center gap-1.5 py-3 px-2 rounded-2xl border-2 transition-all cursor-pointer
+                  ${
+                    isActive
+                      ? "border-lime-400 bg-lime-50 shadow-sm shadow-lime-100"
+                      : "border-slate-100 bg-white hover:border-lime-300 hover:bg-lime-50/40"
+                  }`}
+              >
+                {preset.image && (
+                  <div className="w-16 h-16 relative shrink-0">
+                    <Image
+                      src={preset.image}
+                      alt={preset.label}
+                      fill
+                      sizes="50px"
+                      className="object-contain"
+                    />
+                  </div>
+                )}
+                <span
+                  className={`text-xs font-bold leading-tight text-center ${isActive ? "text-lime-800" : "text-slate-700"}`}
+                >
+                  {preset.label}
+                </span>
+                {isActive && (
+                  <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-lime-400 flex items-center justify-center">
+                    <svg className="w-2 h-2" fill="none" viewBox="0 0 24 24">
+                      <path
+                        stroke="currentColor"
+                        strokeWidth={3.5}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
-
-// ─── Step 2: Location with interactive map ───────────────────────────────────
 
 function StepLocation({
   data,
@@ -284,36 +340,68 @@ function StepLocation({
   onChange: (d: Partial<FormData>) => void;
 }) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
-  const markerRef = useRef<any>(null);
+  const mapRef = useRef<L.Map>(null);
+  const markerRef = useRef<L.Marker>(null);
   const leafletReady = useLeaflet();
 
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoError, setGeoError] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState(data.locationName || "");
+  const [searchResults, setSearchResults] = useState<GeocodeResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [reverseLoading, setReverseLoading] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const buildIcon = () => {
+    const L = window.L;
+    return L.divIcon({
+      className: "custom-map-pin",
+      html: `
+    <div style="
+      position: relative;
+      width: 32px;
+      height: 32px;
+      background-color: #f73138;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      box-shadow: 0 3px 5px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    ">
+      <div style="
+        width: 14px;
+        height: 14px;
+        background-color: #ffffff;
+        border-radius: 50%;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(45deg);
+      "></div>
+    </div>`,
+      iconSize: [32, 44],
+      iconAnchor: [16, 44],
+    });
+  };
 
   const reverseGeocode = useCallback(
     async (lat: number, lng: number) => {
       setReverseLoading(true);
       try {
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ro`,
-          { headers: { "Accept-Language": "ro" } },
+          `/api/${API}/geocode?type=reverse&lat=${lat}&lon=${lng}`,
         );
         const json = await res.json();
         const addr = json.address ?? {};
         const city =
           addr.city ?? addr.town ?? addr.village ?? addr.county ?? "";
-        const road = addr.road ?? addr.neighbourhood ?? "";
+        const road = addr.road ?? addr.neighbourhood ?? addr.suburb ?? "";
         const locationName = [road, city].filter(Boolean).join(", ");
-        const fullAddress = json.display_name ?? "";
-        onChange({ locationName, address: fullAddress });
-        setSearchQuery(locationName);
+        onChange({ locationName, address: json.display_name ?? "" });
+        setSearchQuery(locationName || json.display_name?.split(",")[0] || "");
       } catch {
-        // non-fatal
+        /* non-fatal */
       } finally {
         setReverseLoading(false);
       }
@@ -321,72 +409,49 @@ function StepLocation({
     [onChange],
   );
 
+  const placeMarker = useCallback((lat: number, lng: number) => {
+    const L = window.L;
+    if (!L || !mapRef.current) return;
+    if (markerRef.current) {
+      markerRef.current.setLatLng([lat, lng]);
+    } else {
+      markerRef.current = L.marker([lat, lng], { icon: buildIcon() }).addTo(
+        mapRef.current,
+      );
+    }
+    mapRef.current.setView([lat, lng], 16, { animate: true, duration: 0.6 });
+  }, []);
+
   const setPin = useCallback(
     (lat: number, lng: number) => {
       onChange({ latitude: lat, longitude: lng });
+      placeMarker(lat, lng);
       reverseGeocode(lat, lng);
-
-      const L = (window as any).L;
-      if (!L || !mapRef.current) return;
-
-      if (markerRef.current) {
-        markerRef.current.setLatLng([lat, lng]);
-      } else {
-        const icon = L.divIcon({
-          className: "",
-          html: `<div style="width:24px;height:24px;border-radius:50% 50% 50% 0;background:#123424;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);transform:rotate(-45deg)"></div>`,
-          iconSize: [24, 24],
-          iconAnchor: [12, 24],
-        });
-        markerRef.current = L.marker([lat, lng], { icon }).addTo(
-          mapRef.current,
-        );
-      }
-      mapRef.current.setView([lat, lng], 15, { animate: true, duration: 0.5 });
     },
-    [onChange, reverseGeocode],
+    [onChange, placeMarker, reverseGeocode],
   );
 
-  // Init map
   useEffect(() => {
-    if (!leafletReady || !mapContainerRef.current) return;
-    const L = (window as any).L;
-    if (mapRef.current) return;
-
+    if (!leafletReady || !mapContainerRef.current || mapRef.current) return;
+    const L = window.L;
     const center: [number, number] =
       data.latitude && data.longitude
         ? [data.latitude, data.longitude]
-        : [45.9432, 24.9668]; // Romania center
+        : [45.9432, 24.9668];
 
     const map = L.map(mapContainerRef.current, {
       center,
-      zoom: data.latitude ? 15 : 7,
+      zoom: data.latitude ? 16 : 6,
       zoomControl: true,
     });
-
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "© OpenStreetMap",
       maxZoom: 19,
     }).addTo(map);
-
-    map.on("click", (e: any) => {
-      setPin(e.latlng.lat, e.latlng.lng);
-    });
-
+    map.on("click", (e) => setPin(e.latlng.lat, e.latlng.lng));
     mapRef.current = map;
-
-    // If already have location, place marker
-    if (data.latitude && data.longitude) {
-      const icon = L.divIcon({
-        className: "",
-        html: `<div style="width:24px;height:24px;border-radius:50% 50% 50% 0;background:#123424;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);transform:rotate(-45deg)"></div>`,
-        iconSize: [24, 24],
-        iconAnchor: [12, 24],
-      });
-      markerRef.current = L.marker([data.latitude, data.longitude], {
-        icon,
-      }).addTo(map);
-    }
+    if (data.latitude && data.longitude)
+      placeMarker(data.latitude, data.longitude);
 
     return () => {
       map.remove();
@@ -395,9 +460,47 @@ function StepLocation({
     };
   }, [leafletReady]); // eslint-disable-line
 
-  const handleGetLocation = () => {
+  const handleSearch = (q: string) => {
+    setSearchQuery(q);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (q.trim().length < 3) {
+      setSearchResults([]);
+      return;
+    }
+    debounceRef.current = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const res = await fetch(
+          `/api/${API}/geocode?type=search&q=${encodeURIComponent(q)}`,
+        );
+        const data = await res.json();
+        setSearchResults(Array.isArray(data) ? data : []);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 450);
+  };
+
+  const handleSelectResult = (result: GeocodeResult) => {
+    const lat = parseFloat(result.lat);
+    const lng = parseFloat(result.lon);
+    const name = result.display_name.split(",").slice(0, 2).join(", ").trim();
+    onChange({
+      latitude: lat,
+      longitude: lng,
+      locationName: name,
+      address: result.display_name,
+    });
+    setSearchQuery(name);
+    setSearchResults([]);
+    placeMarker(lat, lng);
+  };
+
+  const handleGPS = () => {
     if (!navigator.geolocation) {
-      setGeoError("Geolocalizarea nu este suportată de browser.");
+      setGeoError("GPS-ul nu este suportat de browser.");
       return;
     }
     setGeoLoading(true);
@@ -411,173 +514,123 @@ function StepLocation({
         setGeoLoading(false);
         setGeoError(
           err.code === 1
-            ? "Acces la locație refuzat."
-            : "Nu am putut obține locația.",
+            ? "Permisiunea pentru locație a fost refuzată."
+            : "Nu am putut determina locația.",
         );
       },
-      { enableHighAccuracy: true, timeout: 10000 },
+      { enableHighAccuracy: true, timeout: 10_000 },
     );
   };
 
-  const handleSearch = async (q: string) => {
-    setSearchQuery(q);
-    if (q.length < 3) {
-      setSearchResults([]);
-      return;
-    }
-    setSearchLoading(true);
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&accept-language=ro`,
-        { headers: { "Accept-Language": "ro" } },
-      );
-      const results = await res.json();
-      setSearchResults(results);
-    } catch {
-      setSearchResults([]);
-    } finally {
-      setSearchLoading(false);
-    }
-  };
-
-  const handleSelectResult = (result: any) => {
-    const lat = parseFloat(result.lat);
-    const lng = parseFloat(result.lon);
-    const name = result.display_name.split(",").slice(0, 2).join(", ");
-    onChange({
-      latitude: lat,
-      longitude: lng,
-      locationName: name,
-      address: result.display_name,
-    });
-    setSearchQuery(name);
-    setSearchResults([]);
-
-    const L = (window as any).L;
-    if (!L || !mapRef.current) return;
-    if (markerRef.current) {
-      markerRef.current.setLatLng([lat, lng]);
-    } else {
-      const icon = L.divIcon({
-        className: "",
-        html: `<div style="width:24px;height:24px;border-radius:50% 50% 50% 0;background:#123424;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);transform:rotate(-45deg)"></div>`,
-        iconSize: [24, 24],
-        iconAnchor: [12, 24],
-      });
-      markerRef.current = L.marker([lat, lng], { icon }).addTo(mapRef.current);
-    }
-    mapRef.current.setView([lat, lng], 15, { animate: true, duration: 0.5 });
-  };
-
   return (
-    <div>
-      <h2 className="text-xl font-extrabold text-slate-900 mb-1">
-        Unde sunt sticlele?
-      </h2>
-      <p className="text-sm text-slate-500 mb-4">
-        Caută o adresă, folosește GPS-ul, sau apasă pe hartă pentru a seta
-        locația.
-      </p>
+    <div className="space-y-4">
+      <div>
+        <FieldLabel>Care este locația ta?</FieldLabel>
+        <div className="relative">
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                placeholder="ex: Strada Victoriei, Cluj..."
+                className="w-full pl-9 pr-8 py-3 rounded-xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none text-sm bg-white transition-shadow"
+              />
+              {searchLoading && (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-slate-400" />
+              )}
+              {searchQuery && !searchLoading && (
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSearchResults([]);
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
+                >
+                  <X className="w-3.5 h-3.5 text-slate-400 hover:text-slate-600" />
+                </button>
+              )}
+            </div>
 
-      {/* Search box */}
-      <div className="relative mb-3">
-        <div className="flex gap-2">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
-              placeholder="Caută adresa..."
-              className="w-full pl-9 pr-4 py-3 rounded-xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none text-sm bg-white"
-            />
-            {searchLoading && (
-              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-slate-400" />
-            )}
+            <button
+              type="button"
+              onClick={handleGPS}
+              disabled={geoLoading}
+              className="w-12 h-12 rounded-xl border border-[#123424]/20 hover:bg-[#123424]/10 flex items-center justify-center transition-all disabled:opacity-50 cursor-pointer shrink-0"
+              title="Folosește GPS-ul"
+            >
+              {geoLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin text-[#123424]" />
+              ) : (
+                <FaRegCompass className="w-5 h-5 text-[#123424]" />
+              )}
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={handleGetLocation}
-            disabled={geoLoading}
-            title="Localizare GPS"
-            className="px-3 py-3 rounded-xl border-2 border-dashed border-[#123424]/30 bg-[#123424]/5 hover:bg-[#123424]/10 transition-all disabled:opacity-50 cursor-pointer flex items-center gap-1.5 text-sm font-bold text-[#123424]"
-          >
-            {geoLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Navigation className="w-4 h-4" />
-            )}
-            <span className="hidden sm:inline">GPS</span>
-          </button>
+
+          {searchResults.length > 0 && (
+            <div className="absolute top-full left-0 right-12 mt-1 bg-white rounded-xl border border-slate-200 z-[1002] overflow-hidden">
+              {searchResults.map((r, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => handleSelectResult(r)}
+                  className="w-full text-left px-4 py-2.5 hover:bg-lime-50 transition-colors flex items-start gap-2.5 border-b border-slate-50 last:border-0 cursor-pointer"
+                >
+                  <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                  <span className="text-sm text-slate-700 line-clamp-1">
+                    {r.display_name}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Search results dropdown */}
-        {searchResults.length > 0 && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-slate-200 shadow-lg z-10 overflow-hidden">
-            {searchResults.map((result, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => handleSelectResult(result)}
-                className="w-full text-left px-4 py-2.5 hover:bg-lime-50 transition-colors border-b border-slate-50 last:border-0"
-              >
-                <div className="flex items-start gap-2">
-                  <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-                  <span className="text-sm text-slate-700 line-clamp-1">
-                    {result.display_name}
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
+        {geoError && (
+          <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+            <span>⚠</span> {geoError}
+          </p>
         )}
       </div>
 
-      {geoError && (
-        <p className="text-red-500 text-sm mb-3 flex items-center gap-1">
-          <Info className="w-4 h-4 shrink-0" /> {geoError}
-        </p>
-      )}
+      <div>
+        <div
+          className="relative rounded-2xl overflow-hidden border-2 border-slate-200"
+          style={{ height: 260 }}
+        >
+          <div ref={mapContainerRef} className="w-full h-full" />
 
-      {/* Interactive Leaflet map */}
-      <div
-        className="relative rounded-2xl overflow-hidden border-2 border-slate-200 bg-slate-100"
-        style={{ height: 280 }}
-      >
-        <div ref={mapContainerRef} className="w-full h-full" />
-
-        {reverseLoading && (
-          <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10">
-            <Loader2 className="w-6 h-6 animate-spin text-[#123424]" />
-          </div>
-        )}
-
-        {!leafletReady && (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-100">
-            <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
-          </div>
-        )}
-
-        {/* Hint overlay - only before any location is set */}
-        {!data.latitude && leafletReady && (
-          <div className="absolute bottom-3 left-0 right-0 flex justify-center z-10 pointer-events-none">
-            <div className="bg-black/60 text-white text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur">
-              Apasă pe hartă pentru a seta locația
+          {!leafletReady && (
+            <div className="absolute inset-0 bg-slate-100 flex items-center justify-center">
+              <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
             </div>
-          </div>
-        )}
+          )}
+          {reverseLoading && (
+            <div className="absolute inset-0 bg-white/50 backdrop-blur-[2px] flex items-center justify-center z-10">
+              <div className="bg-white rounded-xl px-4 py-2 shadow-md flex items-center gap-2 text-sm text-slate-600 font-medium">
+                <Loader2 className="w-4 h-4 animate-spin text-[#123424]" />
+                Se obține adresa...
+              </div>
+            </div>
+          )}
+          {!data.latitude && leafletReady && (
+            <div className="absolute bottom-3 inset-x-0 flex justify-center z-10 pointer-events-none">
+              <div className="bg-black/65 backdrop-blur text-white text-xs font-semibold px-3 py-1.5 rounded-full">
+                Apasă pe hartă pentru a plasa un pin
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Selected location display */}
-      {data.latitude && data.locationName && (
-        <div className="mt-3 p-3 bg-lime-50 rounded-xl border border-lime-200 flex items-center gap-2">
+      {data.latitude && (
+        <div className="flex items-center gap-2 px-3 py-2.5 bg-lime-50 border border-lime-200 rounded-xl">
           <MapPin className="w-4 h-4 text-lime-600 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-lime-800 truncate">
-              {data.locationName}
-            </p>
-            <p className="text-xs text-lime-600">Locație confirmată ✓</p>
-          </div>
+          <p className="text-sm font-semibold text-lime-800 flex-1 truncate">
+            {data.locationName ||
+              `${data.latitude.toFixed(5)}, ${data.longitude?.toFixed(5)}`}
+          </p>
           <button
             type="button"
             onClick={() => {
@@ -588,32 +641,20 @@ function StepLocation({
                 address: "",
               });
               setSearchQuery("");
-              if (markerRef.current && mapRef.current) {
+              if (markerRef.current) {
                 markerRef.current.remove();
                 markerRef.current = null;
               }
             }}
-            className="p-1 rounded-full hover:bg-lime-200 transition-colors"
+            className="w-5 h-5 rounded-full hover:bg-lime-200 flex items-center justify-center transition-colors"
           >
-            <X className="w-3.5 h-3.5 text-lime-600" />
+            <X className="w-3 h-3 text-lime-600" />
           </button>
-        </div>
-      )}
-
-      {data.latitude && !data.locationName && (
-        <div className="mt-3 p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center gap-2">
-          <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
-          <p className="text-sm text-slate-500">
-            {data.latitude.toFixed(4)}, {data.longitude?.toFixed(4)} — Se obține
-            adresa...
-          </p>
         </div>
       )}
     </div>
   );
 }
-
-// ─── Step 3: Details (optional description, phone, expiry, share, photos) ─────
 
 function StepDetails({
   data,
@@ -621,313 +662,285 @@ function StepDetails({
 }: {
   data: FormData;
   onChange: (d: Partial<FormData>) => void;
+  originalPhone: string | null;
 }) {
-  const posterPercent = 100 - data.collectorSharePercent;
-  const posterEarning = (data.estimatedValue * posterPercent) / 100;
-  const collectorEarning =
-    (data.estimatedValue * data.collectorSharePercent) / 100;
-  const isDonation = data.collectorSharePercent === 100;
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    if (files.length + data.images.length > 5) {
-      alert("Maxim 5 imagini");
-      return;
-    }
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        onChange({ images: [...data.images, reader.result as string] });
-      };
-      reader.readAsDataURL(file);
-    });
-  };
+  const [customSplit, setCustomSplit] = useState(false);
+  const estimatedValue = parseFloat(
+    (data.bottleCount * RON_PER_BOTTLE).toFixed(2),
+  );
+  const collectorEarning = parseFloat(
+    ((estimatedValue * data.collectorSharePercent) / 100).toFixed(2),
+  );
+  const posterEarning = parseFloat(
+    (estimatedValue - collectorEarning).toFixed(2),
+  );
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-extrabold text-slate-900 mb-1">
-          Detalii anunț
-        </h2>
-        <p className="text-sm text-slate-500">
-          Configurează împărțirea și adaugă detalii opționale.
-        </p>
-      </div>
+        <FieldLabel>Cum vrei să imparți valoarea?</FieldLabel>
 
-      {/* Percentage picker */}
-      <div className="p-4 bg-white border border-slate-200 rounded-2xl">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-bold text-slate-800">
-            Împărțire valoare
+        <div className="grid grid-cols-2 gap-2 mb-3">
+          {SPLIT_PRESETS.map(({ pct, label, accent }) => {
+            const isActive = data.collectorSharePercent === pct && !customSplit;
+            const earning = parseFloat(
+              ((estimatedValue * pct) / 100).toFixed(2),
+            );
+            return (
+              <button
+                key={pct}
+                type="button"
+                onClick={() => {
+                  onChange({ collectorSharePercent: pct });
+                  setCustomSplit(false);
+                }}
+                className={`relative flex flex-col items-start gap-1 p-3 rounded-xl border-2 text-left transition-all cursor-pointer
+                  ${
+                    isActive
+                      ? accent
+                        ? "border-purple-400 bg-purple-50"
+                        : "border-lime-400 bg-lime-50"
+                      : "border-slate-100 bg-white hover:border-slate-200"
+                  }`}
+              >
+                <span
+                  className={`text-xl font-black leading-none ${isActive ? (accent ? "text-purple-700" : "text-[#123424]") : "text-slate-700"}`}
+                >
+                  {pct}%
+                </span>
+                <span
+                  className={`text-[10px] font-semibold ${isActive ? (accent ? "text-purple-500" : "text-lime-600") : "text-slate-400"}`}
+                >
+                  {label}
+                </span>
+                {estimatedValue > 0 && (
+                  <span
+                    className={`text-xs font-bold ${isActive ? (accent ? "text-purple-600" : "text-lime-700") : "text-slate-500"}`}
+                  >
+                    {earning.toFixed(2)} RON
+                  </span>
+                )}
+                {pct === 30 && !accent && (
+                  <span className="absolute top-2 right-2 text-[9px] font-black text-lime-700 bg-lime-200 px-1.5 py-0.5 rounded-full">
+                    DEFAULT
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setCustomSplit((v) => !v)}
+          className="text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-1"
+        >
+          <span
+            className={`inline-block w-3.5 h-3.5 rounded border border-slate-300 mr-0.5 flex items-center justify-center transition-colors ${customSplit ? "bg-[#123424] border-[#123424]" : "bg-white"}`}
+          >
+            {customSplit && (
+              <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24">
+                <path
+                  stroke="white"
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            )}
           </span>
-          {isDonation && (
-            <span className="text-xs font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
-              🌍 Donație
-            </span>
-          )}
-        </div>
+          Procent personalizat
+        </button>
 
-        <input
-          type="range"
-          min={0}
-          max={100}
-          step={5}
-          value={data.collectorSharePercent}
-          onChange={(e) =>
-            onChange({ collectorSharePercent: parseInt(e.target.value) })
-          }
-          className="w-full h-2 appearance-none rounded-full cursor-pointer"
-          style={{
-            background: `linear-gradient(to right, #a3e635 0%, #a3e635 ${data.collectorSharePercent}%, #e2e8f0 ${data.collectorSharePercent}%, #e2e8f0 100%)`,
-          }}
-        />
-
-        <div className="flex justify-between mt-3 gap-3">
-          <div className="flex-1 p-3 bg-[#123424]/5 rounded-xl text-center">
-            <p className="text-xs text-slate-500 mb-0.5">Tu primești</p>
-            <p className="text-xl font-black text-[#123424]">
-              {posterPercent}%
-            </p>
-            <p className="text-sm font-bold text-slate-600">
-              {posterEarning.toFixed(2)} RON
-            </p>
+        {customSplit && (
+          <div className="mt-3 p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+            <div className="h-2 rounded-full overflow-hidden flex">
+              <div
+                className="h-full bg-[#123424] transition-all duration-150"
+                style={{ width: `${100 - data.collectorSharePercent}%` }}
+              />
+              <div
+                className="h-full bg-lime-400 transition-all duration-150"
+                style={{ width: `${data.collectorSharePercent}%` }}
+              />
+            </div>
+            <input
+              type="range"
+              min={1}
+              max={99}
+              value={data.collectorSharePercent}
+              onChange={(e) =>
+                onChange({ collectorSharePercent: parseInt(e.target.value) })
+              }
+              className="w-full h-1.5 appearance-none rounded-full cursor-pointer"
+              style={{
+                background: `linear-gradient(to right, #123424 0%, #123424 ${100 - data.collectorSharePercent}%, #a3e635 ${100 - data.collectorSharePercent}%, #a3e635 100%)`,
+              }}
+            />
+            <div className="flex justify-between text-xs font-semibold">
+              <span className="text-slate-500">
+                Tu:{" "}
+                <span className="text-[#123424]">
+                  {100 - data.collectorSharePercent}% ·{" "}
+                  {posterEarning.toFixed(2)} RON
+                </span>
+              </span>
+              <span className="text-slate-500">
+                Colector:{" "}
+                <span className="text-lime-600">
+                  {data.collectorSharePercent}% · {collectorEarning.toFixed(2)}{" "}
+                  RON
+                </span>
+              </span>
+            </div>
           </div>
-          <div className="flex items-center text-slate-300 font-bold text-lg">
-            ↔
-          </div>
-          <div className="flex-1 p-3 bg-lime-50 rounded-xl text-center">
-            <p className="text-xs text-slate-500 mb-0.5">Colectorul primește</p>
-            <p className="text-xl font-black text-lime-600">
-              {data.collectorSharePercent}%
-            </p>
-            <p className="text-sm font-bold text-slate-600">
-              {collectorEarning.toFixed(2)} RON
-            </p>
-          </div>
-        </div>
-
-        {isDonation && (
-          <p className="mt-3 text-xs text-purple-600 bg-purple-50 p-2 rounded-xl text-center">
-            💜 Donezi integral valoarea sticlelor colectorului. Mulțumim!
-          </p>
         )}
       </div>
 
-      {/* Description (optional) */}
       <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-          Descriere{" "}
-          <span className="text-slate-400 font-normal">(opțional)</span>
-        </label>
+        <FieldLabel>Detalii suplimentare</FieldLabel>
         <textarea
           value={data.description}
           onChange={(e) => onChange({ description: e.target.value })}
-          placeholder="ex: 80 de sticle PET de apă, câteva doze de bere, la intrarea blocului lângă coșul de gunoi..."
+          placeholder="ex: Sticle PET și doze de aluminiu, la intrarea în bloc, scara A..."
           rows={3}
           maxLength={500}
-          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none text-sm bg-white resize-none"
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none text-sm bg-white resize-none transition-shadow"
         />
-        <p className="text-xs text-slate-400 text-right mt-1">
-          {data.description.length}/500
+        <p className="text-right text-[11px] text-slate-400 mt-1">
+          {data.description.length} / 500
         </p>
       </div>
 
-      {/* Phone */}
       <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-          Număr de telefon{" "}
-          <span className="text-slate-400 font-normal">(opțional)</span>
-        </label>
-        <input
-          type="tel"
-          value={data.phone}
-          onChange={(e) => onChange({ phone: e.target.value })}
-          placeholder="+40 700 000 000"
-          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none text-sm bg-white"
-        />
-        <p className="text-xs text-slate-400 mt-1">
-          Vizibil doar colectorului aprobat.
-        </p>
+        <FieldLabel hint="Vizibil doar colectorului aprobat">
+          Telefon de contact
+        </FieldLabel>
+        <div className="relative">
+          <input
+            type="tel"
+            value={data.phone}
+            onChange={(e) => onChange({ phone: e.target.value })}
+            placeholder="+40 700 000 000"
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none text-sm bg-white transition-shadow"
+          />
+        </div>
       </div>
 
-      {/* Expiry */}
       <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-          Anunțul expiră în
-        </label>
-        <div className="flex gap-2">
-          {[12, 24, 48, 72].map((h) => (
+        <FieldLabel>Cât timp vrei să fie valabil anunțul?</FieldLabel>
+        <div className="grid grid-cols-4 gap-2">
+          {EXPIRY_OPTIONS.map(({ h, label }) => (
             <button
               key={h}
               type="button"
               onClick={() => onChange({ expiresInHours: h })}
-              className={`flex-1 py-2 rounded-xl border-2 text-sm font-semibold transition-all cursor-pointer
-                ${data.expiresInHours === h ? "bg-[#123424] text-white border-[#123424]" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"}`}
+              className={`py-3 rounded-xl border-2 text-sm font-bold transition-all cursor-pointer flex flex-col items-center gap-0.5
+                ${
+                  data.expiresInHours === h
+                    ? "bg-[#123424] text-white border-[#123424]"
+                    : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                }`}
             >
-              {h}h
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Image upload */}
-      <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-          Poze sticle{" "}
-          <span className="text-slate-400 font-normal">(opțional, max 5)</span>
-        </label>
-        <div className="flex flex-wrap gap-2">
-          {data.images.map((src, idx) => (
-            <div
-              key={idx}
-              className="relative w-20 h-20 rounded-xl overflow-hidden border border-slate-200"
-            >
-              <Image
-                src={src}
-                alt=""
-                fill
-                sizes="80px"
-                className="object-cover"
+              <Clock
+                className={`w-3.5 h-3.5 ${data.expiresInHours === h ? "text-lime-400" : "text-slate-400"}`}
               />
-              <button
-                type="button"
-                onClick={() =>
-                  onChange({ images: data.images.filter((_, i) => i !== idx) })
-                }
-                className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
-          {data.images.length < 5 && (
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-20 h-20 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-1 text-slate-400 hover:border-lime-400 hover:text-lime-600 transition-colors cursor-pointer"
-            >
-              <Camera className="w-5 h-5" />
-              <span className="text-[10px] font-semibold">Adaugă</span>
+              {label}
             </button>
-          )}
+          ))}
         </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={handleImageUpload}
-        />
       </div>
     </div>
   );
 }
 
-// ─── Step 4: Confirmation ─────────────────────────────────────────────────────
-
 function StepConfirm({
   data,
-  submitting,
   error,
 }: {
   data: FormData;
   submitting: boolean;
   error: string;
 }) {
-  const posterPercent = 100 - data.collectorSharePercent;
-  const posterEarning = (data.estimatedValue * posterPercent) / 100;
-  const collectorEarning =
-    (data.estimatedValue * data.collectorSharePercent) / 100;
-  const isDonation = data.collectorSharePercent === 100;
+  const estimatedValue = parseFloat(
+    (data.bottleCount * RON_PER_BOTTLE).toFixed(2),
+  );
+  const posterPct = 100 - data.collectorSharePercent;
+  const posterEarning = parseFloat(
+    ((estimatedValue * posterPct) / 100).toFixed(2),
+  );
+  const collectorEarning = parseFloat(
+    (estimatedValue - posterEarning).toFixed(2),
+  );
+
+  const rows: Array<{
+    label: string;
+    value: string;
+    accent?: "green" | "lime" | "purple";
+  }> = [
+    { label: "Număr sticle", value: `${data.bottleCount} buc` },
+    {
+      label: "Valoare estimată SGR",
+      value: `${estimatedValue.toFixed(2)} RON`,
+    },
+    {
+      label: "Tu primești",
+      value: `${posterEarning.toFixed(2)} RON (${posterPct}%)`,
+      accent: "green",
+    },
+    {
+      label: "Colectorul primește",
+      value: `${collectorEarning.toFixed(2)} RON (${data.collectorSharePercent}%)`,
+      accent: data.collectorSharePercent === 100 ? "purple" : "lime",
+    },
+    { label: "Locație", value: data.locationName || "Coordonate setate" },
+    ...(data.description
+      ? [{ label: "Detalii", value: data.description }]
+      : []),
+    ...(data.phone ? [{ label: "Telefon", value: data.phone }] : []),
+    { label: "Valabilitate", value: `${data.expiresInHours} ore` },
+  ];
 
   return (
     <div>
-      <h2 className="text-xl font-extrabold text-slate-900 mb-1">
-        Verifică anunțul
-      </h2>
-      <p className="text-sm text-slate-500 mb-5">
-        Revizuiește detaliile înainte de a posta.
-      </p>
+      <FieldLabel>Rezumatul anunțului</FieldLabel>
 
-      <div className="space-y-3">
-        <Row label="Sticle" value={`${data.bottleCount} buc`} />
-        <Row
-          label="Valoare estimată"
-          value={`${data.estimatedValue.toFixed(2)} RON`}
-        />
-        <Row
-          label="Tu primești"
-          value={
-            isDonation
-              ? "0 RON (donație)"
-              : `${posterEarning.toFixed(2)} RON (${posterPercent}%)`
-          }
-        />
-        <Row
-          label="Colectorul primește"
-          value={`${collectorEarning.toFixed(2)} RON (${data.collectorSharePercent}%)`}
-          highlight={isDonation}
-        />
-        <Row label="Locație" value={data.locationName || "Coordonate setate"} />
-        {data.description && (
-          <Row label="Descriere" value={data.description} multiline />
-        )}
-        {data.phone && <Row label="Telefon" value={data.phone} />}
-        <Row label="Expiră în" value={`${data.expiresInHours} ore`} />
-        {isDonation && (
-          <div className="p-3 bg-purple-50 rounded-xl border border-purple-200 text-center text-sm text-purple-700 font-semibold">
-            🌍 Anunțul tău este o donație. Mulțumim că ajuți!
+      <div className="rounded-2xl border border-slate-100 overflow-hidden">
+        {rows.map(({ label, value, accent }, i) => (
+          <div
+            key={i}
+            className={`flex items-start justify-between gap-4 px-4 py-3 border-b border-slate-50 last:border-0 ${i % 2 === 1 ? "bg-slate-50/50" : "bg-white"}`}
+          >
+            <span className="text-sm text-slate-500 shrink-0">{label}</span>
+            <span
+              className={`text-sm font-semibold text-right break-words max-w-[55%]
+              ${accent === "green" ? "text-[#123424]" : ""}
+              ${accent === "lime" ? "text-lime-600" : ""}
+              ${accent === "purple" ? "text-purple-600" : ""}
+              ${!accent ? "text-slate-800" : ""}
+            `}
+            >
+              {value}
+            </span>
           </div>
-        )}
+        ))}
       </div>
 
       {error && (
-        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 font-semibold">
+        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 font-semibold flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
           {error}
         </div>
       )}
-
-      {submitting && (
-        <div className="mt-4 flex items-center justify-center gap-2 text-slate-500 text-sm">
-          <div className="w-4 h-4 border-2 border-[#123424] border-t-transparent rounded-full animate-spin" />
-          Se trimite anunțul...
-        </div>
-      )}
     </div>
   );
 }
-
-function Row({
-  label,
-  value,
-  multiline,
-  highlight,
-}: {
-  label: string;
-  value: string;
-  multiline?: boolean;
-  highlight?: boolean;
-}) {
-  return (
-    <div className="flex items-start justify-between gap-3 py-2.5 border-b border-slate-100 last:border-0">
-      <span className="text-sm text-slate-500 shrink-0">{label}</span>
-      <span
-        className={`text-sm font-semibold text-right ${multiline ? "break-words max-w-xs" : ""} ${highlight ? "text-purple-600" : "text-slate-900"}`}
-      >
-        {value}
-      </span>
-    </div>
-  );
-}
-
-// ─── Active post guard ────────────────────────────────────────────────────────
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 function ActivePostGuard({ children }: { children: React.ReactNode }) {
-  const { data, isLoading } = useSWR("/api/v1/posts/active", fetcher);
+  const { data, isLoading } = useSWR(`/api/${API}/posts/active`, fetcher);
 
   if (isLoading) {
     return (
@@ -940,7 +953,7 @@ function ActivePostGuard({ children }: { children: React.ReactNode }) {
   if (data?.activePost) {
     return (
       <div className="max-w-lg mx-auto px-4 py-12">
-        <div className="bg-amber-50 border-2 border-amber-200 rounded-3xl p-8 text-center">
+        <div className="bg-amber-50 rounded-3xl p-8 text-center">
           <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
             <AlertTriangle className="w-7 h-7 text-amber-600" />
           </div>
@@ -959,12 +972,6 @@ function ActivePostGuard({ children }: { children: React.ReactNode }) {
               <FaWineBottle className="w-4 h-4 text-lime-400" />
               Vezi anunțul activ
             </Link>
-            <Link
-              href="/profil/postari"
-              className="text-sm text-slate-500 hover:text-slate-700 py-2"
-            >
-              Toate postările mele
-            </Link>
           </div>
         </div>
       </div>
@@ -973,8 +980,6 @@ function ActivePostGuard({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>;
 }
-
-// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function PostCreationClient({
   userPhone,
@@ -989,44 +994,49 @@ export default function PostCreationClient({
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [originalPhone] = useState(userPhone);
 
   const update = useCallback((partial: Partial<FormData>) => {
     setForm((prev) => ({ ...prev, ...partial }));
   }, []);
 
   const canProceed = () => {
-    if (step === 0) return (form.bottleCount as number) > 0;
+    if (step === 0) return form.bottleCount > 0;
     if (step === 1) return form.latitude !== null && form.longitude !== null;
-    if (step === 2) return true; // description is optional
     return true;
   };
 
   const handleNext = () => {
-    if (!canProceed()) return;
-    setStep((s) => Math.min(s + 1, STEPS.length - 1));
+    if (canProceed()) setStep((s) => Math.min(s + 1, STEPS.length - 1));
+    window.scrollTo(0, 0);
   };
-
-  const handleBack = () => setStep((s) => Math.max(s - 1, 0));
+  const handleBack = () => {
+    setStep((s) => Math.max(s - 1, 0));
+    window.scrollTo(0, 0);
+  };
 
   const handleSubmit = async () => {
     setSubmitting(true);
     setError("");
-
     try {
-      const res = await fetch("/api/v1/posts", {
+      const estimatedValue = parseFloat(
+        (form.bottleCount * RON_PER_BOTTLE).toFixed(2),
+      );
+
+      const res = await fetch(`/api/${API}/posts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           bottleCount: form.bottleCount,
-          estimatedValue: form.estimatedValue,
+          estimatedValue,
           collectorSharePercent: form.collectorSharePercent,
-          description: form.description.trim() || "",
+          description: form.description.trim(),
           latitude: form.latitude,
           longitude: form.longitude,
           locationName: form.locationName.trim() || null,
           address: form.address.trim() || null,
           phone: form.phone.trim() || null,
-          images: form.images,
+          images: [],
           expiresInHours: form.expiresInHours,
         }),
       });
@@ -1034,13 +1044,18 @@ export default function PostCreationClient({
       const json = await res.json();
 
       if (!res.ok) {
-        if (res.status === 409 && json.activePostId) {
-          setError("Ai deja un anunț activ. Reîncarcă pagina.");
-        } else {
-          setError(json.error ?? "A apărut o eroare.");
-        }
+        setError(json.error ?? "A apărut o eroare. Încearcă din nou.");
         setSubmitting(false);
         return;
+      }
+
+      const newPhone = form.phone.trim();
+      if (newPhone !== (originalPhone ?? "")) {
+        fetch(`/api/${API}/profile`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone: newPhone || null }),
+        }).catch(() => {});
       }
 
       router.push(`/post/${json.id}`);
@@ -1053,21 +1068,18 @@ export default function PostCreationClient({
   return (
     <ActivePostGuard>
       <div className="max-w-lg mx-auto px-4 py-8 min-h-[100dvh]">
-        <div className="mb-6 text-center">
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-            Postează sticle
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Câteva minute, bani în buzunar.
-          </p>
-        </div>
-
         <StepIndicator current={step} />
 
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 mb-6">
           {step === 0 && <StepBottles data={form} onChange={update} />}
           {step === 1 && <StepLocation data={form} onChange={update} />}
-          {step === 2 && <StepDetails data={form} onChange={update} />}
+          {step === 2 && (
+            <StepDetails
+              data={form}
+              onChange={update}
+              originalPhone={originalPhone}
+            />
+          )}
           {step === 3 && (
             <StepConfirm data={form} submitting={submitting} error={error} />
           )}
@@ -1079,7 +1091,7 @@ export default function PostCreationClient({
               type="button"
               onClick={handleBack}
               disabled={submitting}
-              className="flex items-center gap-2 px-5 py-3 rounded-full border-2 border-slate-200 text-slate-700 font-semibold text-sm hover:border-slate-300 transition-all disabled:opacity-40 cursor-pointer"
+              className="flex items-center gap-2 px-5 py-3.5 rounded-full border-2 border-slate-200 text-slate-700 font-semibold text-sm hover:border-slate-300 transition-all disabled:opacity-40 cursor-pointer"
             >
               <ChevronLeft className="w-4 h-4" /> Înapoi
             </button>
@@ -1090,7 +1102,7 @@ export default function PostCreationClient({
               type="button"
               onClick={handleNext}
               disabled={!canProceed()}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-full bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >
               Continuă <ChevronRight className="w-4 h-4" />
             </button>
@@ -1099,11 +1111,11 @@ export default function PostCreationClient({
               type="button"
               onClick={handleSubmit}
               disabled={submitting}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full bg-lime-400 text-black font-bold text-sm hover:bg-lime-300 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-full bg-lime-400 text-black font-bold text-sm hover:bg-lime-300 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >
               {submitting ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-black/40 border-t-black rounded-full animate-spin" />
                   Se postează...
                 </>
               ) : (
@@ -1115,14 +1127,6 @@ export default function PostCreationClient({
             </button>
           )}
         </div>
-
-        {!canProceed() && (
-          <p className="text-center text-xs text-slate-400 mt-3">
-            {step === 0 && "Selectează numărul de sticle pentru a continua."}
-            {step === 1 &&
-              "Setează locația apăsând pe hartă sau folosind GPS-ul."}
-          </p>
-        )}
       </div>
     </ActivePostGuard>
   );
