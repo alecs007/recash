@@ -1,29 +1,29 @@
 # ── Stage 1: deps ─────────────────────────────────────────────────────────────
 FROM node:20-alpine AS deps
+# Add openssl and libc6-compat
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 RUN npm install -g pnpm
 COPY package.json pnpm-lock.yaml ./
-# Include Prisma schema here so we can generate the client early
 COPY prisma ./prisma 
 RUN pnpm install --frozen-lockfile
 
 # ── Stage 2: build ────────────────────────────────────────────────────────────
 FROM node:20-alpine AS builder
-RUN apk upgrade --no-cache
 WORKDIR /app
 RUN npm install -g pnpm
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Ensure prisma engine is generated for the current OS
+# Generate prisma client for the correct target
 RUN pnpm prisma generate
 RUN pnpm run build
 
 # ── Stage 3: runtime ──────────────────────────────────────────────────────────
 FROM node:20-alpine AS runner
-RUN apk upgrade --no-cache
+# CRITICAL: Install OpenSSL 3.x in the final runner stage
+RUN apk add --no-cache openssl
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -32,14 +32,13 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs \
  && adduser  --system --uid 1001 nextjs
 
-# Standalone mode copies only the necessary files
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static     ./.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/public           ./public
 
-# IMPORTANT: Prisma usually lives inside the standalone/node_modules
-# If you still get errors, the standalone folder usually contains its own node_modules
-# which includes the generated prisma client.
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+
+
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma/client/libquery_engine-linux-musl-openssl-3.0.x.so.node ./node_modules/.prisma/client/
 
 USER nextjs
 EXPOSE 3000
