@@ -1,48 +1,60 @@
 /**
- * ws-server/server.ts  (v2)
+ * ws-server/server.ts  (v4)
  *
- * Standalone WebSocket server. Runs as a separate Render service.
- * Bridges Redis Pub/Sub → connected browser WebSocket clients.
+ * Auth fix: uses Redis one-time tokens instead of Prisma session lookup.
+ * NextAuth JWT strategy never writes to the Session table, so the old
+ * prisma.session.findUnique() always returned null and every connection failed.
  *
- * Bug fixed vs v1:
- *   node-redis v4 pSubscribe callback signature is (message, channel),
- *   NOT (channel, message). Previous code dispatched to the wrong key,
- *   so NO messages ever reached any client.
+ * Flow:
+ *   1. Client calls GET /api/v1/auth/ws-token on the Next.js server
+ *   2. Next.js writes  redis.set("ws-token:<random>", userId, EX 60)
+ *      and returns the random token.
+ *   3. Client connects  ws://server?token=<random>
+ *   4. WS server calls  redis.getDel("ws-token:<random>")  → userId
+ *      The key is deleted atomically (single-use).
+ *   5. Connection is accepted with the resolved userId.
+ *
+ * Other changes vs v3:
+ *   - Removed Prisma dependency entirely (no longer needed)
+ *   - Two Redis clients: subscriber (pub/sub) + redisCli (getDel)
+ *   - Uses PORT env (Railway injects this) with WS_PORT as local dev fallback
+ *   - HTTP server for /health + noServer WebSocketServer on the same port
+ *   - Origin validation in production via ALLOWED_ORIGIN env
  */
 
 import "dotenv/config";
+import { createServer, IncomingMessage, ServerResponse } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { createClient } from "redis";
-import { PrismaClient } from "@prisma/client";
-import { IncomingMessage } from "http";
 import { parse as parseUrl } from "url";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const PORT = parseInt(process.env.WS_PORT ?? "4001", 10);
+const PORT = parseInt(process.env.PORT ?? process.env.WS_PORT ?? "4001", 10);
 const REDIS_URL = process.env.REDIS_URL;
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ?? "";
 
 if (!REDIS_URL) {
   console.error("[ws] REDIS_URL env var is required");
   process.exit(1);
 }
 
-const HEARTBEAT_MS = 25_000; // ping every 25 s
-const PONG_TIMEOUT_MS = 10_000; // terminate if no pong within 10 s
+const HEARTBEAT_MS = 25_000;
+const PONG_TIMEOUT_MS = 10_000;
 
-// ─── Prisma (session lookup for auth) ────────────────────────────────────────
-
-const prisma = new PrismaClient({ log: ["error"] });
-
-// ─── Redis subscriber (dedicated connection — must not share with publisher) ──
+// ─── Redis ────────────────────────────────────────────────────────────────────
+// Two separate connections: a subscriber in pub/sub mode cannot run commands.
 
 const subscriber = createClient({ url: REDIS_URL });
 subscriber.on("error", (err) => console.error("[redis/sub]", err));
 
+const redisCli = createClient({ url: REDIS_URL });
+redisCli.on("error", (err) => console.error("[redis/cli]", err));
+
 // ─── Connection registry ──────────────────────────────────────────────────────
 
-const userSockets = new Map<string, Set<WebSocket>>(); // userId → sockets
-const postSockets = new Map<string, Set<WebSocket>>(); // postId → sockets
+const userSockets = new Map<string, Set<WebSocket>>();
+const postSockets = new Map<string, Set<WebSocket>>();
 
 interface SocketMeta {
   userId: string;
@@ -77,20 +89,25 @@ function broadcast(sockets: Set<WebSocket> | undefined, msg: string) {
   }
 }
 
-// ─── Auth ─────────────────────────────────────────────────────────────────────
+// ─── Origin validation ────────────────────────────────────────────────────────
+
+function isOriginAllowed(origin: string | undefined): boolean {
+  if (!ALLOWED_ORIGIN || process.env.NODE_ENV !== "production") return true;
+  if (!origin) return false;
+  return origin.replace(/\/$/, "") === ALLOWED_ORIGIN.replace(/\/$/, "");
+}
+
+// ─── Auth — Redis one-time token ──────────────────────────────────────────────
 
 async function authenticate(req: IncomingMessage): Promise<string | null> {
   try {
     const { query } = parseUrl(req.url ?? "", true);
     const token = typeof query.token === "string" ? query.token : null;
-    if (!token) return null;
+    if (!token || token.length < 32) return null;
 
-    const session = await prisma.session.findUnique({
-      where: { sessionToken: token },
-      select: { userId: true, expires: true },
-    });
-    if (!session || session.expires < new Date()) return null;
-    return session.userId;
+    // getDel is atomic: retrieves AND deletes in one round-trip (single-use token)
+    const userId = await redisCli.getDel(`ws-token:${token}`);
+    return userId ?? null;
   } catch (err) {
     console.error("[ws/auth]", err);
     return null;
@@ -102,15 +119,12 @@ async function authenticate(req: IncomingMessage): Promise<string | null> {
 function schedulePing(ws: WebSocket) {
   const meta = socketMeta.get(ws);
   if (!meta) return;
-
-  // Clear any existing timers
   if (meta.pingTimer) clearTimeout(meta.pingTimer);
   if (meta.pongKillTimer) clearTimeout(meta.pongKillTimer);
 
   meta.pingTimer = setTimeout(() => {
     if (ws.readyState !== WebSocket.OPEN) return;
     ws.ping();
-
     meta.pongKillTimer = setTimeout(() => {
       console.log(`[ws] no pong from user=${meta.userId}, terminating`);
       ws.terminate();
@@ -123,28 +137,21 @@ function schedulePing(ws: WebSocket) {
 function cleanup(ws: WebSocket) {
   const meta = socketMeta.get(ws);
   if (!meta) return;
-
   if (meta.pingTimer) clearTimeout(meta.pingTimer);
   if (meta.pongKillTimer) clearTimeout(meta.pongKillTimer);
-
   roomDel(userSockets, meta.userId, ws);
   for (const postId of meta.postIds) roomDel(postSockets, postId, ws);
-
   socketMeta.delete(ws);
 }
 
-// ─── Redis message dispatcher ─────────────────────────────────────────────────
-//
-// node-redis v4 pSubscribe callback: (message: string, channel: string)
-// NOTE: message comes FIRST, channel comes SECOND — opposite of what you'd expect!
+// ─── Redis pub/sub dispatcher ─────────────────────────────────────────────────
+// node-redis v4: pSubscribe callback is (message, channel) — message comes FIRST
 
 function onPubSubMessage(message: string, channel: string) {
   if (channel.startsWith("recash:user:")) {
-    const userId = channel.slice("recash:user:".length);
-    broadcast(userSockets.get(userId), message);
+    broadcast(userSockets.get(channel.slice("recash:user:".length)), message);
   } else if (channel.startsWith("recash:post:")) {
-    const postId = channel.slice("recash:post:".length);
-    broadcast(postSockets.get(postId), message);
+    broadcast(postSockets.get(channel.slice("recash:post:".length)), message);
   }
 }
 
@@ -153,7 +160,6 @@ function onPubSubMessage(message: string, channel: string) {
 function handleClientMessage(ws: WebSocket, raw: string) {
   const meta = socketMeta.get(ws);
   if (!meta) return;
-
   let msg: { type: string; payload?: { postId?: string } };
   try {
     msg = JSON.parse(raw);
@@ -162,7 +168,7 @@ function handleClientMessage(ws: WebSocket, raw: string) {
   }
 
   const postId = msg.payload?.postId;
-  if (!postId) return;
+  if (!postId || typeof postId !== "string" || postId.length > 100) return;
 
   if (msg.type === "subscribe_post") {
     meta.postIds.add(postId);
@@ -176,51 +182,74 @@ function handleClientMessage(ws: WebSocket, raw: string) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
-  await subscriber.connect();
-  console.log("[ws] Redis subscriber connected");
+  await Promise.all([subscriber.connect(), redisCli.connect()]);
+  console.log("[ws] Redis connected");
 
-  // node-redis v4: pSubscribe(pattern, callback(message, channel))
   await subscriber.pSubscribe("recash:*", onPubSubMessage);
   console.log("[ws] subscribed to recash:* pattern");
 
-  const wss = new WebSocketServer({ port: PORT });
-  console.log(`[ws] listening on port ${PORT}`);
+  const httpServer = createServer(
+    (_req: IncomingMessage, res: ServerResponse) => {
+      if (_req.url === "/health") {
+        res.writeHead(200, { "Content-Type": "text/plain" });
+        res.end("OK");
+        return;
+      }
+      res.writeHead(404);
+      res.end();
+    },
+  );
 
-  wss.on("connection", async (ws: WebSocket, req: IncomingMessage) => {
-    const userId = await authenticate(req);
-    if (!userId) {
-      ws.close(4001, "Unauthorized");
+  const wss = new WebSocketServer({ noServer: true });
+
+  httpServer.on("upgrade", async (req: IncomingMessage, socket, head) => {
+    if (!isOriginAllowed(req.headers["origin"])) {
+      socket.write("HTTP/1.1 403 Forbidden\r\n\r\n");
+      socket.destroy();
       return;
     }
 
-    const meta: SocketMeta = { userId, postIds: new Set() };
-    socketMeta.set(ws, meta);
-    roomAdd(userSockets, userId, ws);
+    const userId = await authenticate(req);
+    if (!userId) {
+      socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
+      socket.destroy();
+      return;
+    }
 
-    ws.send(JSON.stringify({ type: "connected", payload: { userId } }));
-    schedulePing(ws);
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      const meta: SocketMeta = { userId, postIds: new Set() };
+      socketMeta.set(ws, meta);
+      roomAdd(userSockets, userId, ws);
 
-    ws.on("message", (data) => handleClientMessage(ws, data.toString()));
-    ws.on("pong", () => {
-      const m = socketMeta.get(ws);
-      if (m?.pongKillTimer) {
-        clearTimeout(m.pongKillTimer);
-        m.pongKillTimer = undefined;
-      }
-      schedulePing(ws); // schedule next ping cycle
+      ws.send(JSON.stringify({ type: "connected", payload: { userId } }));
+      schedulePing(ws);
+
+      ws.on("message", (data) => handleClientMessage(ws, data.toString()));
+      ws.on("pong", () => {
+        const m = socketMeta.get(ws);
+        if (m?.pongKillTimer) {
+          clearTimeout(m.pongKillTimer);
+          m.pongKillTimer = undefined;
+        }
+        schedulePing(ws);
+      });
+      ws.on("close", () => cleanup(ws));
+      ws.on("error", (err) => {
+        console.error(`[ws] socket error user=${userId}:`, err);
+        cleanup(ws);
+      });
     });
-    ws.on("close", () => cleanup(ws));
-    ws.on("error", (err) => {
-      console.error(`[ws] socket error user=${userId}:`, err);
-      cleanup(ws);
-    });
+  });
+
+  httpServer.listen(PORT, () => {
+    console.log(`[ws] HTTP+WS server listening on port ${PORT}`);
   });
 
   const shutdown = async () => {
     console.log("[ws] shutting down");
+    httpServer.close();
     wss.close();
-    await subscriber.quit();
-    await prisma.$disconnect();
+    await Promise.all([subscriber.quit(), redisCli.quit()]);
     process.exit(0);
   };
   process.on("SIGTERM", shutdown);

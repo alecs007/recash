@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { FaWineBottle } from "react-icons/fa";
 import { PostStatus, Post } from "@/types";
-import L from "leaflet";
+import type { Map as LeafletMap } from "leaflet";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -51,7 +51,8 @@ function PostMap({
   locationName: string | null;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<L.Map | null>(null);
+
+  const mapRef = useRef<LeafletMap | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -78,6 +79,7 @@ function PostMap({
 
   useEffect(() => {
     if (!ready || !ref.current || mapRef.current) return;
+
     const L = window.L;
     const map = L.map(ref.current, {
       center: [lat, lng],
