@@ -90,28 +90,32 @@ export async function POST(
         where: { id: post.transaction!.id },
         data: isPoster
           ? {
-              posterRating: rating,
-              posterReview: review ?? null,
-              posterRatedAt: new Date(),
-            }
-          : {
               collectorRating: rating,
               collectorReview: review ?? null,
               collectorRatedAt: new Date(),
+            }
+          : {
+              posterRating: rating,
+              posterReview: review ?? null,
+              posterRatedAt: new Date(),
             },
       });
 
-      const asPoster = await tx.transaction.aggregate({
-        where: { posterId: reviewedUserId, posterRating: { not: null } },
-        _sum: { posterRating: true },
-        _count: { posterRating: true },
-      });
-
-      const asCollector = await tx.transaction.aggregate({
-        where: { collectorId: reviewedUserId, collectorRating: { not: null } },
-        _sum: { collectorRating: true },
-        _count: { collectorRating: true },
-      });
+      const [asPoster, asCollector] = await Promise.all([
+        tx.transaction.aggregate({
+          where: { posterId: reviewedUserId, posterRating: { not: null } },
+          _sum: { posterRating: true },
+          _count: { posterRating: true },
+        }),
+        tx.transaction.aggregate({
+          where: {
+            collectorId: reviewedUserId,
+            collectorRating: { not: null },
+          },
+          _sum: { collectorRating: true },
+          _count: { collectorRating: true },
+        }),
+      ]);
 
       const totalCount =
         (asPoster._count.posterRating ?? 0) +

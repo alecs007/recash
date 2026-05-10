@@ -242,7 +242,6 @@ function CodeEntry({
   onComplete: () => void;
 }) {
   const [code, setCode] = useState("");
-  const [bottles, setBottles] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const submit = async () => {
@@ -259,7 +258,6 @@ function CodeEntry({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           code: c,
-          actualBottleCount: bottles ? parseInt(bottles) : undefined,
         }),
       });
       const j = await res.json();
@@ -292,18 +290,7 @@ function CodeEntry({
         autoCapitalize="characters"
         className="w-full px-4 py-4 rounded-xl border-2 border-slate-200 focus:border-[#123424] outline-none text-3xl font-black text-center tracking-[0.5em] text-slate-900 bg-white uppercase transition-colors"
       />
-      <div>
-        <label className="text-xs text-slate-500 mb-1.5 block">
-          Număr real de sticle <span className="italic">(dacă diferă)</span>
-        </label>
-        <input
-          type="number"
-          value={bottles}
-          onChange={(e) => setBottles(e.target.value)}
-          placeholder="Lasă gol dacă e același"
-          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#123424] outline-none text-sm bg-white transition-colors"
-        />
-      </div>
+
       {error && <p className="text-sm text-red-500 font-medium">{error}</p>}
       <button
         onClick={submit}
