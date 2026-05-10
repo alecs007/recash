@@ -1,0 +1,27 @@
+{
+  "name": "recash-ws",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"next dev\" \"tsx watch ws-server/server.ts\"",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "ws:build": "cd ws-server && npm run build",
+    "prisma:push": "prisma db push",
+    "prisma:seed": "tsx scripts/seed.ts",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "dotenv": "^17.4.2",
+    "redis": "^5.12.1",
+    "ws": "^8.20.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/ws": "^8.18.1",
+    "prisma": "^5.22.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5"
+  }
+}

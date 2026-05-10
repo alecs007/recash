@@ -1,0 +1,52 @@
+# render.yaml — Render Blueprint
+# https://render.com/docs/infrastructure-as-code
+
+services:
+  # ── Next.js app ──────────────────────────────────────────────────────────────
+  - type: web
+    name: recash-web
+    runtime: docker
+    dockerfilePath: ./Dockerfile.nextjs
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_VERSION
+        value: v1
+      # Set this AFTER recash-ws is deployed — format: wss://recash-ws.onrender.com
+      - key: NEXT_PUBLIC_WS_URL
+        sync: false
+      # All secrets entered in Render dashboard (not committed to git)
+      - key: RECASH_DATABASE_URI
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: AUTH_SECRET
+        sync: false
+      - key: AUTH_GOOGLE_ID
+        sync: false
+      - key: AUTH_GOOGLE_SECRET
+        sync: false
+      - key: AUTH_FACEBOOK_ID
+        sync: false
+      - key: AUTH_FACEBOOK_SECRET
+        sync: false
+
+  # ── WebSocket server ──────────────────────────────────────────────────────────
+  - type: web
+    name: recash-ws
+    runtime: docker
+    dockerfilePath: ./ws-server/Dockerfile
+    dockerContext: ./ws-server # only ws-server/ is sent as build context
+    plan: starter
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: WS_PORT
+        value: "4001"
+      - key: REDIS_URL
+        sync: false
+      - key: RECASH_DATABASE_URI
+        sync: false

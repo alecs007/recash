@@ -3,9 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"tsx watch server.ts\" \"next dev\"",
+    "dev": "concurrently \"next dev\" \"tsx watch ws-server/server.ts\"",
     "build": "prisma generate && next build",
-    "start": "node dist/server.js && next start",
+    "start": "next start",
+    "ws:build": "cd ws-server && npm run build",
     "prisma:push": "prisma db push",
     "prisma:seed": "tsx scripts/seed.ts",
     "lint": "eslint"

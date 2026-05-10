@@ -1,0 +1,8 @@
+node_modules
+.next
+.git
+.env*
+dist
+coverage
+ws-server/node_modules
+ws-server/dist
