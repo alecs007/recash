@@ -9,34 +9,34 @@ RUN pnpm install --frozen-lockfile
 
 # ── Stage 2: build ────────────────────────────────────────────────────────────
 FROM node:20-alpine AS builder
+# CRITICAL: Install OpenSSL here so 'prisma generate' detects the correct OS
+RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 RUN npm install -g pnpm
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Force the binary target during generation
-ENV PRISMA_CLI_BINARY_TARGETS=linux-musl-openssl-3.0.x
 RUN pnpm prisma generate
 RUN pnpm run build
 
 # ── Stage 3: runtime ──────────────────────────────────────────────────────────
 FROM node:20-alpine AS runner
-# Install openssl 3.x for the runtime
 RUN apk add --no-cache openssl
 WORKDIR /app
 
 ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN addgroup --system --gid 1001 nodejs \
  && adduser  --system --uid 1001 nextjs
 
-# Copy the standalone output
+# Copy Next.js standalone build
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
-
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma/client/libquery_engine-linux-musl-openssl-3.0.x.so.node ./node_modules/.prisma/client/
+# Safely copy whatever engine Prisma generated using a wildcard
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma/client/*engine*.node ./node_modules/.prisma/client/
 
 USER nextjs
 EXPOSE 3000
