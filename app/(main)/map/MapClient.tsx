@@ -20,6 +20,7 @@ import { FiMap } from "react-icons/fi";
 import { FaListUl } from "react-icons/fa6";
 import { FaWineBottle, FaRegCompass } from "react-icons/fa";
 import useSWR from "swr";
+import { useSetActiveCounts } from "@/hooks/useActiveCounts";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -780,6 +781,7 @@ export default function MapPage() {
   const { data: session } = useSession();
   const { open: openAuthModal } = useAuthModal();
   const router = useRouter();
+  const setActiveCounts = useSetActiveCounts();
 
   const [mobileView, setMobileView] = useState<"list" | "map">("map");
   const [search, setSearch] = useState("");
@@ -893,6 +895,8 @@ export default function MapPage() {
         }
 
         await mutate();
+
+        setActiveCounts({ activeCollections: 1, activeCollectionId: postId });
         router.push(`/post/${postId}`);
       } catch {
         setClaimError("Eroare de rețea. Încearcă din nou.");
@@ -907,6 +911,7 @@ export default function MapPage() {
       openAuthModal,
       posts,
       currentUserId,
+      setActiveCounts,
     ],
   );
 

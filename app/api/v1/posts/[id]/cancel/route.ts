@@ -66,7 +66,7 @@ export async function POST(
         data: { status: "CANCELLED" },
       });
 
-      publishPostStatus({ postId: id, status: "CANCELLED" });
+      publishPostStatus({ postId: id, status: "CANCELLED" }, [post.authorId]);
       publishPostCancelled(id, [post.authorId], {
         postId: id,
         cancelledBy: "poster",
@@ -85,7 +85,9 @@ export async function POST(
         if (post.collectorId) {
           await notifyPostCancelled(post.collectorId, id, "poster");
         }
-        publishPostStatus({ postId: id, status: "OPEN", collectorId: null });
+        publishPostStatus({ postId: id, status: "OPEN", collectorId: null }, [
+          post.collectorId!,
+        ]);
         publishPostCancelled(
           id,
           [post.authorId, ...(post.collectorId ? [post.collectorId] : [])],
@@ -97,7 +99,9 @@ export async function POST(
           where: { id },
           data: { status: "OPEN", collectorId: null, claimedAt: null },
         });
-        publishPostStatus({ postId: id, status: "OPEN", collectorId: null });
+        publishPostStatus({ postId: id, status: "OPEN", collectorId: null }, [
+          post.authorId,
+        ]);
         publishPostCancelled(
           id,
           [post.authorId, ...(post.collectorId ? [post.collectorId] : [])],
@@ -121,12 +125,15 @@ export async function POST(
       ];
 
       if (isAuthor && post.collectorId) {
+        publishPostStatus({ postId: id, status: "CANCELLED" }, [
+          post.collectorId!,
+        ]);
         await notifyPostCancelled(post.collectorId, id, "poster");
       } else if (isCollector) {
+        publishPostStatus({ postId: id, status: "CANCELLED" }, [post.authorId]);
         await notifyPostCancelled(post.authorId, id, "collector");
       }
 
-      publishPostStatus({ postId: id, status: "CANCELLED" });
       publishPostCancelled(id, affectedUsers, {
         postId: id,
         cancelledBy,

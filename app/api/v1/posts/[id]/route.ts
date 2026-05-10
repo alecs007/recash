@@ -61,13 +61,13 @@ export async function GET(
     const isCollector = userId === post.collectorId;
     const isParticipant = isAuthor || isCollector;
 
-    // Sanitize sensitive fields for non-participants
+    // Sanitized sensitive fields for non-participants
     if (!isParticipant) {
       return NextResponse.json({
         ...post,
         author: {
           ...post.author,
-          phone: null, // hide phone from strangers
+          phone: null, // hiding phone from strangers
         },
         collector: post.collector ? { ...post.collector, phone: null } : null,
       });

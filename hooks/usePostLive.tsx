@@ -1,18 +1,5 @@
 "use client";
 
-/**
- * hooks/usePostLive.ts  (v2)
- *
- * Provides live post data for PostDetailPage.
- *
- * Bugs fixed vs v1:
- *  1. The fallback poll had self-contradicting conditions — it always returned
- *     early, making the interval dead code. Fixed: WS URL present → trust WS
- *     only. WS URL absent → fall back to 5 s polling.
- *  2. subscribePost is now safe to call on mount even before WS connects
- *     (messages queue in useRecashSocket v2).
- */
-
 import { useEffect, useCallback } from "react";
 import useSWR from "swr";
 import { useRecashSocket } from "./useRecashSocket";

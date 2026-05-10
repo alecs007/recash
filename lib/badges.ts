@@ -2,8 +2,6 @@ import { prisma } from "./prisma";
 import { BadgeType } from "@prisma/client";
 import { invalidate, CacheKey } from "./cache";
 
-// ─── Label map (kept in sync with BADGE_CONFIG in the UI) ────────────────────
-
 const BADGE_LABELS: Record<BadgeType, string> = {
   FIRST_POST: "Prima Postare",
   POST_VETERAN_10: "10 Postări",
@@ -25,27 +23,22 @@ const BADGE_LABELS: Record<BadgeType, string> = {
   PERFECT_RATING: "Rating Perfect",
 };
 
-// ─── Core primitive ───────────────────────────────────────────────────────────
-
-/**
- * Awards a badge. Completely idempotent — safe to call any number of times.
- * Returns `true` only when the badge was *newly* created.
- * Fires a notification and invalidates the badge cache on first award.
- */
 export async function awardBadge(
   userId: string,
   type: BadgeType,
 ): Promise<boolean> {
   try {
-    // 1. Attempt to create the badge record.
-    // Because of @@unique([userId, type]) in schema.prisma,
-    // this will FAIL if the user already has this badge.
-    await prisma.badge.create({
-      data: { userId, type },
+    // Check first, avoids a write on the common already has badge path
+    const existing = await prisma.badge.findUnique({
+      where: { userId_type: { userId, type } },
+      select: { id: true },
     });
+    if (existing) return false;
 
-    // 2. If we reached this line, the badge is brand NEW.
-    // We fire side effects only for the first-time award.
+    // Create if a concurrent request beat us, the unique index will throw
+    await prisma.badge.create({ data: { userId, type } });
+
+    // Only fires for brand-new badges
     await Promise.all([
       prisma.notification.create({
         data: {
@@ -61,18 +54,17 @@ export async function awardBadge(
 
     return true;
   } catch (err) {
-    // P2002 = MongoDB unique constraint violation.
-    // This means the user already has the badge; we return false silently.
-    if ((err as { code?: string }).code === "P2002") {
-      return false;
-    }
+    const code = (err as { code?: string }).code;
+    const meta = (err as { meta?: { message?: string } }).meta;
+    const isDuplicate =
+      code === "P2002" ||
+      (meta?.message ?? "").includes("duplicate key") ||
+      (meta?.message ?? "").includes("E11000");
 
-    // For any other error (DB connection, etc.), throw it.
+    if (isDuplicate) return false;
     throw err;
   }
 }
-
-// ─── Event: post created ──────────────────────────────────────────────────────
 
 export async function checkPostBadges(userId: string): Promise<void> {
   const count = await prisma.post.count({ where: { authorId: userId } });
@@ -86,12 +78,9 @@ export async function checkPostBadges(userId: string): Promise<void> {
   await Promise.all(candidates.map((t) => awardBadge(userId, t)));
 }
 
-// ─── Event: transaction completed ────────────────────────────────────────────
-
 export async function checkTransactionBadges(
   posterId: string,
   collectorId: string,
-  /** Pass claimedAt if available to check SPEED_DEMON */
   claimedAt?: Date | null,
 ): Promise<void> {
   const [posterTxCount, collectorTxCount, posterUser, collectorUser] =
@@ -151,8 +140,6 @@ export async function checkTransactionBadges(
     ...collectorCandidates.map((t) => awardBadge(collectorId, t)),
   ]);
 }
-
-// ─── Event: rating submitted ──────────────────────────────────────────────────
 
 export async function checkRatingBadges(userId: string): Promise<void> {
   const user = await prisma.user.findUnique({

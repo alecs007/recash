@@ -101,35 +101,34 @@ export async function POST(
             },
       });
 
-      const [posterAgg, collectorAgg] = await Promise.all([
-        tx.transaction.aggregate({
-          where: { posterId: reviewedUserId, posterRating: { not: null } },
-          _avg: { posterRating: true },
-          _count: { posterRating: true },
-        }),
-        tx.transaction.aggregate({
-          where: {
-            collectorId: reviewedUserId,
-            collectorRating: { not: null },
-          },
-          _avg: { collectorRating: true },
-          _count: { collectorRating: true },
-        }),
-      ]);
+      const asPoster = await tx.transaction.aggregate({
+        where: { posterId: reviewedUserId, posterRating: { not: null } },
+        _sum: { posterRating: true },
+        _count: { posterRating: true },
+      });
 
-      const posterCount = posterAgg._count.posterRating ?? 0;
-      const collectorCount = collectorAgg._count.collectorRating ?? 0;
-      const totalCount = posterCount + collectorCount;
+      const asCollector = await tx.transaction.aggregate({
+        where: { collectorId: reviewedUserId, collectorRating: { not: null } },
+        _sum: { collectorRating: true },
+        _count: { collectorRating: true },
+      });
+
+      const totalCount =
+        (asPoster._count.posterRating ?? 0) +
+        (asCollector._count.collectorRating ?? 0);
+      const totalSum =
+        (asPoster._sum.posterRating ?? 0) +
+        (asCollector._sum.collectorRating ?? 0);
 
       if (totalCount > 0) {
-        const weightedSum =
-          (posterAgg._avg.posterRating ?? 0) * posterCount +
-          (collectorAgg._avg.collectorRating ?? 0) * collectorCount;
-        const newScore = Math.round((weightedSum / totalCount) * 100) / 100;
+        const newScore = Math.round((totalSum / totalCount) * 100) / 100;
 
         await tx.user.update({
           where: { id: reviewedUserId },
-          data: { reputationScore: newScore, ratingCount: totalCount },
+          data: {
+            reputationScore: newScore,
+            ratingCount: totalCount,
+          },
         });
       }
     });

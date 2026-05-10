@@ -86,12 +86,15 @@ export async function POST(
     );
 
     // Push post status update to everyone watching this post
-    publishPostStatus({
-      postId: id,
-      status: "CLAIMED",
-      collectorId: session.user.id,
-      collectorName: collector?.name ?? null,
-    });
+    publishPostStatus(
+      {
+        postId: id,
+        status: "CLAIMED",
+        collectorId: session.user.id,
+        collectorName: collector?.name ?? null,
+      },
+      [post.authorId],
+    );
 
     return NextResponse.json({ success: true, status: updated.status });
   } catch (err: unknown) {

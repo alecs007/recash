@@ -75,7 +75,7 @@ export async function notifyPostClaimed(
   return createNotification({
     userId: posterId,
     type: "POST_CLAIMED",
-    title: "Cineva vrea să îți colecteze sticlele!",
+    title: "Un colector vrea să îți preia sticlele!",
     message: `${collectorName} dorește să colecteze cele ${bottleCount} sticle. Aprobă sau refuză cererea.`,
     link: `/post/${postId}`,
     metadata: { postId, collectorName },
@@ -142,7 +142,7 @@ export async function notifyPostCancelled(
     title: "Anunț anulat",
     message:
       cancelledBy === "poster"
-        ? "Posterul a anulat acest anunț."
+        ? "Autorul a anulat acest anunț."
         : "Colectorul a anulat colectarea. Anunțul tău este din nou disponibil.",
     link: `/profil/postari`,
     metadata: { postId, cancelledBy },

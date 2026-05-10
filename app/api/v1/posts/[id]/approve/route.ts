@@ -5,7 +5,7 @@ import { rateLimit, RL } from "@/lib/rate-limit";
 import { approveClaimSchema } from "@/lib/validations/post";
 import { notifyClaimApproved, notifyClaimDenied } from "@/lib/notifications";
 import { redis } from "@/lib/redis";
-import { publishPostStatus } from "@/lib/pubsub";
+import { publishPostStatus, publishToUser } from "@/lib/pubsub";
 
 const COLLECTION_WINDOW_MINUTES = 30;
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -92,13 +92,16 @@ export async function POST(
         post.author.name ?? "Posterul",
       );
 
-      // Push to both the post room and the collector's user channel
-      publishPostStatus({
-        postId: id,
-        status: "IN_PROGRESS",
-        collectorId: post.collectorId,
-        expiresAt: collectionDeadline.toISOString(),
-      });
+      // Notify both post room and both users channels
+      publishPostStatus(
+        {
+          postId: id,
+          status: "IN_PROGRESS",
+          collectorId: post.collectorId,
+          expiresAt: collectionDeadline.toISOString(),
+        },
+        [session.user.id, post.collectorId],
+      );
 
       return NextResponse.json({
         success: true,
@@ -117,10 +120,18 @@ export async function POST(
         post.author.name ?? "Posterul",
       );
 
-      publishPostStatus({
-        postId: id,
-        status: "OPEN",
-        collectorId: null,
+      publishPostStatus({ postId: id, status: "OPEN", collectorId: null }, [
+        session.user.id,
+      ]);
+
+      publishToUser(post.collectorId, {
+        type: "post:cancelled",
+        payload: {
+          postId: id,
+          cancelledBy: "poster",
+          newStatus: "OPEN",
+          reason: "claim_denied",
+        },
       });
 
       return NextResponse.json({ success: true, status: "OPEN" });

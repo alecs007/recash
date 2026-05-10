@@ -24,7 +24,7 @@ export async function POST(
 
   const { id } = await params;
 
-  let body: { code?: string; actualBottleCount?: number } = {};
+  let body: { code?: string } = {};
   try {
     body = await req.json();
   } catch {
@@ -80,8 +80,8 @@ export async function POST(
       );
     }
 
-    const finalBottleCount = body.actualBottleCount ?? post.bottleCount;
-    const actualValue = finalBottleCount * SGR_VALUE_PER_BOTTLE;
+    const bottleCount = post.bottleCount;
+    const actualValue = bottleCount * SGR_VALUE_PER_BOTTLE;
     const collectorEarning = (actualValue * post.collectorSharePercent) / 100;
     const posterEarning = actualValue - collectorEarning;
 
@@ -95,7 +95,7 @@ export async function POST(
           postId: id,
           posterId: post.authorId,
           collectorId: post.collectorId!,
-          bottleCount: finalBottleCount,
+          bottleCount,
           actualValue,
           collectorEarning,
           posterEarning,
@@ -104,7 +104,7 @@ export async function POST(
       await tx.user.update({
         where: { id: post.authorId },
         data: {
-          totalBottlesGiven: { increment: finalBottleCount },
+          totalBottlesGiven: { increment: bottleCount },
           totalTransactions: { increment: 1 },
           totalSaved: { increment: posterEarning },
         },
@@ -112,7 +112,7 @@ export async function POST(
       await tx.user.update({
         where: { id: post.collectorId! },
         data: {
-          totalBottlesCollected: { increment: finalBottleCount },
+          totalBottlesCollected: { increment: bottleCount },
           totalTransactions: { increment: 1 },
           totalEarned: { increment: collectorEarning },
         },
@@ -131,13 +131,16 @@ export async function POST(
       notifyPostCompleted(post.collectorId!, id, collectorEarning, "collector"),
     ]);
 
-    publishPostStatus({ postId: id, status: "COMPLETED" });
+    publishPostStatus({ postId: id, status: "COMPLETED" }, [
+      post.authorId,
+      post.collectorId!,
+    ]);
     publishPostCompleted(id, post.authorId, post.collectorId!, {
       postId: id,
       actualValue,
       collectorEarning,
       posterEarning,
-      bottleCount: finalBottleCount,
+      bottleCount,
     });
 
     await Promise.all([
@@ -151,7 +154,7 @@ export async function POST(
         actualValue,
         collectorEarning,
         posterEarning,
-        bottleCount: finalBottleCount,
+        bottleCount,
       },
     });
   } catch (err) {

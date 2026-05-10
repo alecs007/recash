@@ -22,6 +22,7 @@ import {
 import { FaWineBottle } from "react-icons/fa";
 import { PostStatus, Post } from "@/types";
 import type { Map as LeafletMap } from "leaflet";
+import { useSetActiveCounts } from "@/hooks/useActiveCounts";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -640,6 +641,7 @@ function DetailPanel({
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState("");
   const [justReviewed, setJustReviewed] = useState(false);
+  const setActiveCounts = useSetActiveCounts();
 
   const statusCfg = STATUS_CONFIG[post.status];
   const posterPct = 100 - post.collectorSharePercent;
@@ -715,8 +717,7 @@ function DetailPanel({
         if (!res.ok) {
           setActionError(j.error ?? "Eroare");
         } else if (action === "deny") {
-          // Redirect to home with toast after denying a claim
-          onRedirect("/?toast=claim_denied");
+          mutate();
         } else {
           mutate();
         }
@@ -726,7 +727,7 @@ function DetailPanel({
         setActionLoading(false);
       }
     },
-    [post.id, mutate, onRedirect],
+    [post.id, mutate],
   );
 
   const handleCancel = useCallback(
@@ -747,7 +748,12 @@ function DetailPanel({
         if (!res.ok) {
           setActionError(j.error ?? "Eroare");
         } else {
-          // Redirect to home page with the appropriate toast message
+          // Instant optimistic update for the acting user
+          if (isAuthor) {
+            setActiveCounts({ activePosts: 0, activePostId: null });
+          } else {
+            setActiveCounts({ activeCollections: 0, activeCollectionId: null });
+          }
           onRedirect(`/?toast=${toastKey}`);
         }
       } catch {
@@ -756,7 +762,7 @@ function DetailPanel({
         setActionLoading(false);
       }
     },
-    [post.id, post.status, isAuthor, onRedirect],
+    [post.id, post.status, isAuthor, onRedirect, setActiveCounts],
   );
 
   return (
@@ -949,7 +955,16 @@ function DetailPanel({
                   </button>
                 )
               ) : (
-                <CodeEntry postId={post.id} onComplete={() => mutate()} />
+                <CodeEntry
+                  postId={post.id}
+                  onComplete={() => {
+                    setActiveCounts({
+                      activeCollections: 0,
+                      activeCollectionId: null,
+                    });
+                    mutate();
+                  }}
+                />
               )}
             </div>
           </div>

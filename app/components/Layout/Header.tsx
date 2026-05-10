@@ -15,8 +15,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNotificationBell } from "@/hooks/useNotificationBell";
 import { useActiveCounts } from "@/hooks/useActiveCounts";
 
-// ─── Active post / collection indicator ───────────────────────────────────────
-
 function ActiveIndicator({
   activePosts,
   activeCollections,
@@ -149,8 +147,6 @@ function ActiveIndicator({
   );
 }
 
-// ─── Shimmer while session loads ──────────────────────────────────────────────
-
 const Shimmer = () => (
   <div className="flex items-center gap-3 pl-1 pr-2 py-1">
     <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse" />
@@ -158,8 +154,6 @@ const Shimmer = () => (
     <div className="w-3.5 h-3.5 rounded-full bg-slate-200 animate-pulse" />
   </div>
 );
-
-// ─── Header ───────────────────────────────────────────────────────────────────
 
 export default function Header({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -172,10 +166,8 @@ export default function Header({ children }: { children: React.ReactNode }) {
   const isAuthenticated = status === "authenticated" && !!session?.user;
   const isLoading = status === "loading";
 
-  // WS-driven bell count — no polling
   const { unreadCount } = useNotificationBell(isAuthenticated);
 
-  // WS-driven active counts — instant update on claim/complete/cancel
   const { activePosts, activeCollections, activePostId, activeCollectionId } =
     useActiveCounts(isAuthenticated);
 
@@ -221,7 +213,6 @@ export default function Header({ children }: { children: React.ReactNode }) {
               <Shimmer />
             ) : isAuthenticated ? (
               <>
-                {/* Active post / collection indicator — now WS-driven */}
                 <ActiveIndicator
                   activePosts={activePosts}
                   activeCollections={activeCollections}
@@ -229,7 +220,6 @@ export default function Header({ children }: { children: React.ReactNode }) {
                   activeCollectionId={activeCollectionId}
                 />
 
-                {/* Bell — WS-driven count, no polling */}
                 <Link
                   href="/notificari"
                   className="relative grid place-items-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors"
@@ -243,7 +233,6 @@ export default function Header({ children }: { children: React.ReactNode }) {
                   )}
                 </Link>
 
-                {/* Profile dropdown */}
                 <div
                   ref={dropdownRef}
                   className="relative"

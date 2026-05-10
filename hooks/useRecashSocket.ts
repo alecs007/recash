@@ -1,30 +1,7 @@
 "use client";
 
-/**
- * hooks/useRecashSocket.ts  (v3)
- *
- * Fixes vs v2:
- *
- * 1. ROOT CAUSE FIX — ws-token route now issues proper single-use Redis tokens
- *    (see app/api/v1/auth/ws-token/route.ts).  The old route forwarded the raw
- *    NextAuth JWT; the WS server never found it in Redis → every connection
- *    was immediately rejected.
- *
- * 2. RECONNECT FIX — _tokenPromise is cleared on every socket close so that
- *    each reconnect attempt fetches a *fresh* token.  The old code reused the
- *    already-consumed token, making reconnect auth always fail.
- *
- * 3. _scheduleReconnect is now async and fetches its own token instead of
- *    receiving the (stale) one from the previous connection attempt.
- *
- * Everything else (idempotency guard, pending message queue, room re-join on
- * reconnect, exponential back-off) is preserved from v2.
- */
-
 import { useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-
-// ─── Public types ─────────────────────────────────────────────────────────────
 
 export type WsEventType =
   | "connected"
@@ -36,8 +13,6 @@ export type WsEventType =
 
 type Handler<T = unknown> = (payload: T) => void;
 
-// ─── Module-level singleton state ─────────────────────────────────────────────
-
 let _ws: WebSocket | null = null;
 let _wsToken: string | null = null;
 let _reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -47,8 +22,6 @@ const MAX_RECONNECT = 30_000;
 const _handlers = new Map<string, Set<Handler>>();
 const _wantedRooms = new Set<string>();
 const _queue: string[] = [];
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function _safeSend(msg: string) {
   if (!_ws) return;
@@ -71,8 +44,6 @@ function _dispatch(type: string, payload: unknown) {
     }
   }
 }
-
-// ─── Connect ──────────────────────────────────────────────────────────────────
 
 function _connect(token: string) {
   // Idempotent: skip if we already have a live socket with this exact token.

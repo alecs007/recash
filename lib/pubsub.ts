@@ -1,21 +1,17 @@
 import { redis } from "./redis";
 
 export type WsEventType =
-  | "notification:new" // new Notification row created for a user
-  | "post:status_changed" // post status mutated (claim, approve, complete, cancel)
-  | "post:code_ready" // IN_PROGRESS code generated, poster should show it
-  | "post:completed" // transaction finalised
-  | "post:cancelled"; // post or collection cancelled
+  | "notification:new"
+  | "post:status_changed"
+  | "post:code_ready"
+  | "post:completed"
+  | "post:cancelled";
 
 export interface WsEvent<T = unknown> {
   type: WsEventType;
   payload: T;
 }
 
-/**
- * Publish an event to a **user** channel.
- * Fire-and-forget — never throws.
- */
 export function publishToUser(userId: string, event: WsEvent): void {
   const channel = `recash:user:${userId}`;
   const message = JSON.stringify(event);
@@ -26,10 +22,6 @@ export function publishToUser(userId: string, event: WsEvent): void {
     );
 }
 
-/**
- * Publish an event to a **post** channel.
- * Fire-and-forget — never throws.
- */
 export function publishToPost(postId: string, event: WsEvent): void {
   const channel = `recash:post:${postId}`;
   const message = JSON.stringify(event);
@@ -64,12 +56,20 @@ export interface PostStatusPayload {
   expiresAt?: string | null;
 }
 
-export function publishPostStatus(payload: PostStatusPayload): void {
-  // Notify everyone watching the post
-  publishToPost(payload.postId, {
+export function publishPostStatus(
+  payload: PostStatusPayload,
+  affectedUserIds: string[] = [],
+): void {
+  const event: WsEvent<PostStatusPayload> = {
     type: "post:status_changed",
     payload,
-  });
+  };
+  // Post room — detail page
+  publishToPost(payload.postId, event);
+  // User channels — header active indicator
+  for (const uid of affectedUserIds) {
+    publishToUser(uid, event);
+  }
 }
 
 export interface PostCompletedPayload {
@@ -80,7 +80,6 @@ export interface PostCompletedPayload {
   bottleCount: number;
 }
 
-/** Called after the transaction is created in /complete. */
 export function publishPostCompleted(
   postId: string,
   authorId: string,
@@ -102,7 +101,6 @@ export interface PostCancelledPayload {
   newStatus: string;
 }
 
-/** Called after a cancellation. */
 export function publishPostCancelled(
   postId: string,
   affectedUserIds: string[],

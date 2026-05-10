@@ -26,6 +26,7 @@ import {
 import { BOTTLE_PRESETS, RON_PER_BOTTLE } from "@/lib/validations/post";
 import { toast } from "sonner";
 import useSWR from "swr";
+import { useSetActiveCounts } from "@/hooks/useActiveCounts";
 
 const API = process.env.NEXT_PUBLIC_API_VERSION ?? "v1";
 
@@ -997,6 +998,7 @@ export default function PostCreationClient({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [originalPhone] = useState(userPhone);
+  const setActiveCounts = useSetActiveCounts();
 
   const update = useCallback((partial: Partial<FormData>) => {
     setForm((prev) => ({ ...prev, ...partial }));
@@ -1061,9 +1063,10 @@ export default function PostCreationClient({
       }
 
       toast.success("Anunțul a fost publicat!", {
-        description: "Vei fi notificat când un colector face o cerere.",
+        description: "Vei fi notificat atunci când un colector face o cerere.",
       });
 
+      setActiveCounts({ activePosts: 1, activePostId: json.id });
       router.push(`/post/${json.id}`);
     } catch {
       setError("Eroare de rețea. Încearcă din nou.");
