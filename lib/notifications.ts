@@ -2,6 +2,7 @@ import { prisma } from "./prisma";
 import { Prisma } from "@prisma/client";
 import type { NotificationType } from "@prisma/client";
 import { redis } from "./redis";
+import { publishNotification } from "./pubsub";
 
 interface CreateNotificationParams {
   userId: string;
@@ -50,11 +51,21 @@ export async function createNotification(params: CreateNotificationParams) {
 
     await invalidateNotifCache(params.userId);
 
+    publishNotification(params.userId, {
+      id: notif.id,
+      type: notif.type,
+      title: notif.title,
+      message: notif.message,
+      link: notif.link,
+      createdAt: notif.createdAt.toISOString(),
+    });
+
     return notif;
   } catch (err) {
     console.error("[createNotification] error:", err);
   }
 }
+
 export async function notifyPostClaimed(
   posterId: string,
   postId: string,

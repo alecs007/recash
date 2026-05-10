@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit, RL } from "@/lib/rate-limit";
 import { notifyPostClaimed } from "@/lib/notifications";
+import { publishPostStatus } from "@/lib/pubsub";
 
 export async function POST(
   _req: Request,
@@ -39,13 +40,11 @@ export async function POST(
       );
     }
 
-    // Check if post is expired
     if (post.expiresAt && post.expiresAt < new Date()) {
       await prisma.post.update({ where: { id }, data: { status: "EXPIRED" } });
       return NextResponse.json({ error: "Anunțul a expirat" }, { status: 410 });
     }
 
-    // ── Constraint: collector can only have ONE active collection at a time ──
     const existingCollection = await prisma.post.findFirst({
       where: {
         collectorId: session.user.id,
@@ -64,9 +63,8 @@ export async function POST(
       );
     }
 
-    // Claim the post
     const updated = await prisma.post.update({
-      where: { id, status: "OPEN" }, // optimistic lock
+      where: { id, status: "OPEN" },
       data: {
         status: "CLAIMED",
         collectorId: session.user.id,
@@ -74,13 +72,12 @@ export async function POST(
       },
     });
 
-    // Get collector info for notification
     const collector = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { name: true },
     });
 
-    // Notify poster
+    // Notify poster via DB + WS push
     await notifyPostClaimed(
       post.authorId,
       id,
@@ -88,9 +85,16 @@ export async function POST(
       post.bottleCount,
     );
 
+    // Push post status update to everyone watching this post
+    publishPostStatus({
+      postId: id,
+      status: "CLAIMED",
+      collectorId: session.user.id,
+      collectorName: collector?.name ?? null,
+    });
+
     return NextResponse.json({ success: true, status: updated.status });
   } catch (err: unknown) {
-    // P2025 = record not found (already claimed by someone else)
     if ((err as { code?: string }).code === "P2025") {
       return NextResponse.json(
         { error: "Anunțul a fost revendicat de altcineva" },

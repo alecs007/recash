@@ -5,9 +5,10 @@ import { rateLimit, RL } from "@/lib/rate-limit";
 import { approveClaimSchema } from "@/lib/validations/post";
 import { notifyClaimApproved, notifyClaimDenied } from "@/lib/notifications";
 import { redis } from "@/lib/redis";
+import { publishPostStatus } from "@/lib/pubsub";
 
 const COLLECTION_WINDOW_MINUTES = 30;
-const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no confusable chars (0/O, 1/I)
+const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 function generateCode(): string {
   return Array.from(
@@ -56,18 +57,15 @@ export async function POST(
     if (!post) {
       return NextResponse.json({ error: "Anunț negăsit" }, { status: 404 });
     }
-
     if (post.authorId !== session.user.id) {
       return NextResponse.json({ error: "Acces interzis" }, { status: 403 });
     }
-
     if (post.status !== "CLAIMED") {
       return NextResponse.json(
         { error: "Anunțul nu este în starea corectă" },
         { status: 409 },
       );
     }
-
     if (!post.collectorId) {
       return NextResponse.json(
         { error: "Nu există un colector activ" },
@@ -79,18 +77,13 @@ export async function POST(
       const collectionDeadline = new Date(
         Date.now() + COLLECTION_WINDOW_MINUTES * 60 * 1000,
       );
-
-      // Generate 4-char code and store in Redis (TTL = collection window + 5min buffer)
       const code = generateCode();
       const ttlSeconds = COLLECTION_WINDOW_MINUTES * 60 + 300;
       await redis.set(`code:${id}`, code, "EX", ttlSeconds);
 
       await prisma.post.update({
         where: { id },
-        data: {
-          status: "IN_PROGRESS",
-          expiresAt: collectionDeadline,
-        },
+        data: { status: "IN_PROGRESS", expiresAt: collectionDeadline },
       });
 
       await notifyClaimApproved(
@@ -99,13 +92,20 @@ export async function POST(
         post.author.name ?? "Posterul",
       );
 
+      // Push to both the post room and the collector's user channel
+      publishPostStatus({
+        postId: id,
+        status: "IN_PROGRESS",
+        collectorId: post.collectorId,
+        expiresAt: collectionDeadline.toISOString(),
+      });
+
       return NextResponse.json({
         success: true,
         status: "IN_PROGRESS",
         deadline: collectionDeadline.toISOString(),
       });
     } else {
-      // Deny: reset post to OPEN
       await prisma.post.update({
         where: { id },
         data: { status: "OPEN", collectorId: null, claimedAt: null },
@@ -116,6 +116,12 @@ export async function POST(
         id,
         post.author.name ?? "Posterul",
       );
+
+      publishPostStatus({
+        postId: id,
+        status: "OPEN",
+        collectorId: null,
+      });
 
       return NextResponse.json({ success: true, status: "OPEN" });
     }

@@ -5,10 +5,10 @@ import { rateLimit, RL } from "@/lib/rate-limit";
 import { redis } from "@/lib/redis";
 import { notifyPostCompleted } from "@/lib/notifications";
 import { invalidate, CacheKey } from "@/lib/cache";
-import { BadgeType } from "@prisma/client";
 import { checkPostBadges, checkTransactionBadges } from "@/lib/badges";
+import { publishPostCompleted, publishPostStatus } from "@/lib/pubsub";
 
-const SGR_VALUE_PER_BOTTLE = 0.5; // RON
+const SGR_VALUE_PER_BOTTLE = 0.5;
 
 export async function POST(
   req: Request,
@@ -50,19 +50,16 @@ export async function POST(
     if (!post) {
       return NextResponse.json({ error: "Anunț negăsit" }, { status: 404 });
     }
-
     if (post.status !== "IN_PROGRESS") {
       return NextResponse.json(
         { error: "Anunțul nu este activ" },
         { status: 409 },
       );
     }
-
     if (post.collectorId !== session.user.id) {
       return NextResponse.json({ error: "Acces interzis" }, { status: 403 });
     }
 
-    // Validate 4-char code (case-insensitive)
     const storedCode = await redis.get(`code:${id}`);
     if (
       !storedCode ||
@@ -74,7 +71,6 @@ export async function POST(
       );
     }
 
-    // Check 30-min deadline
     if (post.expiresAt && post.expiresAt < new Date()) {
       await prisma.post.update({ where: { id }, data: { status: "EXPIRED" } });
       await redis.del(`code:${id}`);
@@ -94,7 +90,6 @@ export async function POST(
         where: { id },
         data: { status: "COMPLETED", completedAt: new Date() },
       });
-
       await tx.transaction.create({
         data: {
           postId: id,
@@ -106,7 +101,6 @@ export async function POST(
           posterEarning,
         },
       });
-
       await tx.user.update({
         where: { id: post.authorId },
         data: {
@@ -115,7 +109,6 @@ export async function POST(
           totalSaved: { increment: posterEarning },
         },
       });
-
       await tx.user.update({
         where: { id: post.collectorId! },
         data: {
@@ -128,7 +121,6 @@ export async function POST(
 
     await redis.del(`code:${id}`);
 
-    // Award badges and notify — non-blocking
     await Promise.all([
       checkPostBadges(post.authorId),
       checkTransactionBadges(post.authorId, post.collectorId!, post.claimedAt),
@@ -138,6 +130,15 @@ export async function POST(
       notifyPostCompleted(post.authorId, id, posterEarning, "poster"),
       notifyPostCompleted(post.collectorId!, id, collectorEarning, "collector"),
     ]);
+
+    publishPostStatus({ postId: id, status: "COMPLETED" });
+    publishPostCompleted(id, post.authorId, post.collectorId!, {
+      postId: id,
+      actualValue,
+      collectorEarning,
+      posterEarning,
+      bottleCount: finalBottleCount,
+    });
 
     await Promise.all([
       invalidate(CacheKey.profile(post.authorId)),

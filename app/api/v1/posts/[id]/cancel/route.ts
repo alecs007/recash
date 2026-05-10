@@ -5,6 +5,7 @@ import { rateLimit, RL } from "@/lib/rate-limit";
 import { cancelSchema } from "@/lib/validations/post";
 import { notifyPostCancelled } from "@/lib/notifications";
 import { redis } from "@/lib/redis";
+import { publishPostCancelled, publishPostStatus } from "@/lib/pubsub";
 
 export async function POST(
   req: Request,
@@ -64,6 +65,14 @@ export async function POST(
         where: { id },
         data: { status: "CANCELLED" },
       });
+
+      publishPostStatus({ postId: id, status: "CANCELLED" });
+      publishPostCancelled(id, [post.authorId], {
+        postId: id,
+        cancelledBy: "poster",
+        newStatus: "CANCELLED",
+      });
+
       return NextResponse.json({ success: true, status: "CANCELLED" });
     }
 
@@ -76,12 +85,24 @@ export async function POST(
         if (post.collectorId) {
           await notifyPostCancelled(post.collectorId, id, "poster");
         }
+        publishPostStatus({ postId: id, status: "OPEN", collectorId: null });
+        publishPostCancelled(
+          id,
+          [post.authorId, ...(post.collectorId ? [post.collectorId] : [])],
+          { postId: id, cancelledBy: "poster", newStatus: "OPEN" },
+        );
         return NextResponse.json({ success: true, status: "OPEN" });
       } else {
         await prisma.post.update({
           where: { id },
           data: { status: "OPEN", collectorId: null, claimedAt: null },
         });
+        publishPostStatus({ postId: id, status: "OPEN", collectorId: null });
+        publishPostCancelled(
+          id,
+          [post.authorId, ...(post.collectorId ? [post.collectorId] : [])],
+          { postId: id, cancelledBy: "collector", newStatus: "OPEN" },
+        );
         return NextResponse.json({ success: true, status: "OPEN" });
       }
     }
@@ -91,17 +112,26 @@ export async function POST(
         where: { id },
         data: { status: "CANCELLED" },
       });
-
-      // Clean up the 4-char code
       await redis.del(`code:${id}`).catch(() => null);
 
       const cancelledBy = isAuthor ? "poster" : "collector";
+      const affectedUsers = [
+        post.authorId,
+        ...(post.collectorId ? [post.collectorId] : []),
+      ];
 
       if (isAuthor && post.collectorId) {
         await notifyPostCancelled(post.collectorId, id, "poster");
       } else if (isCollector) {
         await notifyPostCancelled(post.authorId, id, "collector");
       }
+
+      publishPostStatus({ postId: id, status: "CANCELLED" });
+      publishPostCancelled(id, affectedUsers, {
+        postId: id,
+        cancelledBy,
+        newStatus: "CANCELLED",
+      });
 
       return NextResponse.json({
         success: true,

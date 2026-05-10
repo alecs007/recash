@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
+import { usePostLive } from "@/hooks/usePostLive";
 import {
   ArrowLeft,
   MapPin,
@@ -17,7 +18,6 @@ import {
   RefreshCw,
   Loader2,
   Calendar,
-  ChevronRight,
 } from "lucide-react";
 import { FaWineBottle } from "react-icons/fa";
 import { PostStatus, Post } from "@/types";
@@ -1182,34 +1182,22 @@ export default function PostDetailClient({
 }) {
   const router = useRouter();
 
-  const { data: post, mutate } = useSWR<Post>(
-    `/api/v1/posts/${postId}`,
-    fetcher,
-    {
-      refreshInterval: (d) =>
-        d?.status === "IN_PROGRESS" || d?.status === "CLAIMED" ? 5000 : 0,
-      revalidateOnFocus: true,
-    },
-  );
+  const { post, mutate, isLoading } = usePostLive(postId);
 
-  if (!post) return <Skeleton />;
-  if (!post.id)
+  if (isLoading) return <Skeleton />;
+
+  if (!post) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 gap-3 text-center px-4">
+      <div className="flex flex-col items-center ...">
         <FaWineBottle className="w-10 h-10 text-slate-300" />
         <p className="text-slate-500 font-medium">Anunțul nu a fost găsit.</p>
-        <Link
-          href="/map"
-          className="text-sm text-[#123424] font-semibold hover:underline flex items-center gap-1"
-        >
-          Hartă <ChevronRight className="w-4 h-4" />
-        </Link>
+        <Link href="/map">Hartă</Link>
       </div>
     );
+  }
 
   const isAuthor = post.isAuthor ?? post.author?.id === userId;
   const isCollector = post.isCollector ?? post.collector?.id === userId;
-
   const handleRedirect = (url: string) => router.push(url);
 
   return (

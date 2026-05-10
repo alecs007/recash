@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useState, useRef, useEffect } from "react";
 import { useAuthModal } from "@/context/AuthModalContext";
@@ -11,130 +11,11 @@ import { FaWineBottle, FaRegUser, FaRegBell, FaRecycle } from "react-icons/fa";
 import { IoChevronDown } from "react-icons/io5";
 import { MdLogout } from "react-icons/md";
 import { LuBike } from "react-icons/lu";
-import { X } from "lucide-react";
-import { NOTIF_CONFIG } from "@/lib/constants/notifications";
-import type { NotificationType } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "sonner";
-import useSWR from "swr";
+import { useNotificationBell } from "@/hooks/useNotificationBell";
+import { useActiveCounts } from "@/hooks/useActiveCounts";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
-
-type RawNotification = {
-  id: string;
-  type: NotificationType;
-  title: string;
-  message: string;
-  link: string | null;
-};
-
-type BellData = {
-  notifications: RawNotification[];
-  unreadCount: number;
-};
-
-function useNotificationBell(authenticated: boolean) {
-  const router = useRouter();
-  const prevCountRef = useRef<number | null>(null);
-  const isInitialRef = useRef(true);
-
-  const { data } = useSWR<BellData>(
-    authenticated ? "/api/v1/profile/notifications?page=1&limit=1" : null,
-    fetcher,
-    {
-      refreshInterval: 8_000,
-      revalidateOnFocus: true,
-      dedupingInterval: 5_000,
-    },
-  );
-
-  const unreadCount = data?.unreadCount ?? 0;
-  const latest = data?.notifications?.[0];
-
-  useEffect(() => {
-    if (!data) return;
-
-    if (isInitialRef.current) {
-      prevCountRef.current = unreadCount;
-      isInitialRef.current = false;
-      return;
-    }
-
-    if (
-      prevCountRef.current !== null &&
-      unreadCount > prevCountRef.current &&
-      latest
-    ) {
-      const cfg = NOTIF_CONFIG[latest.type] ?? NOTIF_CONFIG.SYSTEM;
-      const Icon = cfg.Icon;
-
-      toast.custom(
-        (id) => (
-          <div
-            style={{ width: 356 }}
-            className={`flex items-start gap-3 bg-white rounded-2xl border ${cfg.border} p-4`}
-          >
-            <div
-              className={`shrink-0 w-9 h-9 rounded-full ${cfg.bg} border ${cfg.border} flex items-center justify-center`}
-            >
-              <Icon className={`w-4 h-4 ${cfg.color}`} />
-            </div>
-
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-slate-900 leading-snug">
-                {latest.title}
-              </p>
-              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed line-clamp-2">
-                {latest.message}
-              </p>
-              {latest.link && (
-                <button
-                  onClick={() => {
-                    router.push(latest.link!);
-                    toast.dismiss(id);
-                  }}
-                  className="mt-1.5 text-xs font-semibold text-[#123424] hover:underline"
-                >
-                  Deschide →
-                </button>
-              )}
-            </div>
-
-            <button
-              onClick={() => toast.dismiss(id)}
-              className="shrink-0 p-1 rounded-lg hover:bg-slate-100 transition-colors"
-            >
-              <X className="w-3.5 h-3.5 text-slate-400" />
-            </button>
-          </div>
-        ),
-        { duration: 5000, id: latest.id },
-      );
-    }
-
-    prevCountRef.current = unreadCount;
-  }, [data, latest, router, unreadCount]);
-
-  return unreadCount;
-}
-
-function useActiveCounts(authenticated: boolean) {
-  const { data } = useSWR(
-    authenticated ? "/api/v1/profile/active-counts" : null,
-    fetcher,
-    {
-      refreshInterval: 60_000,
-      revalidateOnFocus: true,
-      dedupingInterval: 30_000,
-    },
-  );
-  return {
-    activePosts: (data?.activePosts as number) ?? 0,
-    activeCollections: (data?.activeCollections as number) ?? 0,
-    activePostId: data?.activePostId as string | null,
-    activeCollectionId: data?.activeCollectionId as string | null,
-  };
-}
+// ─── Active post / collection indicator ───────────────────────────────────────
 
 function ActiveIndicator({
   activePosts,
@@ -147,28 +28,24 @@ function ActiveIndicator({
   activePostId: string | null;
   activeCollectionId: string | null;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
   const hasPosts = activePosts > 0;
   const hasCollections = activeCollections > 0;
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
-        setIsOpen(false);
-      }
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const containerVariants = {
+  const slideIn = {
     initial: { opacity: 0, scale: 0.8, x: 10 },
     animate: { opacity: 1, scale: 1, x: 0 },
-    exit: { opacity: 0, scale: 0.8, x: 10, transition: { duration: 0.2 } },
+    exit: { opacity: 0, scale: 0.8, x: 10, transition: { duration: 0.15 } },
   };
 
   const postHref = activePostId ? `/post/${activePostId}` : "/profil/postari";
@@ -176,20 +53,14 @@ function ActiveIndicator({
     ? `/post/${activeCollectionId}`
     : "/map";
 
+  if (!hasPosts && !hasCollections) return null;
+
   return (
     <AnimatePresence mode="wait">
       {hasPosts && hasCollections ? (
-        <motion.div
-          key="dual-indicator"
-          variants={containerVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          className="relative"
-          ref={containerRef}
-        >
+        <motion.div key="dual" {...slideIn} className="relative" ref={ref}>
           <button
-            onClick={() => setIsOpen(!isOpen)}
+            onClick={() => setOpen((v) => !v)}
             className="relative w-10 h-10 flex items-center justify-center cursor-pointer"
           >
             <div className="absolute top-0 left-0 z-10 w-7 h-7 rounded-full bg-lime-50 border-2 border-lime-400 flex items-center justify-center">
@@ -199,9 +70,8 @@ function ActiveIndicator({
               <LuBike className="w-3.5 h-3.5 text-blue-600" />
             </div>
           </button>
-
           <AnimatePresence>
-            {isOpen && (
+            {open && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9, y: 5 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -210,10 +80,10 @@ function ActiveIndicator({
               >
                 <Link
                   href={postHref}
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => setOpen(false)}
                   className="flex items-center gap-3 p-2 hover:bg-lime-50 rounded-xl transition-colors"
                 >
-                  <div className="relative grid place-items-center w-8.5 h-8.5 rounded-full bg-lime-50 border-2 border-lime-400">
+                  <div className="grid place-items-center w-8 h-8 rounded-full bg-lime-50 border-2 border-lime-400">
                     <motion.div
                       animate={{ scale: [1, 1.1, 1] }}
                       transition={{ repeat: Infinity, duration: 2 }}
@@ -227,10 +97,10 @@ function ActiveIndicator({
                 </Link>
                 <Link
                   href={collectionHref}
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => setOpen(false)}
                   className="flex items-center gap-3 p-2 hover:bg-blue-50 rounded-xl transition-colors"
                 >
-                  <div className="relative grid place-items-center w-8.5 h-8.5 rounded-full bg-blue-50 border-2 border-blue-400">
+                  <div className="grid place-items-center w-8 h-8 rounded-full bg-blue-50 border-2 border-blue-400">
                     <motion.div
                       animate={{ x: [-1, 1, -1] }}
                       transition={{ repeat: Infinity, duration: 1.5 }}
@@ -246,19 +116,12 @@ function ActiveIndicator({
             )}
           </AnimatePresence>
         </motion.div>
-      ) : hasPosts || hasCollections ? (
-        <motion.div
-          key="single-indicator"
-          variants={containerVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          className="flex items-center"
-        >
+      ) : (
+        <motion.div key="single" {...slideIn} className="flex items-center">
           {hasPosts ? (
             <Link
               href={postHref}
-              className="relative grid place-items-center w-10 h-10 rounded-full bg-lime-50 border-2 border-lime-400 hover:bg-lime-100 transition-colors group"
+              className="grid place-items-center w-10 h-10 rounded-full bg-lime-50 border-2 border-lime-400 hover:bg-lime-100 transition-colors"
             >
               <motion.div
                 animate={{ scale: [1, 1.1, 1] }}
@@ -270,7 +133,7 @@ function ActiveIndicator({
           ) : (
             <Link
               href={collectionHref}
-              className="relative grid place-items-center w-10 h-10 rounded-full bg-blue-50 border-2 border-blue-400 hover:bg-blue-100 transition-colors group"
+              className="grid place-items-center w-10 h-10 rounded-full bg-blue-50 border-2 border-blue-400 hover:bg-blue-100 transition-colors"
             >
               <motion.div
                 animate={{ x: [-1, 1, -1] }}
@@ -281,18 +144,22 @@ function ActiveIndicator({
             </Link>
           )}
         </motion.div>
-      ) : null}
+      )}
     </AnimatePresence>
   );
 }
 
-const ProfileShimmer = () => (
+// ─── Shimmer while session loads ──────────────────────────────────────────────
+
+const Shimmer = () => (
   <div className="flex items-center gap-3 pl-1 pr-2 py-1">
     <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse" />
     <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse" />
     <div className="w-3.5 h-3.5 rounded-full bg-slate-200 animate-pulse" />
   </div>
 );
+
+// ─── Header ───────────────────────────────────────────────────────────────────
 
 export default function Header({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -302,11 +169,13 @@ export default function Header({ children }: { children: React.ReactNode }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const isAuthPage = pathname?.startsWith("/auth");
   const isAuthenticated = status === "authenticated" && !!session?.user;
   const isLoading = status === "loading";
 
-  const unreadCount = useNotificationBell(isAuthenticated);
+  // WS-driven bell count — no polling
+  const { unreadCount } = useNotificationBell(isAuthenticated);
+
+  // WS-driven active counts — instant update on claim/complete/cancel
   const { activePosts, activeCollections, activePostId, activeCollectionId } =
     useActiveCounts(isAuthenticated);
 
@@ -315,15 +184,14 @@ export default function Header({ children }: { children: React.ReactNode }) {
       if (
         dropdownRef.current &&
         !dropdownRef.current.contains(e.target as Node)
-      ) {
+      )
         setDropdownOpen(false);
-      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  if (isAuthPage) return <>{children}</>;
+  if (pathname?.startsWith("/auth")) return <>{children}</>;
 
   const initials = session?.user?.name
     ?.split(" ")
@@ -332,13 +200,6 @@ export default function Header({ children }: { children: React.ReactNode }) {
     .join("")
     .toUpperCase();
 
-  const handleMouseEnter = () => {
-    if (window.matchMedia("(pointer: fine)").matches) setDropdownOpen(true);
-  };
-  const handleMouseLeave = () => {
-    if (window.matchMedia("(pointer: fine)").matches) setDropdownOpen(false);
-  };
-
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <header className="sticky top-0 z-[1001] backdrop-blur-md bg-white">
@@ -346,7 +207,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <Image
               src="/images/recash-logo.webp"
-              alt="Recash Logo"
+              alt="Recash"
               width={643}
               height={138}
               className="h-8 w-auto object-contain"
@@ -357,9 +218,10 @@ export default function Header({ children }: { children: React.ReactNode }) {
 
           <div className="flex items-center gap-2 sm:gap-3">
             {isLoading ? (
-              <ProfileShimmer />
+              <Shimmer />
             ) : isAuthenticated ? (
               <>
+                {/* Active post / collection indicator — now WS-driven */}
                 <ActiveIndicator
                   activePosts={activePosts}
                   activeCollections={activeCollections}
@@ -367,6 +229,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                   activeCollectionId={activeCollectionId}
                 />
 
+                {/* Bell — WS-driven count, no polling */}
                 <Link
                   href="/notificari"
                   className="relative grid place-items-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors"
@@ -380,21 +243,28 @@ export default function Header({ children }: { children: React.ReactNode }) {
                   )}
                 </Link>
 
+                {/* Profile dropdown */}
                 <div
                   ref={dropdownRef}
                   className="relative"
-                  onMouseEnter={handleMouseEnter}
-                  onMouseLeave={handleMouseLeave}
+                  onMouseEnter={() => {
+                    if (window.matchMedia("(pointer: fine)").matches)
+                      setDropdownOpen(true);
+                  }}
+                  onMouseLeave={() => {
+                    if (window.matchMedia("(pointer: fine)").matches)
+                      setDropdownOpen(false);
+                  }}
                 >
                   <button
                     onClick={() => setDropdownOpen((v) => !v)}
                     className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
                     aria-label="Meniu profil"
                   >
-                    {session!.user!.image ? (
+                    {session.user.image ? (
                       <Image
-                        src={session!.user!.image}
-                        alt={session!.user!.name ?? "Profil"}
+                        src={session.user.image}
+                        alt={session.user.name ?? "Profil"}
                         width={36}
                         height={36}
                         className="w-9 h-9 rounded-full object-cover border border-lime-400"
@@ -427,28 +297,24 @@ export default function Header({ children }: { children: React.ReactNode }) {
                             <FaRegUser className="w-4 h-4 text-slate-600" />
                             Profilul meu
                           </Link>
-                          {activePosts == 0 && (
+                          {activePosts === 0 && (
                             <Link
                               href="/post"
                               onClick={() => setDropdownOpen(false)}
-                              className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                              className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                             >
-                              <span className="flex items-center gap-3">
-                                <FaWineBottle className="w-4 h-4 text-slate-600" />
-                                Postează sticle
-                              </span>
+                              <FaWineBottle className="w-4 h-4 text-slate-600" />
+                              Postează sticle
                             </Link>
                           )}
-                          {activeCollections == 0 && (
+                          {activeCollections === 0 && (
                             <Link
                               href="/map"
                               onClick={() => setDropdownOpen(false)}
-                              className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                              className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                             >
-                              <span className="flex items-center gap-3">
-                                <LuBike className="w-4 h-4 text-slate-600" />
-                                Colectează sticle
-                              </span>
+                              <LuBike className="w-4 h-4 text-slate-600" />
+                              Colectează sticle
                             </Link>
                           )}
                           <div className="border-t border-slate-100 mt-1 pt-1">
@@ -482,7 +348,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                   onClick={openAuthModal}
                   className="flex items-center justify-center gap-1 text-white bg-[#1a4d36] font-bold py-2.25 px-4 rounded-full text-sm hover:scale-105 transition-all duration-200 cursor-pointer group"
                 >
-                  <FaRecycle className="w-4 h-4 text-lime-400 group-hover:rotate-360 translate-y-px transition-transform duration-700 ease-in-out" />
+                  <FaRecycle className="w-4 h-4 text-lime-400 translate-y-px transition-transform duration-700 ease-in-out" />
                   <span className="tracking-tight">
                     Conectează-te
                     <span className="text-lime-400 ml-0.75 inline-block rotate-3 text-[16px] translate-y-[1px]">
