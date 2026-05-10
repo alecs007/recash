@@ -7,8 +7,10 @@ import authConfig from "./auth.config";
 import { awardBadge } from "@/lib/badges";
 import type { UserRole } from "@prisma/client";
 
+const API_VERSION = process.env.NEXT_PUBLIC_API_VERSION || "v1";
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  basePath: `/api/${process.env.NEXT_PUBLIC_API_VERSION || "v1"}/auth`,
+  basePath: `/api/${API_VERSION}/auth`,
   ...authConfig,
 
   adapter: PrismaAdapter(prisma),

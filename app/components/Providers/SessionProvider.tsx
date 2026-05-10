@@ -10,7 +10,8 @@ interface Props {
 }
 
 export function SessionProvider({ children, session }: Props) {
-  const basePath = `/api/${process.env.NEXT_PUBLIC_API_VERSION}/auth`;
+  const apiVersion = process.env.NEXT_PUBLIC_API_VERSION || "v1";
+  const basePath = `/api/${apiVersion}/auth`;
 
   return (
     <NextAuthSessionProvider basePath={basePath} session={session}>

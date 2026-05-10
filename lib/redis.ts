@@ -1,13 +1,22 @@
 import Redis from "ioredis";
 
 const createClient = () => {
+  const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+
+  if (isBuildPhase) {
+    return new Redis({ lazyConnect: true });
+  }
+
   const client = new Redis(process.env.REDIS_URL!, {
+    lazyConnect: true,
     maxRetriesPerRequest: 5,
     connectTimeout: 10000,
   });
 
   client.on("error", (err: Error) => {
-    console.error("[Redis] Connection Error Detail:", err);
+    if (!isBuildPhase) {
+      console.error("[Redis] Connection Error Detail:", err);
+    }
   });
 
   return client;
