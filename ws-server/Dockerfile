@@ -10,7 +10,7 @@ FROM node:20-alpine AS builder
 RUN apk upgrade --no-cache
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY tsconfig.json server.ts ./
+COPY . .
 RUN npx tsc
 
 # ── Stage 3: runtime ──────────────────────────────────────────────────────────
