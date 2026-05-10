@@ -1,22 +1,24 @@
 "use client";
 
 /**
- * hooks/useRecashSocket.ts  (v2)
+ * hooks/useRecashSocket.ts  (v3)
  *
- * One WebSocket connection per browser tab, shared across all components
- * via module-level singletons. Multiple components can call this hook safely —
- * they all share the same underlying socket.
+ * Fixes vs v2:
  *
- * Bugs fixed vs v1:
- *  1. CONNECTING guard: readyState 0 is now treated the same as OPEN for
- *     idempotency — we never close an in-flight handshake on re-render /
- *     React Strict-Mode double-invoke.
- *  2. Pending message queue: subscribePost() called before onopen now queues
- *     the message and flushes it the moment onopen fires. No lost room joins.
- *  3. Token cached: /api/v1/auth/ws-token is fetched at most once per login
- *     session. Subsequent hook mounts reuse the promise.
- *  4. Token cache cleared on logout so the next login gets a fresh token.
- *  5. All wanted post rooms re-joined automatically on every reconnect.
+ * 1. ROOT CAUSE FIX — ws-token route now issues proper single-use Redis tokens
+ *    (see app/api/v1/auth/ws-token/route.ts).  The old route forwarded the raw
+ *    NextAuth JWT; the WS server never found it in Redis → every connection
+ *    was immediately rejected.
+ *
+ * 2. RECONNECT FIX — _tokenPromise is cleared on every socket close so that
+ *    each reconnect attempt fetches a *fresh* token.  The old code reused the
+ *    already-consumed token, making reconnect auth always fail.
+ *
+ * 3. _scheduleReconnect is now async and fetches its own token instead of
+ *    receiving the (stale) one from the previous connection attempt.
+ *
+ * Everything else (idempotency guard, pending message queue, room re-join on
+ * reconnect, exponential back-off) is preserved from v2.
  */
 
 import { useEffect, useCallback } from "react";
@@ -35,7 +37,6 @@ export type WsEventType =
 type Handler<T = unknown> = (payload: T) => void;
 
 // ─── Module-level singleton state ─────────────────────────────────────────────
-// These live outside React so all hook instances share one socket.
 
 let _ws: WebSocket | null = null;
 let _wsToken: string | null = null;
@@ -43,13 +44,8 @@ let _reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let _reconnectDelay = 1_000;
 const MAX_RECONNECT = 30_000;
 
-// type → Set<handler>
 const _handlers = new Map<string, Set<Handler>>();
-
-// Post rooms we want to be subscribed to (survives reconnects)
 const _wantedRooms = new Set<string>();
-
-// Messages queued while socket is CONNECTING; flushed in onopen
 const _queue: string[] = [];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -59,9 +55,9 @@ function _safeSend(msg: string) {
   if (_ws.readyState === WebSocket.OPEN) {
     _ws.send(msg);
   } else if (_ws.readyState === WebSocket.CONNECTING) {
-    _queue.push(msg); // deferred until onopen
+    _queue.push(msg);
   }
-  // CLOSING / CLOSED → silently drop; rooms will be rejoined on reconnect
+  // CLOSING / CLOSED → drop; rooms re-joined on next reconnect
 }
 
 function _dispatch(type: string, payload: unknown) {
@@ -76,10 +72,10 @@ function _dispatch(type: string, payload: unknown) {
   }
 }
 
-// ─── Connect / reconnect ──────────────────────────────────────────────────────
+// ─── Connect ──────────────────────────────────────────────────────────────────
 
 function _connect(token: string) {
-  // Idempotent: if the socket is live (or connecting) with the same token → skip
+  // Idempotent: skip if we already have a live socket with this exact token.
   if (
     _wsToken === token &&
     _ws !== null &&
@@ -89,7 +85,7 @@ function _connect(token: string) {
     return;
   }
 
-  // Tear down any stale socket without triggering the reconnect path
+  // Tear down any stale socket without triggering the reconnect path.
   if (_ws) {
     _ws.onopen = null;
     _ws.onmessage = null;
@@ -108,20 +104,21 @@ function _connect(token: string) {
     sock = new WebSocket(url);
   } catch (err) {
     console.error("[ws] constructor failed:", err);
-    _scheduleReconnect(token);
+    _wsToken = null;
+    _scheduleReconnect();
     return;
   }
   _ws = sock;
 
   sock.onopen = () => {
-    _reconnectDelay = 1_000; // reset exponential backoff on success
+    _reconnectDelay = 1_000; // reset back-off on success
 
-    // Flush messages that were sent while we were CONNECTING
+    // Flush messages queued while CONNECTING
     while (_queue.length > 0) {
       sock.send(_queue.shift()!);
     }
 
-    // Re-join every post room we care about (important after reconnect)
+    // Re-join every post room (critical after reconnect)
     for (const postId of _wantedRooms) {
       sock.send(
         JSON.stringify({ type: "subscribe_post", payload: { postId } }),
@@ -139,26 +136,37 @@ function _connect(token: string) {
     _dispatch(msg.type, msg.payload);
   };
 
+  sock.onerror = () => {
+    /* onclose always follows onerror — handled there */
+  };
+
   sock.onclose = (ev) => {
+    // Clear the cached token promise so the next connection attempt fetches a
+    // fresh single-use token (fix for the reconnect auth failure bug).
+    _tokenPromise = null;
+    _wsToken = null;
+
     if (ev.code === 4001) {
-      // Server rejected auth — don't loop; user needs to re-login
+      // Server explicitly rejected auth — don't loop, user needs to re-login.
       console.warn("[ws] server rejected auth (4001)");
       return;
     }
-    _scheduleReconnect(token);
-  };
 
-  sock.onerror = () => {
-    /* onclose always follows onerror */
+    _scheduleReconnect();
   };
 }
 
-function _scheduleReconnect(token: string) {
+// ─── Reconnect ────────────────────────────────────────────────────────────────
+// Async so it can fetch a fresh token before connecting.
+
+function _scheduleReconnect() {
   if (_reconnectTimer) return;
-  _reconnectTimer = setTimeout(() => {
+  _reconnectTimer = setTimeout(async () => {
     _reconnectTimer = null;
     _reconnectDelay = Math.min(_reconnectDelay * 2, MAX_RECONNECT);
-    _connect(token);
+
+    const token = await _fetchToken();
+    if (token) _connect(token);
   }, _reconnectDelay);
 }
 
@@ -176,6 +184,7 @@ function _disconnect() {
     _ws = null;
   }
   _wsToken = null;
+  _tokenPromise = null;
   _queue.length = 0;
 }
 
@@ -191,25 +200,25 @@ function _unsubscribePost(postId: string) {
   _safeSend(JSON.stringify({ type: "unsubscribe_post", payload: { postId } }));
 }
 
-// ─── Token cache ──────────────────────────────────────────────────────────────
-// One HTTP round-trip per login session. Cleared on logout.
+// ─── Token fetching ───────────────────────────────────────────────────────────
+// Deduplicated per connection attempt: multiple hook instances on the same
+// mount share one promise.  Cleared on socket close so reconnects get a fresh
+// single-use token.
 
 let _tokenPromise: Promise<string | null> | null = null;
 
 async function _fetchToken(): Promise<string | null> {
   if (_tokenPromise) return _tokenPromise;
+
   _tokenPromise = fetch("/api/v1/auth/ws-token")
     .then(async (r) => {
       if (!r.ok) return null;
-      const j: { token: string | null } = await r.json();
+      const j = (await r.json()) as { token: string | null };
       return j.token;
     })
     .catch(() => null);
-  return _tokenPromise;
-}
 
-function _clearToken() {
-  _tokenPromise = null;
+  return _tokenPromise;
 }
 
 // ─── React hook ───────────────────────────────────────────────────────────────
@@ -225,7 +234,7 @@ export function useRecashSocket() {
         if (token) _connect(token);
       });
     } else if (status === "unauthenticated") {
-      _clearToken();
+      _tokenPromise = null;
       _disconnect();
     }
   }, [status, session?.user?.id]);
