@@ -90,21 +90,21 @@ export async function POST(
         where: { id: post.transaction!.id },
         data: isPoster
           ? {
-              collectorRating: rating,
-              collectorReview: review ?? null,
-              collectorRatedAt: new Date(),
-            }
-          : {
               posterRating: rating,
               posterReview: review ?? null,
               posterRatedAt: new Date(),
+            }
+          : {
+              collectorRating: rating,
+              collectorReview: review ?? null,
+              collectorRatedAt: new Date(),
             },
       });
 
-      const [asPoster, asCollector] = await Promise.all([
+      const [posterAgg, collectorAgg] = await Promise.all([
         tx.transaction.aggregate({
           where: { posterId: reviewedUserId, posterRating: { not: null } },
-          _sum: { posterRating: true },
+          _avg: { posterRating: true },
           _count: { posterRating: true },
         }),
         tx.transaction.aggregate({
@@ -112,27 +112,24 @@ export async function POST(
             collectorId: reviewedUserId,
             collectorRating: { not: null },
           },
-          _sum: { collectorRating: true },
+          _avg: { collectorRating: true },
           _count: { collectorRating: true },
         }),
       ]);
 
-      const totalCount =
-        (asPoster._count.posterRating ?? 0) +
-        (asCollector._count.collectorRating ?? 0);
-      const totalSum =
-        (asPoster._sum.posterRating ?? 0) +
-        (asCollector._sum.collectorRating ?? 0);
+      const posterCount = posterAgg._count.posterRating ?? 0;
+      const collectorCount = collectorAgg._count.collectorRating ?? 0;
+      const totalCount = posterCount + collectorCount;
 
       if (totalCount > 0) {
-        const newScore = Math.round((totalSum / totalCount) * 100) / 100;
+        const weightedSum =
+          (posterAgg._avg.posterRating ?? 0) * posterCount +
+          (collectorAgg._avg.collectorRating ?? 0) * collectorCount;
+        const newScore = Math.round((weightedSum / totalCount) * 100) / 100;
 
         await tx.user.update({
           where: { id: reviewedUserId },
-          data: {
-            reputationScore: newScore,
-            ratingCount: totalCount,
-          },
+          data: { reputationScore: newScore, ratingCount: totalCount },
         });
       }
     });

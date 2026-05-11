@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { BADGE_CONFIG, BADGE_COLORS } from "@/lib/constants/badges";
 
 export type BadgeData = {
@@ -80,12 +81,18 @@ export function BadgeCard({ badge, onSeen, earned = true }: Props) {
             backgroundColor: color,
           }}
         />
-        <span
-          className="absolute inset-0 flex items-center justify-center"
-          style={{ fontSize: "22px", lineHeight: 1 }}
-        >
-          {cfg.emoji}
-        </span>
+
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Image
+            width={128}
+            height={128}
+            priority
+            draggable={false}
+            src={cfg.image}
+            alt={cfg.label}
+            className="w-11 h-11 object-contain"
+          />
+        </div>
       </div>
 
       <div className="flex flex-col items-center gap-1 text-center w-full">

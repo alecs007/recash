@@ -1118,9 +1118,14 @@ export default function MapPage() {
               </>
             ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-                <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-                  <FaWineBottle className="w-6 h-6 text-slate-300" />
-                </div>
+                <Image
+                  src="/images/bottle-sad.svg"
+                  width={72}
+                  height={72}
+                  priority
+                  draggable={false}
+                  alt="No results"
+                />
                 <p className="font-bold text-slate-800 text-sm mb-1.5">
                   {search || minBottles > 0
                     ? "Niciun rezultat"
@@ -1129,7 +1134,7 @@ export default function MapPage() {
                 <p className="text-xs text-slate-400 leading-relaxed">
                   {search || minBottles > 0
                     ? "Încearcă să schimbi filtrele de căutare."
-                    : "Momentan nu există sticle de colectat în zonă."}
+                    : "Momentan nu există sticle de colectat."}
                 </p>
                 {(search || minBottles > 0) && (
                   <button
