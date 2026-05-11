@@ -6,6 +6,44 @@ import { redis } from "@/lib/redis";
 
 const SUMMARY_TTL = 30;
 
+async function getSafeTransactions(userId: string, take: number) {
+  const rawTx = await prisma.transaction.findMany({
+    where: {
+      OR: [{ posterId: userId }, { collectorId: userId }],
+    },
+    orderBy: { completedAt: "desc" },
+    take: take * 3,
+    select: {
+      id: true,
+      bottleCount: true,
+      actualValue: true,
+      collectorEarning: true,
+      posterEarning: true,
+      collectorRating: true,
+      posterRating: true,
+      completedAt: true,
+      posterId: true,
+      postId: true,
+      poster: { select: { id: true, name: true, image: true } },
+      collector: { select: { id: true, name: true, image: true } },
+    },
+  });
+
+  if (rawTx.length === 0) return [];
+
+  const postIds = [...new Set(rawTx.map((t) => t.postId))];
+  const existingPosts = await prisma.post.findMany({
+    where: { id: { in: postIds } },
+    select: { id: true, description: true, locationName: true },
+  });
+  const postMap = new Map(existingPosts.map((p) => [p.id, p]));
+
+  return rawTx
+    .filter((t) => postMap.has(t.postId))
+    .map((t) => ({ ...t, post: postMap.get(t.postId)! }))
+    .slice(0, take);
+}
+
 async function getProfileSummary(userId: string) {
   const cacheKey = `profile:${userId}:summary`;
 
@@ -19,7 +57,7 @@ async function getProfileSummary(userId: string) {
 
   if (cached_val) return cached_val;
 
-  const [user, postsResult, transactionsResult, badges] = await Promise.all([
+  const [user, postsResult, badges] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -64,30 +102,6 @@ async function getProfileSummary(userId: string) {
       },
     }),
 
-    prisma.transaction.findMany({
-      where: {
-        OR: [{ posterId: userId }, { collectorId: userId }],
-      },
-      orderBy: { completedAt: "desc" },
-      take: 3,
-      select: {
-        id: true,
-        bottleCount: true,
-        actualValue: true,
-        collectorEarning: true,
-        posterEarning: true,
-        collectorRating: true,
-        posterRating: true,
-        completedAt: true,
-        posterId: true,
-        post: {
-          select: { id: true, description: true, locationName: true },
-        },
-        poster: { select: { id: true, name: true, image: true } },
-        collector: { select: { id: true, name: true, image: true } },
-      },
-    }),
-
     prisma.badge.findMany({
       where: { userId },
       orderBy: { earnedAt: "desc" },
@@ -98,10 +112,14 @@ async function getProfileSummary(userId: string) {
 
   if (!user) return null;
 
-  const totalPosts = await prisma.post.count({ where: { authorId: userId } });
-  const totalTransactions = await prisma.transaction.count({
-    where: { OR: [{ posterId: userId }, { collectorId: userId }] },
-  });
+  const transactionsResult = await getSafeTransactions(userId, 3);
+
+  const [totalPosts, totalTransactions] = await Promise.all([
+    prisma.post.count({ where: { authorId: userId } }),
+    prisma.transaction.count({
+      where: { OR: [{ posterId: userId }, { collectorId: userId }] },
+    }),
+  ]);
 
   const summary = {
     user,

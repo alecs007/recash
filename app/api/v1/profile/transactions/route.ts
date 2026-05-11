@@ -19,8 +19,6 @@ export async function GET(req: Request) {
     50,
     Math.max(1, parseInt(searchParams.get("limit") ?? "10") || 10),
   );
-  const skip = (page - 1) * limit;
-
   const side = searchParams.get("side") ?? "all";
 
   const where =
@@ -39,49 +37,73 @@ export async function GET(req: Request) {
 
   try {
     const result = await cached(cacheKey, TTL.transactions, async () => {
-      const [transactions, total] = await Promise.all([
+      const [rawTransactions, total] = await Promise.all([
         prisma.transaction.findMany({
           where,
           orderBy: { completedAt: "desc" },
-          skip,
-          take: limit,
-          include: {
+          skip: 0,
+          take: 1000,
+          select: {
+            id: true,
+            bottleCount: true,
+            actualValue: true,
+            collectorEarning: true,
+            posterEarning: true,
+            collectorRating: true,
+            posterRating: true,
+            completedAt: true,
+            posterId: true,
+            postId: true,
             poster: {
-              select: {
-                id: true,
-                name: true,
-                image: true,
-                reputationScore: true,
-              },
+              select: { id: true, name: true, image: true },
             },
             collector: {
-              select: {
-                id: true,
-                name: true,
-                image: true,
-                reputationScore: true,
-              },
-            },
-            post: {
-              select: {
-                id: true,
-                description: true,
-                locationName: true,
-                images: true,
-              },
+              select: { id: true, name: true, image: true },
             },
           },
         }),
         prisma.transaction.count({ where }),
       ]);
-      return { transactions, total };
+
+      if (rawTransactions.length === 0) {
+        return { transactions: [], total: 0 };
+      }
+
+      const postIds = [...new Set(rawTransactions.map((t) => t.postId))];
+      const existingPosts = await prisma.post.findMany({
+        where: { id: { in: postIds } },
+        select: {
+          id: true,
+          description: true,
+          locationName: true,
+          images: true,
+        },
+      });
+
+      const postMap = new Map(existingPosts.map((p) => [p.id, p]));
+
+      const validTransactions = rawTransactions
+        .filter((t) => postMap.has(t.postId))
+        .map((t) => ({
+          ...t,
+          post: postMap.get(t.postId)!,
+        }));
+
+      const paginated = validTransactions.slice(
+        (page - 1) * limit,
+        (page - 1) * limit + limit,
+      );
+
+      const adjustedTotal = Math.min(total, validTransactions.length);
+
+      return { transactions: paginated, total: adjustedTotal };
     });
 
     return NextResponse.json({
       transactions: result.transactions,
       total: result.total,
       page,
-      totalPages: Math.ceil(result.total / limit),
+      totalPages: Math.max(1, Math.ceil(result.total / limit)),
     });
   } catch (err) {
     console.error("[GET /api/v1/profile/transactions]", err);
