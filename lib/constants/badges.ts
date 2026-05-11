@@ -57,13 +57,13 @@ export const BADGE_CONFIG: Record<string, BadgeCfg> = {
   ECO_STARTER: {
     image: "/images/badges/50-sticle.avif",
     label: "Eco Starter",
-    desc: "50 sticle reciclate total",
+    desc: "50 sticle reciclate",
     group: "Eco",
   },
   ECO_WARRIOR: {
     image: "/images/badges/250-sticle.avif",
     label: "Eco Warrior",
-    desc: "250 sticle reciclate total",
+    desc: "250 sticle reciclate",
     group: "Eco",
   },
   ECO_CHAMPION: {
@@ -86,7 +86,7 @@ export const BADGE_CONFIG: Record<string, BadgeCfg> = {
   },
   FIRST_WEEK: {
     image: "/images/badges/prima-postare.avif",
-    label: "Prima Săptămână",
+    label: "Newbie",
     desc: "Activ în prima săptămână",
     group: "Activitate",
   },
@@ -98,7 +98,7 @@ export const BADGE_CONFIG: Record<string, BadgeCfg> = {
   },
   VETERAN_1_YEAR: {
     image: "/images/badges/prima-postare.avif",
-    label: "Veteran 1 An",
+    label: "Veteran",
     desc: "1 an de activitate",
     group: "Activitate",
   },

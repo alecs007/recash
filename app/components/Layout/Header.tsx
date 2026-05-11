@@ -61,20 +61,26 @@ function ActiveIndicator({
             onClick={() => setOpen((v) => !v)}
             className="relative w-10 h-10 flex items-center justify-center cursor-pointer"
           >
-            <div className="absolute top-0 left-0 z-10 w-7 h-7 rounded-full bg-lime-50 border-2 border-lime-400 flex items-center justify-center">
+            <div className="absolute -top-1 -right-1.5 z-[50] pointer-events-none">
+              <div className="bg-red-600 text-white text-[8px] font-black px-1 py-0.5 rounded-sm leading-none tracking-tighter shadow-sm border border-white flex items-center justify-center">
+                LIVE
+              </div>
+            </div>
+            <div className="absolute top-0 left-0 z-10 w-7 h-7 rounded-full bg-lime-50 border-2 border-lime-400 flex items-center justify-center shadow-sm">
               <FaWineBottle className="w-3.5 h-3.5 text-lime-600" />
             </div>
-            <div className="absolute bottom-0 right-0 z-0 w-7 h-7 rounded-full bg-blue-50 border-2 border-blue-400 flex items-center justify-center">
+            <div className="absolute bottom-0 right-0 z-0 w-7 h-7 rounded-full bg-blue-50 border-2 border-blue-400 flex items-center justify-center shadow-sm">
               <LuBike className="w-3.5 h-3.5 text-blue-600" />
             </div>
           </button>
+
           <AnimatePresence>
             {open && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9, y: 5 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 5 }}
-                className="absolute top-full mt-2 right-0 bg-white border border-slate-200 rounded-2xl p-1.5 flex flex-col gap-1 z-[1002]"
+                className="absolute top-full mt-2 right-0 bg-white border border-slate-200 rounded-2xl p-1.5 flex flex-col gap-1 z-[1002] shadow-xl"
               >
                 <Link
                   href={postHref}
@@ -115,11 +121,20 @@ function ActiveIndicator({
           </AnimatePresence>
         </motion.div>
       ) : (
-        <motion.div key="single" {...slideIn} className="flex items-center">
+        <motion.div
+          key="single"
+          {...slideIn}
+          className="relative flex items-center"
+        >
+          <div className="absolute -top-1 -right-1 z-[50] pointer-events-none">
+            <div className="bg-red-600 text-white text-[8px] font-black px-1 py-0.5 rounded-sm leading-none tracking-tighter shadow-sm border border-white flex items-center justify-center">
+              LIVE
+            </div>
+          </div>
           {hasPosts ? (
             <Link
               href={postHref}
-              className="grid place-items-center w-10 h-10 rounded-full bg-lime-50 border-2 border-lime-400 hover:bg-lime-100 transition-colors"
+              className="grid place-items-center w-10 h-10 rounded-full bg-lime-50 border-2 border-lime-400 hover:bg-lime-100 transition-colors shadow-sm"
             >
               <motion.div
                 animate={{ scale: [1, 1.1, 1] }}
@@ -131,7 +146,7 @@ function ActiveIndicator({
           ) : (
             <Link
               href={collectionHref}
-              className="grid place-items-center w-10 h-10 rounded-full bg-blue-50 border-2 border-blue-400 hover:bg-blue-100 transition-colors"
+              className="grid place-items-center w-10 h-10 rounded-full bg-blue-50 border-2 border-blue-400 hover:bg-blue-100 transition-colors shadow-sm"
             >
               <motion.div
                 animate={{ x: [-1, 1, -1] }}

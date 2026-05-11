@@ -300,7 +300,7 @@ function PostCard({
             {post.author.name ?? "Utilizator"}
           </p>
           <div className="flex items-center gap-1">
-            <Star className="w-2.5 h-2.5 text-lime-400 fill-lime-400" />
+            <Star className="w-2.5 h-2.5 text-[#FFDF00] fill-[#FFDF00]" />
             <span className="text-[10px] font-semibold text-slate-400">
               {post.author.reputationScore.toFixed(1)}
             </span>
@@ -332,25 +332,27 @@ function PostCard({
       )}
 
       {/* Earning strip */}
-      <div className="flex items-center justify-between mb-3 px-3 py-2 bg-slate-50 rounded-xl">
-        <div className="text-xs text-slate-600">
-          <span className="font-black text-lime-600 text-sm">
-            {post.collectorSharePercent}%
-          </span>
-          <span className="text-slate-400"> pentru tine</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {urgent && (
-            <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-              <Clock className="w-2.5 h-2.5" />
-              {hoursLeft}h
+      {!isOwnPost && (
+        <div className="flex items-center justify-between mb-3 px-3 py-2 bg-slate-50 rounded-xl">
+          <div className="text-xs text-slate-600">
+            <span className="font-black text-lime-600 text-sm">
+              {post.collectorSharePercent}%
             </span>
-          )}
-          <span className="text-xs font-black text-slate-800">
-            ~{collectorEarning.toFixed(2)} RON
-          </span>
+            <span className="text-slate-400"> pentru tine</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {urgent && (
+              <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                <Clock className="w-2.5 h-2.5" />
+                {hoursLeft}h
+              </span>
+            )}
+            <span className="text-xs font-black text-slate-800">
+              ~{collectorEarning.toFixed(2)} RON
+            </span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Claim button */}
       <button
@@ -450,22 +452,24 @@ function SelectedPostOverlay({
         </div>
 
         <div className="p-4">
-          <div className="grid grid-cols-2 gap-2 mb-3">
-            <div className="bg-lime-50 rounded-xl p-2.5 text-center border border-lime-100">
-              <p className="text-[10px] text-slate-500 mb-0.5">Tu câștigești</p>
-              <p className="text-base font-black text-lime-700">
-                ~{collectorEarning.toFixed(2)}
-              </p>
-              <p className="text-[10px] text-slate-400">RON</p>
+          {!isOwnPost && (
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <div className="bg-lime-50 rounded-xl p-2.5 text-center border border-lime-100">
+                <p className="text-[10px] text-slate-500 mb-0.5">Tu câștigi</p>
+                <p className="text-base font-black text-lime-700">
+                  ~{collectorEarning.toFixed(2)}
+                </p>
+                <p className="text-[10px] text-slate-400">RON</p>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-2.5 text-center border border-slate-100">
+                <p className="text-[10px] text-slate-500 mb-0.5">Procentaj</p>
+                <p className="text-base font-black text-slate-800">
+                  {post.collectorSharePercent}%
+                </p>
+                <p className="text-[10px] text-slate-400">din total</p>
+              </div>
             </div>
-            <div className="bg-slate-50 rounded-xl p-2.5 text-center border border-slate-100">
-              <p className="text-[10px] text-slate-500 mb-0.5">Procentaj</p>
-              <p className="text-base font-black text-slate-800">
-                {post.collectorSharePercent}%
-              </p>
-              <p className="text-[10px] text-slate-400">din total</p>
-            </div>
-          </div>
+          )}
 
           {post.description && (
             <p className="text-xs text-slate-500 italic line-clamp-2 mb-3 leading-relaxed">
@@ -498,9 +502,6 @@ function SelectedPostOverlay({
     </div>
   );
 }
-
-// ─── Map Component ────────────────────────────────────────────────────────────
-// Uses MarkerClusterGroup for scalability — handles 10k+ posts efficiently.
 
 function PostMap({
   posts,
