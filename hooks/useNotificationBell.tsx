@@ -34,7 +34,7 @@ export function useNotificationBell(authenticated: boolean) {
     fetcher,
     {
       revalidateOnFocus: true,
-      refreshInterval: 0,
+      refreshInterval: process.env.NEXT_PUBLIC_WS_URL ? 60_000 : 15_000,
       dedupingInterval: 3_000,
     },
   );

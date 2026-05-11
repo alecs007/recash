@@ -92,9 +92,12 @@ function broadcast(sockets: Set<WebSocket> | undefined, msg: string) {
 // ─── Origin validation ────────────────────────────────────────────────────────
 
 function isOriginAllowed(origin: string | undefined): boolean {
-  if (!ALLOWED_ORIGIN || process.env.NODE_ENV !== "production") return true;
+  if (!ALLOWED_ORIGIN) return true; // not configured → allow all
   if (!origin) return false;
-  return origin.replace(/\/$/, "") === ALLOWED_ORIGIN.replace(/\/$/, "");
+  const allowed = ALLOWED_ORIGIN.split(",").map((o) =>
+    o.trim().replace(/\/$/, ""),
+  );
+  return allowed.includes((origin ?? "").replace(/\/$/, ""));
 }
 
 // ─── Auth — Redis one-time token ──────────────────────────────────────────────

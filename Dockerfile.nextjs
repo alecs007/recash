@@ -3,20 +3,24 @@ FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 RUN npm install -g pnpm
+
 COPY package.json pnpm-lock.yaml ./
 COPY prisma ./prisma 
 RUN pnpm install --frozen-lockfile
 
 # ── Stage 2: build ────────────────────────────────────────────────────────────
 FROM node:20-alpine AS builder
-# OpenSSL here ensures Prisma generates the correct engine for Alpine/Node 20
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 RUN npm install -g pnpm
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Your package.json 'build' script already runs 'prisma generate'
+ARG NEXT_PUBLIC_WS_URL
+ARG NEXT_PUBLIC_API_VERSION
+ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
+ENV NEXT_PUBLIC_API_VERSION=$NEXT_PUBLIC_API_VERSION
+
 RUN pnpm run build
 
 # ── Stage 3: runtime ──────────────────────────────────────────────────────────

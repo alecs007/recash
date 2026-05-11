@@ -45,8 +45,10 @@ function _dispatch(type: string, payload: unknown) {
   }
 }
 
+let _connecting = false;
 function _connect(token: string) {
   // Idempotent: skip if we already have a live socket with this exact token.
+  if (_connecting) return; // ← guard concurrent calls
   if (
     _wsToken === token &&
     _ws !== null &&
@@ -55,6 +57,8 @@ function _connect(token: string) {
   ) {
     return;
   }
+
+  _connecting = true;
 
   // Tear down any stale socket without triggering the reconnect path.
   if (_ws) {
@@ -82,6 +86,7 @@ function _connect(token: string) {
   _ws = sock;
 
   sock.onopen = () => {
+    _connecting = false; // ← release
     _reconnectDelay = 1_000; // reset back-off on success
 
     // Flush messages queued while CONNECTING
@@ -112,8 +117,7 @@ function _connect(token: string) {
   };
 
   sock.onclose = (ev) => {
-    // Clear the cached token promise so the next connection attempt fetches a
-    // fresh single-use token (fix for the reconnect auth failure bug).
+    _connecting = false; // ← release on failure too
     _tokenPromise = null;
     _wsToken = null;
 
