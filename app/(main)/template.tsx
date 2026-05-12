@@ -64,9 +64,14 @@ export default function Template({ children }: { children: React.ReactNode }) {
   return (
     <motion.div
       key={pathname}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring", stiffness: 85, damping: 15 }}
+      initial={{ opacity: 0, scale: 0.98, y: 8 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 1.02, y: -8 }}
+      transition={{
+        duration: 0.4,
+        ease: [0.22, 1, 0.36, 1], // Custom "Expo" easing for that premium feel
+      }}
+      style={{ width: "100%" }}
     >
       {children}
     </motion.div>

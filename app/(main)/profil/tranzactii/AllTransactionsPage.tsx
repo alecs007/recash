@@ -257,9 +257,14 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
                 </div>
 
                 <div className="flex items-center justify-between mt-2 px-1">
-                  <p className="text-xs text-slate-500 italic truncate flex-1">
-                    &quot;{t.post.description}&quot;
-                  </p>
+                  {t.post.description && t.post.description.length > 0 ? (
+                    <p className="text-xs text-slate-500 italic truncate flex-1">
+                      &quot;{t.post.description}&quot;
+                    </p>
+                  ) : (
+                    <span />
+                  )}
+
                   <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0 ml-2" />
                 </div>
               </Link>
