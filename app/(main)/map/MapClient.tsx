@@ -22,8 +22,6 @@ import { FaWineBottle, FaRegCompass } from "react-icons/fa";
 import useSWR from "swr";
 import { useSetActiveCounts } from "@/hooks/useActiveCounts";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type Post = {
   id: string;
   status: string;
@@ -51,7 +49,6 @@ type ActiveData = {
   activeCollection: { id: string } | null;
 };
 
-// Leaflet-specific types to avoid `any`
 type LeafletMap = {
   remove: () => void;
   setView: (latlng: [number, number], zoom: number, opts?: object) => void;
@@ -453,20 +450,17 @@ function SelectedPostOverlay({
 
         <div className="p-4">
           {!isOwnPost && (
-            <div className="grid grid-cols-2 gap-2 mb-3">
-              <div className="bg-lime-50 rounded-xl p-2.5 text-center border border-lime-100">
-                <p className="text-[10px] text-slate-500 mb-0.5">Tu câștigi</p>
-                <p className="text-base font-black text-lime-700">
-                  ~{collectorEarning.toFixed(2)}
-                </p>
-                <p className="text-[10px] text-slate-400">RON</p>
-              </div>
-              <div className="bg-slate-50 rounded-xl p-2.5 text-center border border-slate-100">
-                <p className="text-[10px] text-slate-500 mb-0.5">Procentaj</p>
-                <p className="text-base font-black text-slate-800">
+            <div className="flex items-center justify-between mb-3 px-3 py-2 bg-slate-50 rounded-xl">
+              <div className="text-xs text-slate-600">
+                <span className="font-black text-lime-600 text-sm">
                   {post.collectorSharePercent}%
-                </p>
-                <p className="text-[10px] text-slate-400">din total</p>
+                </span>
+                <span className="text-slate-400"> pentru tine</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-black text-slate-800">
+                  ~{collectorEarning.toFixed(2)} RON
+                </span>
               </div>
             </div>
           )}

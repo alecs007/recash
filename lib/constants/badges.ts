@@ -61,19 +61,19 @@ export const BADGE_CONFIG: Record<string, BadgeCfg> = {
     group: "Eco",
   },
   ECO_WARRIOR: {
-    image: "/images/badges/250-sticle.avif",
+    image: "/images/badges/prima-postare.avif",
     label: "Eco Warrior",
     desc: "250 sticle reciclate",
     group: "Eco",
   },
   ECO_CHAMPION: {
-    image: "/images/badges/1000-sticle.avif",
+    image: "/images/badges/prima-postare.avif",
     label: "Eco Champion",
     desc: "1.000 sticle reciclate",
     group: "Eco",
   },
   ECO_LEGEND: {
-    image: "/images/badges/5000-sticle.avif",
+    image: "/images/badges/prima-postare.avif",
     label: "Eco Legend",
     desc: "5.000 sticle reciclate",
     group: "Eco",

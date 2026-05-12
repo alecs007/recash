@@ -70,13 +70,6 @@ interface GeocodeResult {
 }
 const PRESETS = BOTTLE_PRESETS.filter((p) => p.value > 0);
 
-const SPLIT_PRESETS = [
-  { pct: 30, label: "Recomandat", accent: false },
-  { pct: 50, label: "Echilibrat", accent: false },
-  { pct: 70, label: "Generos", accent: false },
-  { pct: 100, label: "Donație 🌍", accent: true },
-];
-
 const EXPIRY_OPTIONS = [
   { h: 12, label: "12h" },
   { h: 24, label: "1 zi" },
@@ -667,15 +660,8 @@ function StepDetails({
   onChange: (d: Partial<FormData>) => void;
   originalPhone: string | null;
 }) {
-  const [customSplit, setCustomSplit] = useState(false);
   const estimatedValue = parseFloat(
     (data.bottleCount * RON_PER_BOTTLE).toFixed(2),
-  );
-  const collectorEarning = parseFloat(
-    ((estimatedValue * data.collectorSharePercent) / 100).toFixed(2),
-  );
-  const posterEarning = parseFloat(
-    (estimatedValue - collectorEarning).toFixed(2),
   );
 
   return (
@@ -683,122 +669,77 @@ function StepDetails({
       <div>
         <FieldLabel>Cum vrei să imparți valoarea?</FieldLabel>
 
-        <div className="grid grid-cols-2 gap-2 mb-3">
-          {SPLIT_PRESETS.map(({ pct, label, accent }) => {
-            const isActive = data.collectorSharePercent === pct && !customSplit;
-            const earning = parseFloat(
-              ((estimatedValue * pct) / 100).toFixed(2),
-            );
-            return (
-              <button
-                key={pct}
-                type="button"
-                onClick={() => {
-                  onChange({ collectorSharePercent: pct });
-                  setCustomSplit(false);
-                }}
-                className={`relative flex flex-col items-start gap-1 p-3 rounded-xl border-2 text-left transition-all cursor-pointer
-                  ${
-                    isActive
-                      ? accent
-                        ? "border-purple-400 bg-purple-50"
-                        : "border-lime-400 bg-lime-50"
-                      : "border-slate-100 bg-white hover:border-slate-200"
-                  }`}
-              >
-                <span
-                  className={`text-xl font-black leading-none ${isActive ? (accent ? "text-purple-700" : "text-[#123424]") : "text-slate-700"}`}
-                >
-                  {pct}%
-                </span>
-                <span
-                  className={`text-[10px] font-semibold ${isActive ? (accent ? "text-purple-500" : "text-lime-600") : "text-slate-400"}`}
-                >
-                  {label}
-                </span>
-                {estimatedValue > 0 && (
-                  <span
-                    className={`text-xs font-bold ${isActive ? (accent ? "text-purple-600" : "text-lime-700") : "text-slate-500"}`}
-                  >
-                    {earning.toFixed(2)} RON
-                  </span>
-                )}
-                {pct === 30 && !accent && (
-                  <span className="absolute top-2 right-2 text-[9px] font-black text-lime-700 bg-lime-200 px-1.5 py-0.5 rounded-full">
-                    DEFAULT
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setCustomSplit((v) => !v)}
-          className="text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-1"
-        >
-          <span
-            className={`inline-block w-3.5 h-3.5 rounded border border-slate-300 mr-0.5 flex items-center justify-center transition-colors ${customSplit ? "bg-[#123424] border-[#123424]" : "bg-white"}`}
-          >
-            {customSplit && (
-              <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24">
-                <path
-                  stroke="white"
-                  strokeWidth={3}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            )}
-          </span>
-          Procent personalizat
-        </button>
-
-        {customSplit && (
-          <div className="mt-3 p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-            <div className="h-2 rounded-full overflow-hidden flex">
-              <div
-                className="h-full bg-[#123424] transition-all duration-150"
-                style={{ width: `${100 - data.collectorSharePercent}%` }}
-              />
+        <div className="mt-4">
+          <div className="relative h-6 flex items-center mb-4">
+            <div className="absolute w-full h-3 rounded-full overflow-hidden flex shadow-inner bg-slate-200">
               <div
                 className="h-full bg-lime-400 transition-all duration-150"
                 style={{ width: `${data.collectorSharePercent}%` }}
               />
+
+              <div
+                className="h-full bg-[#123424] transition-all duration-150"
+                style={{ width: `${100 - data.collectorSharePercent}%` }}
+              />
             </div>
+
             <input
               type="range"
-              min={1}
-              max={99}
+              min={0}
+              max={100}
+              step={5}
               value={data.collectorSharePercent}
               onChange={(e) =>
                 onChange({ collectorSharePercent: parseInt(e.target.value) })
               }
-              className="w-full h-1.5 appearance-none rounded-full cursor-pointer"
-              style={{
-                background: `linear-gradient(to right, #123424 0%, #123424 ${100 - data.collectorSharePercent}%, #a3e635 ${100 - data.collectorSharePercent}%, #a3e635 100%)`,
-              }}
+              className="absolute w-full h-full appearance-none bg-transparent cursor-pointer z-10
+        [&::-webkit-slider-thumb]:appearance-none 
+        [&::-webkit-slider-thumb]:w-6 
+        [&::-webkit-slider-thumb]:h-6 
+        [&::-webkit-slider-thumb]:rounded-full 
+        [&::-webkit-slider-thumb]:bg-white 
+        [&::-webkit-slider-thumb]:border-4 
+        [&::-webkit-slider-thumb]:border-[#123424] 
+        [&::-webkit-slider-thumb]:shadow-md"
             />
-            <div className="flex justify-between text-xs font-semibold">
-              <span className="text-slate-500">
-                Tu:{" "}
-                <span className="text-[#123424]">
-                  {100 - data.collectorSharePercent}% ·{" "}
-                  {posterEarning.toFixed(2)} RON
+          </div>
+
+          <div className="flex justify-between items-center mt-2">
+            <div className="flex flex-col">
+              <span className="text-[10px] tracking-wider text-slate-400 font-semibold">
+                Partea ta
+              </span>
+              <span className="text-lg font-black text-lime-600">
+                {100 - data.collectorSharePercent}%
+                <span className="ml-1 text-xs font-semibold text-lime-600/60">
+                  (
+                  {(
+                    (estimatedValue * (100 - data.collectorSharePercent)) /
+                    100
+                  ).toFixed(2)}{" "}
+                  RON)
                 </span>
               </span>
-              <span className="text-slate-500">
-                Colector:{" "}
-                <span className="text-lime-600">
-                  {data.collectorSharePercent}% · {collectorEarning.toFixed(2)}{" "}
-                  RON
+            </div>
+
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] tracking-wider text-slate-400 font-semibold">
+                Partea colectorului
+              </span>{" "}
+              <span className="text-lg font-black text-[#123424]">
+                {data.collectorSharePercent}%{" "}
+                <span className="ml-1 text-xs font-semibold text-slate-400">
+                  (
+                  {(
+                    (estimatedValue * data.collectorSharePercent) /
+                    100
+                  ).toFixed(2)}{" "}
+                  RON)
                 </span>
               </span>
             </div>
           </div>
-        )}
+        </div>
       </div>
 
       <div>
@@ -817,7 +758,7 @@ function StepDetails({
       </div>
 
       <div>
-        <FieldLabel hint="Vizibil doar colectorului aprobat">
+        <FieldLabel hint="Opțional, vizibil doar colectorului">
           Telefon de contact
         </FieldLabel>
         <div className="relative">

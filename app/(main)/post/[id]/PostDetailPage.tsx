@@ -776,16 +776,16 @@ function DetailPanel({
               <h1 className="text-4xl font-black text-[#123424] tracking-tight tabular-nums leading-none">
                 {post.bottleCount}
               </h1>
-              <span className="text-lg text-slate-400 font-medium">sticle</span>
+              <span className="text-lg text-slate-400">sticle</span>
             </div>
 
             <div className="w-px h-8 bg-slate-200" />
 
             <div className="flex items-baseline gap-1.5 ">
-              <span className="text-3xl font-bold text-lime-700 tabular-nums leading-none">
+              <span className="text-3xl font-black text-lime-700 tabular-nums leading-none">
                 {(post.bottleCount * 0.5).toFixed(2)}
               </span>
-              <span className="text-sm text-lime-600/70 uppercase tracking-wider">
+              <span className="text-sm text-slate-400 uppercase tracking-wider">
                 ron
               </span>
             </div>
