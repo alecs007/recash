@@ -68,8 +68,8 @@ export default function Template({ children }: { children: React.ReactNode }) {
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 1.02, y: -8 }}
       transition={{
-        duration: 0.4,
-        ease: [0.22, 1, 0.36, 1], // Custom "Expo" easing for that premium feel
+        duration: 0.8,
+        ease: [0.22, 1, 0.36, 1],
       }}
       style={{ width: "100%" }}
     >
