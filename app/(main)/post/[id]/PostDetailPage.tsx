@@ -18,6 +18,7 @@ import {
   RefreshCw,
   Loader2,
   Calendar,
+  LockKeyholeOpen,
 } from "lucide-react";
 import { FaWineBottle } from "react-icons/fa";
 import { PostStatus, Post } from "@/types";
@@ -288,7 +289,7 @@ function CodeEntry({
         placeholder="A3BC"
         maxLength={4}
         autoCapitalize="characters"
-        className="w-full px-4 py-4 rounded-xl border-2 border-slate-200 focus:border-[#123424] outline-none text-3xl font-black text-center tracking-[0.5em] text-slate-900 bg-white uppercase transition-colors"
+        className="w-full px-4 py-4 rounded-xl border-2 border-slate-200 focus:border-lime-400 outline-none text-3xl font-black text-center tracking-[0.5em] text-slate-900 bg-white uppercase transition-colors"
       />
 
       {error && <p className="text-sm text-red-500 font-medium">{error}</p>}
@@ -940,7 +941,7 @@ function DetailPanel({
           <div className="mb-7 space-y-6">
             {post.expiresAt && <Countdown deadline={post.expiresAt} />}
             <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+              <p className="text-xs font-semibold text-slate-400 tracking-wider mb-3">
                 {isAuthor ? "Codul tău de confirmare" : "Introdu codul"}
               </p>
               {isAuthor ? (
@@ -949,9 +950,10 @@ function DetailPanel({
                 ) : (
                   <button
                     onClick={() => setShowCode(true)}
-                    className="w-full py-3.5 rounded-xl bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all cursor-pointer"
+                    className="w-full flex items-center justify-center py-3.5 rounded-xl bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all cursor-pointer"
                   >
                     Afișează codul
+                    <LockKeyholeOpen className="w-4 h-4 ml-2" />
                   </button>
                 )
               ) : (
