@@ -68,9 +68,15 @@ export async function awardBadge(
 
 export async function checkPostBadges(userId: string): Promise<void> {
   const count = await prisma.post.count({ where: { authorId: userId } });
-
   const candidates: BadgeType[] = [];
-  if (count >= 1) candidates.push("FIRST_POST");
+
+  if (count >= 1) {
+    candidates.push("FIRST_POST");
+    if (await checkFirstWeekEligibility(userId)) {
+      candidates.push("FIRST_WEEK");
+    }
+  }
+
   if (count >= 10) candidates.push("POST_VETERAN_10");
   if (count >= 50) candidates.push("POST_VETERAN_50");
   if (count >= 100) candidates.push("POST_VETERAN_100");
@@ -106,6 +112,14 @@ export async function checkTransactionBadges(
 
   const posterCandidates: BadgeType[] = [];
   const collectorCandidates: BadgeType[] = [];
+
+  if (posterTxCount >= 1 && (await checkFirstWeekEligibility(posterId))) {
+    posterCandidates.push("FIRST_WEEK");
+  }
+
+  if (collectorTxCount >= 1 && (await checkFirstWeekEligibility(collectorId))) {
+    collectorCandidates.push("FIRST_WEEK");
+  }
 
   // Poster-side badges
   if (posterTxCount >= 100) posterCandidates.push("CENTURION");
@@ -150,4 +164,18 @@ export async function checkRatingBadges(userId: string): Promise<void> {
   if (user && user.ratingCount >= 10 && user.reputationScore >= 5.0) {
     await awardBadge(userId, "PERFECT_RATING");
   }
+}
+
+async function checkFirstWeekEligibility(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { createdAt: true },
+  });
+
+  if (!user) return false;
+
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+  return user.createdAt >= oneWeekAgo;
 }

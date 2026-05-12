@@ -4,7 +4,7 @@ import Google from "next-auth/providers/google";
 import Facebook from "next-auth/providers/facebook";
 import { prisma } from "@/lib/prisma";
 import authConfig from "./auth.config";
-import { awardBadge } from "@/lib/badges";
+import { createNotification } from "./lib/notifications";
 import type { UserRole } from "@prisma/client";
 
 const API_VERSION = process.env.NEXT_PUBLIC_API_VERSION || "v1";
@@ -49,8 +49,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   events: {
     async createUser({ user }) {
       if (!user.id) return;
-      await awardBadge(user.id, "FIRST_WEEK").catch((err) =>
-        console.error("[auth] FIRST_WEEK badge error:", err),
+      await createNotification({
+        userId: user.id,
+        type: "SYSTEM",
+        title: "Bine ai venit! 👋",
+        message: "Ne bucurăm că te-ai alăturat comunității Recash!",
+        link: "/map",
+      }).catch((err) =>
+        console.error("[auth] Welcome notification error:", err),
       );
     },
   },
