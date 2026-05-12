@@ -248,10 +248,12 @@ const uniqueLocations = [
 
 async function main() {
   console.log("🧹 Reseting database...");
+
   await prisma.transaction.deleteMany();
   await prisma.notification.deleteMany();
   await prisma.badge.deleteMany();
   await prisma.post.deleteMany();
+
   await prisma.session.deleteMany();
   await prisma.account.deleteMany();
   await prisma.user.deleteMany();
@@ -293,8 +295,17 @@ async function main() {
   }
 
   console.log("📦 Generating 121 posts...");
-  for (let i = 0; i < 121; i++) {
+  for (let i = 0; i < createdUsers.length; i++) {
     const author = createdUsers[i];
+
+    // Safety check: ensure author exists before attempting to link a post to them
+    if (!author || !author.id) {
+      console.warn(
+        `⚠️ Skipping post creation for index ${i} due to missing user ID.`,
+      );
+      continue;
+    }
+
     const location = fakerRO.helpers.arrayElement(uniqueLocations);
     const bottleCount = fakerRO.helpers.arrayElement([
       12, 24, 33, 45, 60, 85, 121,
@@ -335,14 +346,12 @@ async function main() {
     });
   }
 
-  console.log(
-    `✅ Finalizat! 121 utilizatori și 121 postări create în 40 de locații.`,
-  );
+  console.log(`✅ Finalizat! Utilizatori și postări create cu succes.`);
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error("❌ Eroare in timpul procesului de seed:", e);
     process.exit(1);
   })
   .finally(async () => {

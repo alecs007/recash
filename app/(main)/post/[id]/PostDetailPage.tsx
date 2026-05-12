@@ -379,7 +379,7 @@ function ReviewForm({
         placeholder="Comentariu opțional..."
         rows={2}
         maxLength={500}
-        className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-[#123424] outline-none text-sm resize-none bg-white transition-colors"
+        className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-lime-400 outline-none text-sm resize-none bg-white transition-colors"
       />
       {error && <p className="text-sm text-red-500">{error}</p>}
       <button

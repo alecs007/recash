@@ -37,7 +37,9 @@ export function StarRating({ score, count }: { score: number; count: number }) {
         {score.toFixed(1)}
       </span>
       {count > 0 && (
-        <span className="text-xs text-slate-300">({count} recenzii)</span>
+        <span className="text-xs text-slate-300">
+          ({count} {count === 1 ? "recenzie" : "recenzii"})
+        </span>
       )}
     </div>
   );
