@@ -22,6 +22,8 @@ import { FaWineBottle, FaRegCompass } from "react-icons/fa";
 import useSWR from "swr";
 import { useSetActiveCounts } from "@/hooks/useActiveCounts";
 
+const API = process.env.NEXT_PUBLIC_API_VERSION ?? "v1";
+
 type Post = {
   id: string;
   status: string;
@@ -47,6 +49,21 @@ type Post = {
 type ActiveData = {
   activePost: { id: string } | null;
   activeCollection: { id: string } | null;
+};
+
+type GeocodeResult = {
+  lat: string;
+  lon: string;
+  display_name: string;
+  address?: {
+    city?: string;
+    town?: string;
+    village?: string;
+    county?: string;
+    road?: string;
+    neighbourhood?: string;
+    suburb?: string;
+  };
 };
 
 type LeafletMap = {
@@ -90,8 +107,6 @@ type LeafletLib = {
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-// ─── Leaflet singleton loader ─────────────────────────────────────────────────
-
 let _leafletPromise: Promise<void> | null = null;
 
 function ensureLeaflet(): Promise<void> {
@@ -109,7 +124,6 @@ function ensureLeaflet(): Promise<void> {
       document.head.appendChild(css);
     }
 
-    // Marker cluster CSS
     if (!document.querySelector('link[href*="MarkerCluster"]')) {
       const css2 = document.createElement("link");
       css2.rel = "stylesheet";
@@ -127,13 +141,12 @@ function ensureLeaflet(): Promise<void> {
     script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
     script.async = true;
     script.onload = () => {
-      // Load cluster plugin after Leaflet
       const clusterScript = document.createElement("script");
       clusterScript.src =
         "https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js";
       clusterScript.async = true;
       clusterScript.onload = () => resolve();
-      clusterScript.onerror = () => resolve(); // cluster is optional, resolve anyway
+      clusterScript.onerror = () => resolve();
       document.head.appendChild(clusterScript);
     };
     script.onerror = (err) => {
@@ -169,20 +182,13 @@ function useLeaflet() {
   return ready;
 }
 
-// ─── Virtual list hook — only render visible cards ────────────────────────────
-// Renders a window of VIRTUAL_PAGE_SIZE items, expanding on scroll.
-
 const VIRTUAL_PAGE_SIZE = 30;
 
 function useVirtualList<T>(items: T[]) {
   const [limit, setLimit] = useState(VIRTUAL_PAGE_SIZE);
-
-  // 1. Keep track of the "source of truth" for the current list
   const [prevItems, setPrevItems] = useState(items);
   const sentinel = useRef<HTMLDivElement>(null);
 
-  // 2. Sync state during render
-  // If the items reference changed, reset the limit immediately
   let effectiveLimit = limit;
   if (items !== prevItems) {
     setPrevItems(items);
@@ -193,20 +199,17 @@ function useVirtualList<T>(items: T[]) {
   useEffect(() => {
     const el = sentinel.current;
     if (!el || items.length === 0) return;
-
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          // Use functional update to ensure we have the latest limit
           setLimit((prev) => Math.min(prev + VIRTUAL_PAGE_SIZE, items.length));
         }
       },
       { threshold: 0.1 },
     );
-
     observer.observe(el);
     return () => observer.disconnect();
-  }, [items.length]); // Re-bind observer if total length changes
+  }, [items.length]);
 
   return {
     visible: items.slice(0, effectiveLimit),
@@ -215,9 +218,6 @@ function useVirtualList<T>(items: T[]) {
   };
 }
 
-// ─── Pure helper — computes hoursLeft without Date.now() in render ────────────
-// Called once per card mount/update via useMemo with a stable snapshot.
-
 function computeHoursLeft(expiresAt: string | null): number | null {
   if (!expiresAt) return null;
   return Math.max(
@@ -225,8 +225,6 @@ function computeHoursLeft(expiresAt: string | null): number | null {
     Math.floor((new Date(expiresAt).getTime() - Date.now()) / 3_600_000),
   );
 }
-
-// ─── Post Card ────────────────────────────────────────────────────────────────
 
 function PostCard({
   post,
@@ -249,7 +247,6 @@ function PostCard({
 }) {
   const collectorEarning =
     (post.estimatedValue * post.collectorSharePercent) / 100;
-  // useMemo keeps Date.now() out of the render path itself
   const hoursLeft = useMemo(
     () => computeHoursLeft(post.expiresAt),
     [post.expiresAt],
@@ -275,7 +272,6 @@ function PostCard({
           : "border-slate-100 hover:border-lime-200"
       }`}
     >
-      {/* Author row */}
       <div className="flex items-center gap-2.5 mb-2.5">
         <div className="w-9 h-9 rounded-full bg-lime-50 border border-lime-200 flex items-center justify-center overflow-hidden shrink-0">
           {post.author.image ? (
@@ -311,7 +307,6 @@ function PostCard({
         </div>
       </div>
 
-      {/* Location */}
       {post.locationName && (
         <div className="flex items-center gap-1.5 mb-2">
           <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
@@ -321,14 +316,12 @@ function PostCard({
         </div>
       )}
 
-      {/* Description */}
       {post.description && (
         <p className="text-xs text-slate-400 mb-2.5 line-clamp-2 italic leading-relaxed">
           &quot;{post.description}&quot;
         </p>
       )}
 
-      {/* Earning strip */}
       {!isOwnPost && (
         <div className="flex items-center justify-between mb-3 px-3 py-2 bg-slate-50 rounded-xl">
           <div className="text-xs text-slate-600">
@@ -351,7 +344,6 @@ function PostCard({
         </div>
       )}
 
-      {/* Claim button */}
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -376,8 +368,6 @@ function PostCard({
     </div>
   );
 }
-
-// ─── Selected Post Overlay ────────────────────────────────────────────────────
 
 function SelectedPostOverlay({
   post,
@@ -513,16 +503,13 @@ function PostMap({
   const clusterGroupRef = useRef<LeafletLayer | null>(null);
   const markersRef = useRef<Map<string, LeafletMarker>>(new Map());
   const userMarkerRef = useRef<LeafletMarker | null>(null);
-  // Store callback in ref — update in useEffect, not render
   const onSelectRef = useRef(onSelectPost);
   const leafletReady = useLeaflet();
 
-  // Update the callback ref in an effect (not during render)
   useEffect(() => {
     onSelectRef.current = onSelectPost;
   }, [onSelectPost]);
 
-  // Init map exactly once
   useEffect(() => {
     if (!leafletReady || !containerRef.current || mapRef.current) return;
 
@@ -539,7 +526,6 @@ function PostMap({
       maxZoom: 19,
     }).addTo(map);
 
-    // Create cluster group for scalability
     let clusterGroup: LeafletLayer;
     if (L.markerClusterGroup) {
       clusterGroup = L.markerClusterGroup({
@@ -551,7 +537,6 @@ function PostMap({
         spiderfyOnMaxZoom: true,
       });
     } else {
-      // Fallback: fake layer group API using map directly
       clusterGroup = {
         addTo: (m: LeafletMap) => {
           void m;
@@ -579,7 +564,6 @@ function PostMap({
     });
     ro.observe(containerRef.current);
 
-    // Capture ref values for cleanup closure
     const capturedMarkers = markersRef.current;
 
     return () => {
@@ -592,7 +576,6 @@ function PostMap({
     };
   }, [leafletReady]);
 
-  // User location marker
   useEffect(() => {
     if (!mapRef.current || !userLocation) return;
     const L = (window as unknown as { L?: LeafletLib }).L;
@@ -620,7 +603,6 @@ function PostMap({
     mapRef.current.setView(userLocation, 13, { animate: true });
   }, [userLocation]);
 
-  // Sync markers — diffing approach for performance with large lists
   useEffect(() => {
     if (!mapRef.current || !leafletReady || !clusterGroupRef.current) return;
     const L = (window as unknown as { L?: LeafletLib }).L;
@@ -629,7 +611,6 @@ function PostMap({
     const cluster = clusterGroupRef.current;
     const currentMarkers = markersRef.current;
 
-    // Remove stale markers
     const postIds = new Set(posts.map((p) => p.id));
     currentMarkers.forEach((marker, id) => {
       if (!postIds.has(id)) {
@@ -638,7 +619,6 @@ function PostMap({
       }
     });
 
-    // Add / update markers
     posts.forEach((post) => {
       const isSelected = post.id === selectedId;
       const n = post.bottleCount;
@@ -673,7 +653,7 @@ function PostMap({
       if (existing) {
         existing.setIcon(icon);
       } else {
-        const postId = post.id; // capture for closure
+        const postId = post.id;
         const marker = L.marker([post.latitude, post.longitude], { icon }).on(
           "click",
           () => onSelectRef.current(postId),
@@ -684,7 +664,6 @@ function PostMap({
     });
   }, [posts, selectedId, leafletReady]);
 
-  // Pan to selected post
   useEffect(() => {
     if (!selectedId || !mapRef.current) return;
     const post = posts.find((p) => p.id === selectedId);
@@ -730,7 +709,6 @@ function PostMap({
       }
     };
 
-    // Delay pan so the map panel is visible in the DOM before calculating coordinates
     const timer = setTimeout(doPan, 50);
     return () => clearTimeout(timer);
   }, [selectedId, posts]);
@@ -750,8 +728,6 @@ function PostMap({
   );
 }
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-
 function CardSkeleton() {
   return (
     <div className="bg-white rounded-2xl border border-slate-100 p-4 animate-pulse space-y-3">
@@ -769,8 +745,6 @@ function CardSkeleton() {
     </div>
   );
 }
-
-// ─── Main Map Page ────────────────────────────────────────────────────────────
 
 export default function MapPage() {
   const { data: session } = useSession();
@@ -790,6 +764,11 @@ export default function MapPage() {
   const [minBottles, setMinBottles] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
 
+  const [geoResults, setGeoResults] = useState<GeocodeResult[]>([]);
+  const [geoSearchLoading, setGeoSearchLoading] = useState(false);
+  const geoDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchWrapperRef = useRef<HTMLDivElement>(null);
+
   const topbarRef = useRef<HTMLDivElement>(null);
   const [topbarHeight, setTopbarHeight] = useState(57);
 
@@ -800,6 +779,19 @@ export default function MapPage() {
     const ro = new ResizeObserver(() => setTopbarHeight(el.offsetHeight));
     ro.observe(el);
     return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        searchWrapperRef.current &&
+        !searchWrapperRef.current.contains(e.target as Node)
+      ) {
+        setGeoResults([]);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
   const isLoggedIn = !!session?.user?.id;
@@ -845,6 +837,48 @@ export default function MapPage() {
 
   const { visible: visiblePosts, sentinel, hasMore } = useVirtualList(filtered);
 
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value);
+
+    if (geoDebounceRef.current) clearTimeout(geoDebounceRef.current);
+
+    if (value.trim().length < 3) {
+      setGeoResults([]);
+      return;
+    }
+
+    geoDebounceRef.current = setTimeout(async () => {
+      setGeoSearchLoading(true);
+      try {
+        const res = await fetch(
+          `/api/${API}/geocode?type=search&q=${encodeURIComponent(value)}`,
+        );
+        const data = await res.json();
+        setGeoResults(Array.isArray(data) ? data : []);
+      } catch {
+        setGeoResults([]);
+      } finally {
+        setGeoSearchLoading(false);
+      }
+    }, 450);
+  }, []);
+
+  const handleSelectGeoResult = useCallback((result: GeocodeResult) => {
+    const lat = parseFloat(result.lat);
+    const lng = parseFloat(result.lon);
+
+    const shortName = result.display_name
+      .split(",")
+      .slice(0, 2)
+      .join(", ")
+      .trim();
+
+    setSearch(shortName);
+    setGeoResults([]);
+    // Pan the map to this location (reuses the userLocation mechanism)
+    setUserLocation([lat, lng]);
+  }, []);
+
   const handleGetLocation = useCallback(() => {
     if (!navigator.geolocation) return;
     setGeoLoading(true);
@@ -865,7 +899,6 @@ export default function MapPage() {
         return;
       }
 
-      // Check if own post
       const post = posts.find((p) => p.id === postId);
       if (post?.author.id === currentUserId) return;
 
@@ -890,7 +923,6 @@ export default function MapPage() {
         }
 
         await mutate();
-
         setActiveCounts({ activeCollections: 1, activeCollectionId: postId });
         router.push(`/post/${postId}`);
       } catch {
@@ -916,35 +948,81 @@ export default function MapPage() {
   }, []);
 
   return (
-    <div className="flex flex-col max-w-7xl mx-auto overflow-hidden fixed inset-0 bottom-0 top-16">
-      {/* ── Top bar — sticky on mobile ────────────────────────────────────── */}
+    <div className="flex flex-col max-w-7xl mx-auto fixed inset-0 bottom-0 top-16">
       <div
         ref={topbarRef}
-        className="shrink-0 bg-white border-b border-slate-100 px-4 py-3 z-10"
+        className="shrink-0 bg-white border-b border-slate-100 px-4 py-3 z-[700]"
         style={{ position: "sticky", top: 0 }}
       >
-        <div className="flex items-center gap-2 max-w-7xl mx-auto">
-          {/* Search */}
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Caută o locație..."
-              className="w-full pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none transition-shadow"
-            />
-            {search && (
-              <button
-                onClick={() => setSearch("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+        <div className="flex items-center gap-2 max-w-7xl mx-auto ">
+          <div ref={searchWrapperRef} className="relative flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                onFocus={() => {
+                  if (search.trim().length >= 3) handleSearchChange(search);
+                }}
+                placeholder="Caută o locație sau zonă..."
+                className="w-full pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none transition-shadow"
+              />
+
+              {geoSearchLoading ? (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-slate-400" />
+              ) : search ? (
+                <button
+                  onClick={() => {
+                    setSearch("");
+                    setGeoResults([]);
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              ) : null}
+            </div>
+
+            {geoResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-slate-200 overflow-hidden">
+                {geoResults.map((result, i) => {
+                  const shortName = result.display_name
+                    .split(",")
+                    .slice(0, 2)
+                    .join(", ")
+                    .trim();
+                  const detail = result.display_name
+                    .split(",")
+                    .slice(2, 4)
+                    .join(", ")
+                    .trim();
+
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => handleSelectGeoResult(result)}
+                      className="w-full text-left px-4 py-2.5 hover:bg-lime-50 transition-colors flex items-start gap-2.5 border-b border-slate-50 last:border-0 cursor-pointer"
+                    >
+                      <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                      <span className="flex flex-col min-w-0">
+                        <span className="text-sm font-medium text-slate-800 truncate">
+                          {shortName}
+                        </span>
+                        {detail && (
+                          <span className="text-xs text-slate-400 truncate">
+                            {detail}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             )}
           </div>
 
-          {/* GPS */}
           <button
             onClick={handleGetLocation}
             disabled={geoLoading}
@@ -958,7 +1036,6 @@ export default function MapPage() {
             )}
           </button>
 
-          {/* Filters toggle */}
           <button
             onClick={() => setShowFilters((v) => !v)}
             className={`p-2.5 rounded-xl border transition-colors shrink-0 cursor-pointer ${
@@ -970,7 +1047,6 @@ export default function MapPage() {
             <LuFilter className="w-4 h-4" />
           </button>
 
-          {/* Mobile view toggle */}
           <div className="flex sm:hidden items-center bg-slate-100 rounded-xl p-1 gap-0.5 shrink-0">
             <button
               onClick={() => setMobileView("list")}
@@ -995,13 +1071,12 @@ export default function MapPage() {
           </div>
         </div>
 
-        {/* Active collection banner */}
         {activeData?.activeCollection && (
           <Link
             href={`/post/${activeData.activeCollection.id}`}
             className="max-w-7xl mx-auto"
           >
-            <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-3 py-2  mt-2">
+            <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mt-2">
               <span className="text-xs font-semibold text-amber-700">
                 Ai o colectare în desfășurare
               </span>
@@ -1012,7 +1087,6 @@ export default function MapPage() {
           </Link>
         )}
 
-        {/* Claim error banner */}
         {claimError && (
           <div className="max-w-7xl mx-auto mt-2">
             <div className="flex items-center justify-between bg-red-50 border border-red-200 rounded-xl px-3 py-2">
@@ -1047,8 +1121,7 @@ export default function MapPage() {
                   minBottles === n
                     ? "bg-[#123524] text-white border-[#123524] shadow-sm"
                     : "bg-white text-slate-600 border-slate-200 hover:border-slate-400 hover:bg-slate-50"
-                }
-    `}
+                }`}
               >
                 {n === 0 ? "Toate" : `${n}+`}
               </button>
@@ -1058,6 +1131,7 @@ export default function MapPage() {
                 onClick={() => {
                   setMinBottles(0);
                   setSearch("");
+                  setGeoResults([]);
                 }}
                 className="px-3 py-1 rounded-full text-xs font-semibold text-red-500 border border-red-200 hover:bg-red-50 transition-colors cursor-pointer"
               >
@@ -1068,9 +1142,8 @@ export default function MapPage() {
         </div>
       )}
 
-      {/* ── Main layout ───────────────────────────────────────────────────────── */}
       <div className="flex-1 flex overflow-hidden min-h-0">
-        {/* ── Sidebar (list) ──────────────────────────────────────────────────── */}
+        {/* ── Sidebar ─────────────────────────────────────────────────────────── */}
         <div
           className={`
             flex flex-col bg-slate-50 border-r border-slate-100
@@ -1079,7 +1152,6 @@ export default function MapPage() {
             ${mobileView === "list" ? "flex" : "hidden sm:flex"}
           `}
         >
-          {/* Count row */}
           <div className="shrink-0 p-4 bg-white border-b border-slate-100 flex items-center justify-between">
             <span className="text-xs text-slate-500">
               {isLoading ? (
@@ -1103,7 +1175,6 @@ export default function MapPage() {
             )}
           </div>
 
-          {/* Scrollable post list — virtualized with sentinel */}
           <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
             {isLoading ? (
               <>
@@ -1136,6 +1207,7 @@ export default function MapPage() {
                     onClick={() => {
                       setSearch("");
                       setMinBottles(0);
+                      setGeoResults([]);
                     }}
                     className="mt-3 text-xs font-semibold text-lime-700 hover:underline cursor-pointer"
                   >
@@ -1158,7 +1230,6 @@ export default function MapPage() {
                     isOwnPost={post.author.id === currentUserId}
                   />
                 ))}
-                {/* Infinite scroll sentinel */}
                 {hasMore && (
                   <div ref={sentinel} className="py-4 flex justify-center">
                     <Loader2 className="w-5 h-5 text-slate-300 animate-spin" />
@@ -1183,7 +1254,6 @@ export default function MapPage() {
             onSelectPost={handleSelectPost}
           />
 
-          {/* Selected post overlay */}
           {selectedPost && (
             <SelectedPostOverlay
               post={selectedPost}
@@ -1196,7 +1266,6 @@ export default function MapPage() {
             />
           )}
 
-          {/* Zero-posts hint */}
           {!isLoading && filtered.length === 0 && !selectedPost && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="bg-white/90 backdrop-blur-sm rounded-2xl px-6 py-4 shadow-lg border border-slate-200 text-center">
