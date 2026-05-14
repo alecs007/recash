@@ -970,7 +970,7 @@ export default function MapPage() {
                   if (search.trim().length >= 3) handleSearchChange(search);
                 }}
                 placeholder="Caută o locație..."
-                className="w-full pl-9 pr-8 py-1.5 rounded-xl border border-slate-200 bg-white focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none transition-shadow"
+                className="w-full pl-9 pr-8 py-1.5 md:py-2 rounded-xl border border-slate-200 bg-white focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none transition-shadow"
               />
 
               {geoSearchLoading ? (
@@ -1031,7 +1031,7 @@ export default function MapPage() {
             onClick={handleGetLocation}
             disabled={geoLoading}
             title="Folosește GPS-ul"
-            className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-50 shrink-0 cursor-pointer"
+            className="p-2.5 md:p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-50 shrink-0 cursor-pointer"
           >
             {geoLoading ? (
               <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
@@ -1042,7 +1042,7 @@ export default function MapPage() {
 
           <button
             onClick={() => setShowFilters((v) => !v)}
-            className={`p-2.5 rounded-xl border transition-colors shrink-0 cursor-pointer ${
+            className={`p-2.5 md:p-3 rounded-xl border transition-colors shrink-0 cursor-pointer ${
               showFilters || minBottles > 0
                 ? "border-lime-400 bg-lime-50 text-lime-700"
                 : "border-slate-200 bg-white text-[#123424] hover:bg-slate-50"
