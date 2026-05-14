@@ -101,32 +101,28 @@ export async function POST(
             },
       });
 
-      const [posterAgg, collectorAgg] = await Promise.all([
+      const [receivedAsPoster, receivedAsCollector] = await Promise.all([
         tx.transaction.aggregate({
-          where: { posterId: reviewedUserId, posterRating: { not: null } },
-          _avg: { posterRating: true },
-          _count: { posterRating: true },
-        }),
-        tx.transaction.aggregate({
-          where: {
-            collectorId: reviewedUserId,
-            collectorRating: { not: null },
-          },
+          where: { posterId: reviewedUserId, collectorRating: { not: null } },
           _avg: { collectorRating: true },
           _count: { collectorRating: true },
         }),
+        tx.transaction.aggregate({
+          where: { collectorId: reviewedUserId, posterRating: { not: null } },
+          _avg: { posterRating: true },
+          _count: { posterRating: true },
+        }),
       ]);
 
-      const posterCount = posterAgg._count.posterRating ?? 0;
-      const collectorCount = collectorAgg._count.collectorRating ?? 0;
-      const totalCount = posterCount + collectorCount;
+      const asPosterCount = receivedAsPoster._count.collectorRating ?? 0;
+      const asCollectorCount = receivedAsCollector._count.posterRating ?? 0;
+      const totalCount = asPosterCount + asCollectorCount;
 
       if (totalCount > 0) {
         const weightedSum =
-          (posterAgg._avg.posterRating ?? 0) * posterCount +
-          (collectorAgg._avg.collectorRating ?? 0) * collectorCount;
+          (receivedAsPoster._avg.collectorRating ?? 0) * asPosterCount +
+          (receivedAsCollector._avg.posterRating ?? 0) * asCollectorCount;
         const newScore = Math.round((weightedSum / totalCount) * 100) / 100;
-
         await tx.user.update({
           where: { id: reviewedUserId },
           data: { reputationScore: newScore, ratingCount: totalCount },
