@@ -51,7 +51,7 @@ const INITIAL: FormData = {
   locationName: "",
   address: "",
   phone: "",
-  expiresInHours: 48,
+  expiresInHours: 24,
 };
 
 interface GeocodeResult {
@@ -72,9 +72,9 @@ const PRESETS = BOTTLE_PRESETS.filter((p) => p.value > 0);
 
 const EXPIRY_OPTIONS = [
   { h: 12, label: "12h" },
-  { h: 24, label: "1 zi" },
-  { h: 48, label: "2 zile" },
-  { h: 72, label: "3 zile" },
+  { h: 24, label: "24h" },
+  { h: 48, label: "48h" },
+  { h: 72, label: "72h" },
 ];
 
 function useLeaflet() {
@@ -531,7 +531,7 @@ function StepLocation({
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
                 placeholder="ex: Strada Victoriei, Cluj..."
-                className="w-full pl-9 pr-8 py-3 rounded-xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none text-sm bg-white transition-shadow"
+                className="w-full pl-9 pr-8 py-3 h-12 rounded-xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none bg-white transition-shadow"
               />
               {searchLoading && (
                 <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-slate-400" />
@@ -750,7 +750,7 @@ function StepDetails({
           placeholder="ex: Sticle PET și doze de aluminiu, la intrarea în bloc, scara A..."
           rows={3}
           maxLength={500}
-          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none text-sm bg-white resize-none transition-shadow"
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none bg-white resize-none transition-shadow"
         />
         <p className="text-right text-[11px] text-slate-400 mt-1">
           {data.description.length} / 500
@@ -767,7 +767,7 @@ function StepDetails({
             value={data.phone}
             onChange={(e) => onChange({ phone: e.target.value })}
             placeholder="+40 700 000 000"
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none text-sm bg-white transition-shadow"
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none bg-white transition-shadow"
           />
         </div>
       </div>
@@ -787,9 +787,6 @@ function StepDetails({
                     : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
                 }`}
             >
-              <Clock
-                className={`w-3.5 h-3.5 ${data.expiresInHours === h ? "text-lime-400" : "text-slate-400"}`}
-              />
               {label}
             </button>
           ))}

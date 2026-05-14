@@ -87,7 +87,6 @@ function PostMap({
       center: [lat, lng],
       zoom: 15,
       zoomControl: false,
-      scrollWheelZoom: false,
       attributionControl: false,
     });
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {

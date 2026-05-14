@@ -103,6 +103,9 @@ type LeafletLib = {
   marker: (latlng: [number, number], opts: object) => LeafletMarker;
   divIcon: (opts: object) => LeafletIcon;
   markerClusterGroup?: (opts?: object) => LeafletLayer;
+  control: {
+    zoom: (opts: { position?: string }) => { addTo: (m: LeafletMap) => void };
+  };
 };
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -517,9 +520,10 @@ function PostMap({
     const map = L.map(containerRef.current, {
       center: [45.9432, 24.9668],
       zoom: 7,
-      zoomControl: true,
+      zoomControl: false,
       attributionControl: true,
     });
+    L.control.zoom({ position: "topright" }).addTo(map);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "© <a href='https://openstreetmap.org'>OpenStreetMap</a>",
@@ -965,8 +969,8 @@ export default function MapPage() {
                 onFocus={() => {
                   if (search.trim().length >= 3) handleSearchChange(search);
                 }}
-                placeholder="Caută o locație sau zonă..."
-                className="w-full pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none transition-shadow"
+                placeholder="Caută o locație..."
+                className="w-full pl-9 pr-8 py-1.5 rounded-xl border border-slate-200 bg-white focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none transition-shadow"
               />
 
               {geoSearchLoading ? (
