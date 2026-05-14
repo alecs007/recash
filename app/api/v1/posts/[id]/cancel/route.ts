@@ -80,20 +80,21 @@ export async function POST(
       if (isAuthor) {
         await prisma.post.update({
           where: { id },
-          data: { status: "OPEN", collectorId: null, claimedAt: null },
+          data: { status: "CANCELLED" },
         });
         if (post.collectorId) {
           await notifyPostCancelled(post.collectorId, id, "poster");
         }
-        publishPostStatus({ postId: id, status: "OPEN", collectorId: null }, [
-          post.collectorId!,
-        ]);
+        publishPostStatus(
+          { postId: id, status: "CANCELLED", collectorId: null },
+          [post.collectorId!],
+        );
         publishPostCancelled(
           id,
           [post.authorId, ...(post.collectorId ? [post.collectorId] : [])],
-          { postId: id, cancelledBy: "poster", newStatus: "OPEN" },
+          { postId: id, cancelledBy: "poster", newStatus: "CANCELLED" },
         );
-        return NextResponse.json({ success: true, status: "OPEN" });
+        return NextResponse.json({ success: true, status: "CANCELLED" });
       } else {
         await prisma.post.update({
           where: { id },
