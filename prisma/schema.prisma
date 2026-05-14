@@ -160,8 +160,8 @@ model Post {
   completedAt DateTime?
   expiresAt   DateTime?
 
-  author      User         @relation("PostAuthor",    fields: [authorId],    references: [id])
-  collector   User?        @relation("PostCollector", fields: [collectorId], references: [id])
+  author      User       @relation("PostAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  collector   User?      @relation("PostCollector", fields: [collectorId], references: [id], onDelete: SetNull)
   transaction Transaction?
 
   // ── Indexes ────────────────────────────────────────────────────────────────

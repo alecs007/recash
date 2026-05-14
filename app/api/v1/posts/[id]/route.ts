@@ -56,6 +56,14 @@ export async function GET(
       return NextResponse.json({ error: "Anunț negăsit" }, { status: 404 });
     }
 
+    if (!post.author) {
+      console.error(`Post ${id} is orphaned. No author found.`);
+      return NextResponse.json(
+        { error: "Datele autorului sunt corupte" },
+        { status: 500 },
+      );
+    }
+
     const userId = session?.user?.id;
     const isAuthor = userId === post.authorId;
     const isCollector = userId === post.collectorId;
@@ -76,9 +84,9 @@ export async function GET(
     const showPhone = isParticipant && post.status === "IN_PROGRESS";
     return NextResponse.json({
       ...post,
-      author: { ...post.author, phone: showPhone ? post.author.phone : null },
+      author: { ...post.author, phone: showPhone ? post.author?.phone : null },
       collector: post.collector
-        ? { ...post.collector, phone: showPhone ? post.collector.phone : null }
+        ? { ...post.collector, phone: showPhone ? post.collector?.phone : null }
         : null,
       isAuthor,
       isCollector,
