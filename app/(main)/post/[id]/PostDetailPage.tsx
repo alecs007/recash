@@ -569,31 +569,131 @@ function NavButtons({ lat, lng }: { lat: number; lng: number }) {
   );
 }
 
-function Skeleton() {
+function SkeletonPanel() {
   return (
-    <div
-      className="flex flex-col lg:flex-row"
-      style={{ height: "calc(100vh - 64px)" }}
-    >
-      <div className="lg:w-[55%] h-64 lg:h-full bg-slate-100 animate-pulse" />
-      <div className="flex-1 px-6 lg:px-10 py-8 space-y-6 animate-pulse">
-        <div className="h-4 w-24 bg-slate-100 rounded-full" />
-        <div className="space-y-2">
-          <div className="h-10 w-36 bg-slate-100 rounded-xl" />
-          <div className="h-4 w-48 bg-slate-100 rounded-lg" />
+    <div className="h-full overflow-y-auto animate-pulse">
+      <div className="px-6 lg:px-10 py-6 lg:py-8 max-w-xl lg:max-w-none">
+        {/* Back link + status badge */}
+        <div className="flex items-center justify-between mb-7">
+          <div className="h-4 w-28 bg-slate-100 rounded-full" />
+          <div className="h-6 w-20 bg-slate-100 rounded-full" />
         </div>
-        <div className="h-px bg-slate-100" />
-        <div className="space-y-3">
-          <div className="h-6 w-full bg-slate-100 rounded-xl" />
-          <div className="h-3 w-2/3 bg-slate-100 rounded-lg" />
+
+        {/* Bottle count + separator + value */}
+        <div className="mb-7">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-2">
+            <div className="flex items-baseline gap-2">
+              <div className="h-10 w-16 bg-slate-100 rounded-lg" />
+              <div className="h-5 w-10 bg-slate-100 rounded-lg" />
+            </div>
+            <div className="w-px h-8 bg-slate-100" />
+            <div className="flex items-baseline gap-1.5">
+              <div className="h-9 w-24 bg-slate-100 rounded-lg" />
+              <div className="h-4 w-8 bg-slate-100 rounded-lg" />
+            </div>
+          </div>
+          {/* Location */}
+          <div className="flex items-center gap-1.5 mb-1">
+            <div className="h-3.5 w-3.5 bg-slate-100 rounded-full" />
+            <div className="h-3.5 w-40 bg-slate-100 rounded-lg" />
+          </div>
+          {/* Description */}
+          <div className="mt-4 space-y-2">
+            <div className="h-3.5 w-full bg-slate-100 rounded-lg" />
+            <div className="h-3.5 w-4/5 bg-slate-100 rounded-lg" />
+          </div>
+          {/* Date row */}
+          <div className="flex items-center gap-4 mt-4">
+            <div className="h-3 w-36 bg-slate-100 rounded-lg" />
+            <div className="h-3 w-24 bg-slate-100 rounded-lg" />
+          </div>
         </div>
-        <div className="h-px bg-slate-100" />
-        <div className="space-y-3">
-          <div className="h-10 w-full bg-slate-100 rounded-xl" />
-          <div className="h-10 w-full bg-slate-100 rounded-xl" />
+
+        <div className="h-px bg-slate-100 mb-7" />
+
+        {/* Earnings section */}
+        <div className="mb-7">
+          <div className="flex items-baseline gap-2 mb-1">
+            <div className="h-4 w-20 bg-slate-100 rounded-lg" />
+            <div className="h-9 w-28 bg-slate-100 rounded-lg" />
+            <div className="h-5 w-10 bg-slate-100 rounded-lg" />
+          </div>
+          {/* Split bar */}
+          <div className="mt-3 h-2.5 bg-slate-100 rounded-full" />
+          <div className="flex justify-between mt-1">
+            <div className="h-3 w-28 bg-slate-100 rounded-lg" />
+            <div className="h-3 w-28 bg-slate-100 rounded-lg" />
+          </div>
+        </div>
+
+        <div className="h-px bg-slate-100 mb-7" />
+
+        {/* Status action placeholder */}
+        <div className="mb-7 space-y-3">
+          <div className="h-4 w-3/4 bg-slate-100 rounded-lg" />
+          <div className="h-3.5 w-1/2 bg-slate-100 rounded-lg" />
+        </div>
+
+        <div className="h-px bg-slate-100 mb-7" />
+
+        {/* Person rows */}
+        <div className="space-y-4 mb-7">
+          {/* Author */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-slate-100 shrink-0" />
+            <div className="flex-1 space-y-1.5">
+              <div className="flex items-center gap-2">
+                <div className="h-3.5 w-28 bg-slate-100 rounded-lg" />
+                <div className="h-4 w-12 bg-slate-100 rounded-full" />
+              </div>
+              <div className="h-3 w-16 bg-slate-100 rounded-lg" />
+            </div>
+          </div>
+          {/* Collector placeholder */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full border-2 border-dashed border-slate-200 shrink-0" />
+            <div className="h-3.5 w-36 bg-slate-100 rounded-lg" />
+          </div>
+        </div>
+
+        <div className="h-px bg-slate-100 mb-7" />
+
+        {/* Navigation buttons */}
+        <div className="grid grid-cols-3 gap-2">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="flex flex-col items-center gap-2 p-3 rounded-xl border border-slate-100 bg-white"
+            >
+              <div className="w-9 h-9 bg-slate-100 rounded-lg" />
+              <div className="h-3 w-14 bg-slate-100 rounded-lg" />
+            </div>
+          ))}
         </div>
       </div>
     </div>
+  );
+}
+
+function Skeleton() {
+  return (
+    <>
+      {/* Mobile: map strip on top, scrollable panel below */}
+      <div className="lg:hidden flex flex-col min-h-[calc(100vh-64px)]">
+        <div className="h-[260px] shrink-0 bg-slate-100 animate-pulse" />
+        <div className="flex-1 bg-white">
+          <SkeletonPanel />
+        </div>
+      </div>
+
+      {/* Desktop: side-by-side, full-height */}
+      <div className="hidden lg:flex" style={{ height: "calc(100vh - 64px)" }}>
+        <div className="w-[55%] shrink-0 bg-slate-100 animate-pulse" />
+        <div className="flex-1 bg-white border-l border-slate-100 overflow-hidden">
+          <SkeletonPanel />
+        </div>
+      </div>
+    </>
   );
 }
 
