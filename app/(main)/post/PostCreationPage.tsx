@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 import {
   FaWineBottle,
   FaMapMarkerAlt,
@@ -80,7 +80,7 @@ const EXPIRY_OPTIONS = [
 
 const SLIDE_EASE = [0.22, 1, 0.36, 1] as const;
 
-const stepVariants = {
+const stepVariants: Variants = {
   enter: (dir: number) => ({
     x: dir > 0 ? 56 : -56,
     opacity: 0,
@@ -93,7 +93,7 @@ const stepVariants = {
   exit: (dir: number) => ({
     x: dir > 0 ? -56 : 56,
     opacity: 0,
-    transition: { duration: 0.2, ease: [0.4, 0, 1, 1] },
+    transition: { duration: 0.2, ease: [0.4, 0, 1, 1] as const },
   }),
 };
 
