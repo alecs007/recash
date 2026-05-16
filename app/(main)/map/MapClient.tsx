@@ -111,15 +111,17 @@ type LeafletLib = {
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 let _leafletPromise: Promise<void> | null = null;
+let _clusterReady = false; // ← new
 
 function ensureLeaflet(): Promise<void> {
   if (typeof window === "undefined") return Promise.resolve();
-  if ((window as unknown as { L?: LeafletLib }).L) return Promise.resolve();
 
-  const existingScript = document.querySelector('script[src*="leaflet.js"]');
-  if (existingScript && _leafletPromise) return _leafletPromise;
+  const w = window as unknown as { L?: LeafletLib };
 
-  _leafletPromise = new Promise<void>((resolve, reject) => {
+  if (w.L && _clusterReady) return Promise.resolve();
+  if (_leafletPromise) return _leafletPromise;
+
+  _leafletPromise = new Promise<void>((resolve) => {
     if (!document.querySelector('link[href*="leaflet.css"]')) {
       const css = document.createElement("link");
       css.rel = "stylesheet";
@@ -140,21 +142,37 @@ function ensureLeaflet(): Promise<void> {
       document.head.appendChild(css3);
     }
 
-    const script = document.createElement("script");
-    script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-    script.async = true;
-    script.onload = () => {
+    const loadCluster = () => {
       const clusterScript = document.createElement("script");
       clusterScript.src =
         "https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js";
       clusterScript.async = true;
-      clusterScript.onload = () => resolve();
-      clusterScript.onerror = () => resolve();
+      clusterScript.onload = () => {
+        _clusterReady = true;
+        resolve();
+      };
+      clusterScript.onerror = () => {
+        console.warn(
+          "[map] MarkerCluster failed to load, falling back to ungrouped markers",
+        );
+        resolve();
+      };
       document.head.appendChild(clusterScript);
     };
+
+    if (w.L) {
+      loadCluster();
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+    script.async = true;
+    script.onload = loadCluster;
     script.onerror = (err) => {
       _leafletPromise = null;
-      reject(new Error("Failed to load Leaflet: " + String(err)));
+      console.error("[map] Leaflet failed to load", err);
+      resolve();
     };
     document.head.appendChild(script);
   });

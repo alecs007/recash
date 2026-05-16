@@ -46,6 +46,7 @@ export function StatsGrid({ user }: { user: UserProfile }) {
                   width={24}
                   height={24}
                   priority
+                  draggable={false}
                   className="w-8 h-8 shrink-0"
                 />
                 <span className="text-sm font-medium text-slate-600">
