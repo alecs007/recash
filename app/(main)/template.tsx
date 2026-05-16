@@ -43,6 +43,8 @@ export default function Template({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const firedRef = useRef<string | null>(null);
 
+  const isMapPage = pathname === "/map";
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [pathname]);
@@ -50,11 +52,9 @@ export default function Template({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const key = searchParams.get("toast");
     if (!key || !TOAST_MAP[key] || firedRef.current === key) return;
-
     firedRef.current = key;
     const { message, level } = TOAST_MAP[key];
     FIRE[level](message);
-
     const params = new URLSearchParams(searchParams.toString());
     params.delete("toast");
     const qs = params.toString() ? `?${params.toString()}` : "";
@@ -64,9 +64,9 @@ export default function Template({ children }: { children: React.ReactNode }) {
   return (
     <motion.div
       key={pathname}
-      initial={{ opacity: 0, scale: 0.98, y: 8 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 1.02, y: -8 }}
+      initial={isMapPage ? { opacity: 0 } : { opacity: 0, scale: 0.98, y: 8 }}
+      animate={isMapPage ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
+      exit={isMapPage ? { opacity: 0 } : { opacity: 0, scale: 1.02, y: -8 }}
       transition={{
         duration: 0.8,
         ease: [0.22, 1, 0.36, 1],

@@ -970,11 +970,13 @@ export default function MapPage() {
   }, []);
 
   return (
-    <div className="flex flex-col max-w-7xl mx-auto fixed inset-0 bottom-0 top-16">
+    <div
+      className="flex flex-col max-w-7xl mx-auto fixed inset-0 bottom-0 top-16"
+      style={{ top: 64 }}
+    >
       <div
         ref={topbarRef}
         className="shrink-0 bg-white border-b border-slate-100 px-4 py-3 z-[700]"
-        style={{ position: "sticky", top: 0 }}
       >
         <div className="flex items-center gap-2 max-w-7xl mx-auto ">
           <div ref={searchWrapperRef} className="relative flex-1">
@@ -1197,7 +1199,10 @@ export default function MapPage() {
             )}
           </div>
 
-          <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
+          <div
+            className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0"
+            data-lenis-prevent
+          >
             {isLoading ? (
               <>
                 <CardSkeleton />
@@ -1268,6 +1273,7 @@ export default function MapPage() {
             flex-1 relative overflow-hidden min-h-0
             ${mobileView === "map" ? "flex" : "hidden sm:flex"}
           `}
+          style={{ minHeight: 0 }}
         >
           <PostMap
             posts={filtered}
