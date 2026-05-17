@@ -378,7 +378,7 @@ function ReviewForm({
       <textarea
         value={review}
         onChange={(e) => setReview(e.target.value)}
-        placeholder="Comentariu opțional..."
+        placeholder="Lasă un comentariu (opțional)..."
         rows={2}
         maxLength={500}
         className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-lime-400 outline-none bg-white transition-colors"
