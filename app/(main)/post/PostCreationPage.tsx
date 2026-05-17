@@ -832,7 +832,7 @@ function StepDetails({
           placeholder="ex: Sticle PET și doze de aluminiu, la intrarea în bloc, scara A..."
           rows={3}
           maxLength={500}
-          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none bg-white resize-none transition-shadow"
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none bg-white transition-shadow"
         />
         <p className="text-right text-[11px] text-slate-400 mt-1">
           {data.description.length} / 500
