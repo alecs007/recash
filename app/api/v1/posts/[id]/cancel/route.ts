@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit, RL } from "@/lib/rate-limit";
-import { notifyPostCancelled, createNotification } from "@/lib/notifications";
+import {
+  notifyPostCancelled,
+  notifyInProgressCancelled,
+  createNotification,
+} from "@/lib/notifications";
 import { invalidate, CacheKey } from "@/lib/cache";
 import { redis } from "@/lib/redis";
 import { publishPostCancelled, publishPostStatus } from "@/lib/pubsub";
@@ -151,14 +155,32 @@ export async function POST(
         ...(post.collectorId ? [post.collectorId] : []),
       ];
 
+      const cancellerUser = await prisma.user.findUnique({
+        where: { id: cancellerUserId },
+        select: { name: true },
+      });
+      const cancellerName = cancellerUser?.name ?? "Partenerul";
+
       if (isAuthor && post.collectorId) {
         publishPostStatus({ postId: id, status: "CANCELLED" }, [
           post.collectorId!,
         ]);
-        await notifyPostCancelled(post.collectorId, id, "poster");
+        await notifyInProgressCancelled(
+          post.collectorId,
+          id,
+          cancellerName,
+          "poster",
+          newScore,
+        );
       } else if (isCollector) {
         publishPostStatus({ postId: id, status: "CANCELLED" }, [post.authorId]);
-        await notifyPostCancelled(post.authorId, id, "collector");
+        await notifyInProgressCancelled(
+          post.authorId,
+          id,
+          cancellerName,
+          "collector",
+          newScore,
+        );
       }
 
       publishPostCancelled(id, affectedUsers, {

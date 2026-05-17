@@ -179,3 +179,21 @@ export async function notifyRatingReceived(
     metadata: { rating, reviewerName },
   });
 }
+
+export async function notifyInProgressCancelled(
+  affectedUserId: string,
+  postId: string,
+  cancellerName: string,
+  cancellerRole: "poster" | "collector",
+  penaltyScore: number,
+) {
+  const cancellerLabel = cancellerRole === "poster" ? "Autorul" : "Colectorul";
+  return createNotification({
+    userId: affectedUserId,
+    type: "POST_CANCELLED",
+    title: "Colectare anulată 😔",
+    message: `${cancellerLabel} (${cancellerName}) a anulat colectarea în desfășurare și a fost penalizat pentru această acțiune.`,
+    link: `/post/${postId}`,
+    metadata: { postId, cancellerRole, penaltyScore },
+  });
+}
