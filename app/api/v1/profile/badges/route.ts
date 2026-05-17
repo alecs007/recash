@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { cached, invalidate, CacheKey, TTL } from "@/lib/cache";
+import { cached, CacheKey, TTL } from "@/lib/cache";
 import { rateLimit, RL } from "@/lib/rate-limit";
 
 export async function GET() {
@@ -23,17 +23,6 @@ export async function GET() {
         select: { id: true, type: true, earnedAt: true, seen: true },
       }),
     );
-
-    const hasUnseen = badges.some((b: { seen: boolean }) => !b.seen);
-    if (hasUnseen) {
-      prisma.badge
-        .updateMany({
-          where: { userId: session.user.id, seen: false },
-          data: { seen: true },
-        })
-        .then(() => invalidate(cacheKey))
-        .catch((err) => console.error("[badges] seen update error:", err));
-    }
 
     return NextResponse.json(badges);
   } catch (err) {

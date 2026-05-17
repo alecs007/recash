@@ -325,24 +325,26 @@ function StepBottles({
           </motion.button>
         </div>
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={estimatedValue}
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, ease: SLIDE_EASE }}
-            className="mt-2 h-9 flex items-center justify-center"
-          >
-            <div className="inline-flex items-center gap-1 rounded-full px-4 py-1.5">
-              <span className="text-xs text-slate-500">
-                {data.bottleCount} × 0,50 RON =
-              </span>
-              <span className="text-sm font-black text-lime-700">
+        <div className="mt-2 h-9 flex items-center justify-center">
+          <div className="inline-flex items-center gap-1 rounded-full px-4 py-1.5">
+            <span className="text-xs text-slate-500">
+              {data.bottleCount} × 0,50 RON =
+            </span>
+
+            <AnimatePresence mode="popLayout">
+              <motion.span
+                key={estimatedValue}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.1 }}
+                className="text-sm font-black text-lime-700 font-mono"
+              >
                 {estimatedValue.toFixed(2)} RON
-              </span>
-            </div>
-          </motion.div>
-        </AnimatePresence>
+              </motion.span>
+            </AnimatePresence>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-2">
@@ -856,21 +858,19 @@ function StepDetails({
           {EXPIRY_OPTIONS.map(({ h, label }) => {
             const active = data.expiresInHours === h;
             return (
-              <motion.button
+              <button
                 key={h}
                 type="button"
-                whileTap={{ scale: 0.94 }}
                 onClick={() => onChange({ expiresInHours: h })}
-                animate={{
+                style={{
                   backgroundColor: active ? "#123424" : "#ffffff",
                   borderColor: active ? "#123424" : "#e2e8f0",
                   color: active ? "#ffffff" : "#475569",
                 }}
-                transition={{ duration: 0.2 }}
                 className="py-3 rounded-xl border-2 text-sm font-bold cursor-pointer flex flex-col items-center gap-0.5"
               >
                 {label}
-              </motion.button>
+              </button>
             );
           })}
         </div>
@@ -1121,7 +1121,7 @@ export default function PostCreationClient({
         <StepIndicator current={step} />
 
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden mb-6">
-          <AnimatePresence mode="wait" custom={direction}>
+          <AnimatePresence mode="wait" custom={direction} initial={false}>
             <motion.div
               key={step}
               custom={direction}

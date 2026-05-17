@@ -132,7 +132,7 @@ export async function POST(
     });
 
     const sideEffects: Promise<unknown>[] = [
-      notifyRatingReceived(reviewedUserId, rating, reviewerName),
+      notifyRatingReceived(reviewedUserId, postId, rating, reviewerName),
       invalidate(CacheKey.profile(reviewedUserId)),
     ];
 

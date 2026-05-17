@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit, RL } from "@/lib/rate-limit";
-import { notifyPostClaimed } from "@/lib/notifications";
+import { notifyPostClaimed, createNotification } from "@/lib/notifications";
 import { publishPostStatus } from "@/lib/pubsub";
 
 export async function POST(
@@ -84,6 +84,15 @@ export async function POST(
       collector?.name ?? "Un colector",
       post.bottleCount,
     );
+
+    await createNotification({
+      userId: session.user.id,
+      type: "POST_CLAIMED",
+      title: "Cerere trimisă! ⏳",
+      message: `Ai solicitat colectarea a ${post.bottleCount} sticle. Așteaptă aprobarea autorului.`,
+      link: `/post/${id}`,
+      metadata: { postId: id },
+    });
 
     // Push post status update to everyone watching this post
     publishPostStatus(

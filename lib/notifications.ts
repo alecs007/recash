@@ -144,7 +144,7 @@ export async function notifyPostCancelled(
       cancelledBy === "poster"
         ? "Autorul a anulat acest anunț."
         : "Colectorul a anulat colectarea. Anunțul tău este din nou disponibil.",
-    link: `/profil/postari`,
+    link: cancelledBy === "poster" ? `/map` : `/post/${postId}`,
     metadata: { postId, cancelledBy },
   });
 }
@@ -166,6 +166,7 @@ export async function notifyTimerWarning(
 
 export async function notifyRatingReceived(
   userId: string,
+  postId: string,
   rating: number,
   reviewerName: string,
 ) {
@@ -174,7 +175,7 @@ export async function notifyRatingReceived(
     type: "RATING_RECEIVED",
     title: "Ai primit un rating nou! ⭐",
     message: `${reviewerName} ți-a acordat ${rating} ${rating === 1 ? "stea" : "stele"}.`,
-    link: `/profil`,
+    link: `/post/${postId}`,
     metadata: { rating, reviewerName },
   });
 }

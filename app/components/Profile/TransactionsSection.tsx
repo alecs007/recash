@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, ChevronRight } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { Transaction } from "@/types";
 import { SectionHeader } from "./SectionHeader";
 

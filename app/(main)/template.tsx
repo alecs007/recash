@@ -3,38 +3,42 @@
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { showToast } from "@/lib/toast";
 
 type ToastLevel = "success" | "info" | "warning" | "error";
 
-const TOAST_MAP: Record<string, { message: string; level: ToastLevel }> = {
+type Toast = {
+  title: string;
+  message?: string;
+  level: ToastLevel;
+};
+
+const TOAST_MAP: Record<string, Toast> = {
   post_cancelled: {
-    message: "Anunțul a fost anulat.",
+    title: "Anunț anulat",
+    message: "Anunțul tău a fost anulat cu succes.",
     level: "info",
   },
   claim_denied: {
-    message: "Cererea a fost refuzată. Anunțul este din nou disponibil.",
-    level: "info",
+    title: "Cerere refuzată",
+    message: "Autorul a refuzat cererea ta. Anunțul este din nou disponibil.",
+    level: "error",
   },
   claim_cancelled: {
+    title: "Colectare anulată",
     message: "Ai renunțat la colectare. Anunțul este din nou disponibil.",
     level: "info",
   },
   collection_cancelled_poster: {
-    message: "Colectarea a fost anulată.",
+    title: "Colectare anulată",
+    message: "Ai anulat colectarea în desfășurare.",
     level: "warning",
   },
   collection_cancelled_collector: {
-    message: "Ai anulat colectarea.",
+    title: "Colectare anulată",
+    message: "Ai renunțat la această colectare.",
     level: "warning",
   },
-};
-
-const FIRE: Record<ToastLevel, (msg: string) => void> = {
-  success: (msg) => toast.success(msg),
-  info: (msg) => toast.info(msg),
-  warning: (msg) => toast.warning(msg),
-  error: (msg) => toast.error(msg),
 };
 
 export default function Template({ children }: { children: React.ReactNode }) {
@@ -53,8 +57,8 @@ export default function Template({ children }: { children: React.ReactNode }) {
     const key = searchParams.get("toast");
     if (!key || !TOAST_MAP[key] || firedRef.current === key) return;
     firedRef.current = key;
-    const { message, level } = TOAST_MAP[key];
-    FIRE[level](message);
+    const { title, message, level } = TOAST_MAP[key];
+    showToast(level, title, message);
     const params = new URLSearchParams(searchParams.toString());
     params.delete("toast");
     const qs = params.toString() ? `?${params.toString()}` : "";
