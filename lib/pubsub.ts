@@ -5,7 +5,8 @@ export type WsEventType =
   | "post:status_changed"
   | "post:code_ready"
   | "post:completed"
-  | "post:cancelled";
+  | "post:cancelled"
+  | "post:rating_updated";
 
 export interface WsEvent<T = unknown> {
   type: WsEventType;
@@ -108,6 +109,26 @@ export function publishPostCancelled(
 ): void {
   const event: WsEvent<PostCancelledPayload> = {
     type: "post:cancelled",
+    payload,
+  };
+  publishToPost(postId, event);
+  for (const uid of affectedUserIds) {
+    publishToUser(uid, event);
+  }
+}
+
+export interface PostRatingPayload {
+  postId: string;
+  ratedBy: "poster" | "collector";
+}
+
+export function publishRatingUpdated(
+  postId: string,
+  affectedUserIds: string[],
+  payload: PostRatingPayload,
+): void {
+  const event: WsEvent<PostRatingPayload> = {
+    type: "post:rating_updated",
     payload,
   };
   publishToPost(postId, event);

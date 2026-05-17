@@ -91,6 +91,7 @@ export async function POST(req: Request) {
     locationName,
     address,
     images,
+    expiresInHours,
   } = body as Record<string, unknown>;
 
   if (typeof description !== "string" || description.trim().length > 500) {
@@ -178,6 +179,14 @@ export async function POST(req: Request) {
     }
   }
 
+  const safeExpiresInHours =
+    typeof expiresInHours === "number" &&
+    Number.isInteger(expiresInHours) &&
+    expiresInHours >= 1 &&
+    expiresInHours <= 168
+      ? expiresInHours
+      : 48;
+
   const existingActive = await prisma.post.findFirst({
     where: {
       authorId: session.user.id,
@@ -211,7 +220,7 @@ export async function POST(req: Request) {
           typeof locationName === "string" ? locationName.trim() || null : null,
         address: typeof address === "string" ? address.trim() || null : null,
         images: safeImages,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        expiresAt: new Date(Date.now() + safeExpiresInHours * 60 * 60 * 1000),
       },
       select: { id: true, status: true, createdAt: true },
     });

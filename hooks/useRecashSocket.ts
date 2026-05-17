@@ -9,7 +9,8 @@ export type WsEventType =
   | "post:status_changed"
   | "post:code_ready"
   | "post:completed"
-  | "post:cancelled";
+  | "post:cancelled"
+  | "post:rating_updated";
 
 type Handler<T = unknown> = (payload: T) => void;
 

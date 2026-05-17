@@ -278,7 +278,7 @@ function PostCard({
     isLoggedIn && (isOwnPost || !canClaim || claiming === post.id);
 
   const buttonText = () => {
-    if (!isLoggedIn) return "Conectează-te pentru a colecta";
+    if (!isLoggedIn) return "Conectează-te și colectează!";
     if (isOwnPost) return "Anunțul tău";
     if (!canClaim) return "Colectare activă";
     return "Colectează";
@@ -371,18 +371,18 @@ function PostCard({
           onClaim(post.id);
         }}
         disabled={buttonDisabled}
-        className={`w-full py-2.5 rounded-xl text-xs font-bold active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+        className={`w-full py-2.5 rounded-xl text-sm font-bold active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
           isOwnPost
             ? "bg-slate-300 cursor-not-allowed opacity-70"
             : "bg-[#123424] hover:bg-[#1a4d36] disabled:opacity-40 disabled:cursor-not-allowed"
         } ${buttonDisabled ? "pointer-events-none text-slate-600" : " text-white"}`}
       >
         {claiming === post.id ? (
-          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          <Loader2 className="w-4 h-4 animate-spin" />
         ) : (
           <>
             <FaWineBottle
-              className={`w-3.5 h-3.5 ${buttonDisabled ? "text-slate-600" : "text-lime-400"}`}
+              className={`w-4 h-4 ${buttonDisabled ? "text-slate-600" : "text-lime-400"}`}
             />
             {buttonText()}
           </>
@@ -421,7 +421,7 @@ function SelectedPostOverlay({
     isLoggedIn && (isOwnPost || !canClaim || claiming === post.id);
 
   const buttonText = () => {
-    if (!isLoggedIn) return "Conectează-te pentru a colecta";
+    if (!isLoggedIn) return "Conectează-te și colectează!";
     if (isOwnPost) return "Anunțul tău";
     if (!canClaim) return "Colectare activă";
     return "Colectează";
@@ -515,18 +515,18 @@ function SelectedPostOverlay({
             onClaim(post.id);
           }}
           disabled={buttonDisabled}
-          className={`w-full py-2.5 rounded-xl text-xs font-bold active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+          className={`w-full py-3 rounded-xl text-sm font-bold active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
             isOwnPost
               ? "bg-slate-300 cursor-not-allowed opacity-70"
               : "bg-[#123424] hover:bg-[#1a4d36] disabled:opacity-40 disabled:cursor-not-allowed"
           } ${buttonDisabled ? "pointer-events-none text-slate-600" : " text-white"}`}
         >
           {claiming === post.id ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
             <>
               <FaWineBottle
-                className={`w-3.5 h-3.5 ${buttonDisabled ? "text-slate-600" : "text-lime-400"}`}
+                className={`w-4 h-4 ${buttonDisabled ? "text-slate-600" : "text-lime-400"}`}
               />
               {buttonText()}
             </>

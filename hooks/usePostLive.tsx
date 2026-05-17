@@ -39,10 +39,12 @@ export function usePostLive(postId: string) {
     on("post:status_changed", refresh);
     on("post:completed", refresh);
     on("post:cancelled", refresh);
+    on("post:rating_updated", refresh);
     return () => {
       off("post:status_changed", refresh);
       off("post:completed", refresh);
       off("post:cancelled", refresh);
+      off("post:rating_updated", refresh);
     };
   }, [on, off, refresh]);
 

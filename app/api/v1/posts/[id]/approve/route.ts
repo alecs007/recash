@@ -74,6 +74,17 @@ export async function POST(
     }
 
     if (action === "approve") {
+      if (post.expiresAt && post.expiresAt < new Date()) {
+        await prisma.post.update({
+          where: { id },
+          data: { status: "EXPIRED", collectorId: null, claimedAt: null },
+        });
+        return NextResponse.json(
+          { error: "Anunțul a expirat. Nu mai poate fi aprobat." },
+          { status: 410 },
+        );
+      }
+
       const collectionDeadline = new Date(
         Date.now() + COLLECTION_WINDOW_MINUTES * 60 * 1000,
       );

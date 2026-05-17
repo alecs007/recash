@@ -6,6 +6,7 @@ import { reviewSchema } from "@/lib/validations/post";
 import { notifyRatingReceived } from "@/lib/notifications";
 import { invalidate, CacheKey } from "@/lib/cache";
 import { awardBadge } from "@/lib/badges";
+import { publishRatingUpdated } from "@/lib/pubsub";
 
 export async function POST(
   req: Request,
@@ -148,6 +149,11 @@ export async function POST(
           }
         }),
     );
+
+    publishRatingUpdated(postId, [post.authorId, post.collectorId!], {
+      postId,
+      ratedBy: isPoster ? "poster" : "collector",
+    });
 
     await Promise.all(sideEffects).catch((err) =>
       console.error("[review] side-effect error:", err),

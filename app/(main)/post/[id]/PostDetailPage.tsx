@@ -24,6 +24,7 @@ import { FaWineBottle } from "react-icons/fa";
 import { PostStatus, Post } from "@/types";
 import type { Map as LeafletMap } from "leaflet";
 import { useSetActiveCounts } from "@/hooks/useActiveCounts";
+import { useRecashSocket } from "@/hooks/useRecashSocket";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -513,8 +514,13 @@ function ExpiryText({ expiresAt }: { expiresAt: string | null }) {
         return;
       }
       const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
       const d = Math.floor(h / 24);
-      setLabel(d > 0 ? `Expiră în ${d}z ${h % 24}h` : `Expiră în ${h}h`);
+      setLabel(
+        d > 0
+          ? `Expiră în ${d}z ${h % 24}h`
+          : `Expiră în ${h > 0 ? `${h}h ` : ""} ${m}min`,
+      );
     };
     calc();
     const id = setInterval(calc, 60000);
@@ -1041,7 +1047,9 @@ function DetailPanel({
             {post.expiresAt && <Countdown deadline={post.expiresAt} />}
             <div>
               <p className="text-xs font-semibold text-slate-400 tracking-wider mb-3">
-                {isAuthor ? "Codul tău de confirmare" : "Introdu codul"}
+                {isAuthor
+                  ? "Codul tău de confirmare"
+                  : "Introdu codul de confirmare"}
               </p>
               {isAuthor ? (
                 showCode ? (
@@ -1301,6 +1309,24 @@ export default function PostDetailClient({
   const router = useRouter();
 
   const { post, mutate, isLoading } = usePostLive(postId);
+  const { on, off } = useRecashSocket();
+
+  useEffect(() => {
+    const handleCancelled = (payload: {
+      postId: string;
+      cancelledBy: string;
+      newStatus: string;
+      reason?: string;
+    }) => {
+      if (payload.postId !== postId) return;
+      if (payload.reason === "claim_denied") {
+        router.push("/");
+      }
+    };
+
+    on("post:cancelled", handleCancelled);
+    return () => off("post:cancelled", handleCancelled);
+  }, [on, off, postId, router]);
 
   if (isLoading) return <Skeleton />;
 

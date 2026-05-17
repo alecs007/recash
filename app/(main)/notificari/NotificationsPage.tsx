@@ -6,6 +6,7 @@ import { ArrowLeft, Bell, BellOff, CheckCheck, Loader2 } from "lucide-react";
 import useSWR, { mutate as globalMutate } from "swr";
 import { NOTIF_CONFIG } from "@/lib/constants/notifications";
 import { Notification } from "@prisma/client";
+import { Pagination } from "@/app/components/UI/Pagination";
 import { useRecashSocket } from "@/hooks/useRecashSocket";
 import { useNotificationBell } from "@/hooks/useNotificationBell";
 
@@ -113,38 +114,6 @@ function Skeleton() {
           </div>
         </div>
       ))}
-    </div>
-  );
-}
-
-function Pagination({
-  page,
-  totalPages,
-  onPageChange,
-}: {
-  page: number;
-  totalPages: number;
-  onPageChange: (p: number) => void;
-}) {
-  return (
-    <div className="flex items-center justify-center gap-2 pt-4">
-      <button
-        onClick={() => onPageChange(Math.max(1, page - 1))}
-        disabled={page === 1}
-        className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 border border-slate-200 hover:border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-      >
-        ← Anterior
-      </button>
-      <span className="text-sm text-slate-500 font-medium">
-        {page} / {totalPages}
-      </span>
-      <button
-        onClick={() => onPageChange(Math.min(totalPages, page + 1))}
-        disabled={page === totalPages}
-        className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 border border-slate-200 hover:border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-      >
-        Următor →
-      </button>
     </div>
   );
 }

@@ -755,15 +755,13 @@ function StepDetails({
         <div className="mt-4">
           <div className="relative h-6 flex items-center mb-4">
             <div className="absolute w-full h-3 rounded-full overflow-hidden flex shadow-inner bg-slate-200">
-              <motion.div
+              <div
                 className="h-full bg-lime-400"
-                animate={{ width: `${data.collectorSharePercent}%` }}
-                transition={{ duration: 0.15 }}
+                style={{ width: `${data.collectorSharePercent}%` }}
               />
-              <motion.div
+              <div
                 className="h-full bg-[#123424]"
-                animate={{ width: `${100 - data.collectorSharePercent}%` }}
-                transition={{ duration: 0.15 }}
+                style={{ width: `${100 - data.collectorSharePercent}%` }}
               />
             </div>
             <input

@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, MapPin, ChevronRight } from "lucide-react";
+import { ArrowLeft, MapPin } from "lucide-react";
+import { Pagination } from "@/app/components/UI/Pagination";
 import useSWR from "swr";
 
 type Transaction = {
@@ -69,38 +70,6 @@ function Skeleton() {
           <div className="mt-3 h-3 w-2/3 bg-slate-100 rounded-lg" />
         </div>
       ))}
-    </div>
-  );
-}
-
-function Pagination({
-  page,
-  totalPages,
-  onPageChange,
-}: {
-  page: number;
-  totalPages: number;
-  onPageChange: (p: number) => void;
-}) {
-  return (
-    <div className="flex items-center justify-center gap-2 pt-4">
-      <button
-        onClick={() => onPageChange(Math.max(1, page - 1))}
-        disabled={page === 1}
-        className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 border border-slate-200 hover:border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-      >
-        ← Anterior
-      </button>
-      <span className="text-sm text-slate-500 font-medium">
-        {page} / {totalPages}
-      </span>
-      <button
-        onClick={() => onPageChange(Math.min(totalPages, page + 1))}
-        disabled={page === totalPages}
-        className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 border border-slate-200 hover:border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-      >
-        Următor →
-      </button>
     </div>
   );
 }
@@ -255,18 +224,11 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
                     </div>
                   </div>
                 </div>
-
-                <div className="flex items-center justify-between mt-2 px-1">
-                  {t.post.description && t.post.description.length > 0 ? (
-                    <p className="text-xs text-slate-500 italic truncate flex-1">
-                      &quot;{t.post.description}&quot;
-                    </p>
-                  ) : (
-                    <span />
-                  )}
-
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0 ml-2" />
-                </div>
+                {t.post.description && t.post.description.length > 0 && (
+                  <p className="text-xs text-slate-500 italic truncate flex-1 mt-2 px-1">
+                    &quot;{t.post.description}&quot;
+                  </p>
+                )}
               </Link>
             );
           })}
