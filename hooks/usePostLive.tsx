@@ -35,18 +35,43 @@ export function usePostLive(postId: string) {
     mutate(undefined, { revalidate: true });
   }, [mutate]);
 
+  const softRefreshRating = useCallback(() => {
+    mutate(
+      async (current): Promise<Post | undefined> => {
+        if (!current) return current;
+        const fresh: Post = await fetch(`/api/v1/posts/${postId}`).then((r) =>
+          r.json(),
+        );
+        if (!fresh.transaction || !current.transaction) return current;
+        return {
+          ...current,
+          transaction: {
+            ...current.transaction,
+            posterRating: fresh.transaction.posterRating,
+            collectorRating: fresh.transaction.collectorRating,
+            posterReview: fresh.transaction.posterReview,
+            collectorReview: fresh.transaction.collectorReview,
+            posterRatedAt: fresh.transaction.posterRatedAt,
+            collectorRatedAt: fresh.transaction.collectorRatedAt,
+          },
+        };
+      },
+      { revalidate: false },
+    );
+  }, [mutate, postId]);
+
   useEffect(() => {
     on("post:status_changed", refresh);
     on("post:completed", refresh);
     on("post:cancelled", refresh);
-    on("post:rating_updated", refresh);
+    on("post:rating_updated", softRefreshRating);
     return () => {
       off("post:status_changed", refresh);
       off("post:completed", refresh);
       off("post:cancelled", refresh);
-      off("post:rating_updated", refresh);
+      off("post:rating_updated", softRefreshRating);
     };
-  }, [on, off, refresh]);
+  }, [on, off, refresh, softRefreshRating]);
 
   // Additional safety-net poll for active posts when WS is down.
   // Only runs when: WS URL is set (WS is intended), post IS active, and the
