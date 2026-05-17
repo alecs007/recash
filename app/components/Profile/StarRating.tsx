@@ -1,8 +1,18 @@
-export function StarRating({ score, count }: { score: number; count: number }) {
+import { FaBan } from "react-icons/fa";
+
+export function StarRating({
+  score,
+  count,
+  cancelledCount = 0,
+}: {
+  score: number;
+  count: number;
+  cancelledCount?: number;
+}) {
   const full = Math.floor(score);
   const half = score - full >= 0.5;
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex flex-wrap items-center gap-1.5">
       <div className="flex gap-0.5">
         {[1, 2, 3, 4, 5].map((i) => (
           <svg key={i} className="w-4 h-4" viewBox="0 0 20 20">
@@ -39,6 +49,12 @@ export function StarRating({ score, count }: { score: number; count: number }) {
       {count > 0 && (
         <span className="text-xs text-slate-300">
           ({count} {count === 1 ? "recenzie" : "recenzii"})
+        </span>
+      )}
+      {cancelledCount != 0 && (
+        <span className="flex items-center gap-1 text-xs font-bold text-red-400 px-2">
+          <FaBan className="w-3 h-3" /> {cancelledCount}{" "}
+          {cancelledCount === 1 ? "anulare" : "anulări"} în progres
         </span>
       )}
     </div>

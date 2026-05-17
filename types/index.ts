@@ -12,6 +12,7 @@ export type UserProfile = {
   totalSaved: number;
   reputationScore: number;
   ratingCount: number;
+  cancelledCount: number;
   _count: { posts: number; claimedPosts: number; badges: number };
 };
 

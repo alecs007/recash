@@ -58,7 +58,11 @@ export function ProfilePage({ summary }: { summary: ProfileSummary }) {
             <p className="text-white/60 text-xs sm:text-sm mb-2 sm:mb-3 truncate">
               {user.email}
             </p>
-            <StarRating score={user.reputationScore} count={user.ratingCount} />
+            <StarRating
+              score={user.reputationScore}
+              count={user.ratingCount}
+              cancelledCount={user.cancelledCount}
+            />
             <div className="hidden sm:flex flex-wrap gap-4 mt-4">
               <div className="flex items-center text-white/70 text-sm">
                 <Trophy className="w-4 h-4 text-lime-400 mr-1.5" />

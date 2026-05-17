@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit, RL } from "@/lib/rate-limit";
-import { cancelSchema } from "@/lib/validations/post";
-import { notifyPostCancelled } from "@/lib/notifications";
+import { notifyPostCancelled, createNotification } from "@/lib/notifications";
+import { invalidate, CacheKey } from "@/lib/cache";
 import { redis } from "@/lib/redis";
 import { publishPostCancelled, publishPostStatus } from "@/lib/pubsub";
 
@@ -20,16 +20,6 @@ export async function POST(
   if (!rl.ok) return rl.response;
 
   const { id } = await params;
-
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    body = {};
-  }
-
-  const parsed = cancelSchema.safeParse(body);
-  const reason = parsed.success ? parsed.data.reason : null;
 
   try {
     const post = await prisma.post.findUnique({ where: { id } });
@@ -113,11 +103,47 @@ export async function POST(
     }
 
     if (post.status === "IN_PROGRESS") {
-      await prisma.post.update({
-        where: { id },
-        data: { status: "CANCELLED" },
+      const cancellerUserId = isAuthor ? post.authorId : post.collectorId!;
+
+      // Treating the cancellation as a 0 star rating for the person who bailed
+      const canceller = await prisma.user.findUnique({
+        where: { id: cancellerUserId },
+        select: { reputationScore: true, ratingCount: true },
       });
+      const currentScore = canceller?.reputationScore ?? 0;
+      const currentCount = canceller?.ratingCount ?? 0;
+      const newCount = currentCount + 1;
+      const newScore =
+        Math.round(((currentScore * currentCount) / newCount) * 100) / 100;
+
+      await prisma.$transaction([
+        prisma.post.update({
+          where: { id },
+          data: { status: "CANCELLED" },
+        }),
+        prisma.user.update({
+          where: { id: cancellerUserId },
+          data: {
+            cancelledCount: { increment: 1 },
+            reputationScore: newScore,
+            ratingCount: newCount,
+          },
+        }),
+      ]);
+
       await redis.del(`code:${id}`).catch(() => null);
+
+      await invalidate(
+        CacheKey.profile(cancellerUserId),
+        `profile:${cancellerUserId}:summary`,
+      );
+      await createNotification({
+        userId: cancellerUserId,
+        type: "POST_CANCELLED",
+        title: "Reputație afectată ⚠️",
+        message: `Ai anulat o colectare în desfășurare. Scorul tău de reputație a fost redus la ${newScore.toFixed(1)}/5.`,
+        link: "/profil",
+      });
 
       const cancelledBy = isAuthor ? "poster" : "collector";
       const affectedUsers = [
@@ -145,7 +171,6 @@ export async function POST(
         success: true,
         status: "CANCELLED",
         cancelledBy,
-        reason,
       });
     }
 

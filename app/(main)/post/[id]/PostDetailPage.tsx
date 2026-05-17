@@ -19,6 +19,7 @@ import {
   Loader2,
   Calendar,
   LockKeyholeOpen,
+  AlertTriangle,
 } from "lucide-react";
 import { FaWineBottle } from "react-icons/fa";
 import { PostStatus, Post } from "@/types";
@@ -397,17 +398,16 @@ function ReviewForm({
 function CancelModal({
   onConfirm,
   onClose,
+  isInProgress,
 }: {
-  onConfirm: (r: string) => void;
+  onConfirm: () => void;
   onClose: () => void;
-  isAuthor: boolean;
-  status: PostStatus;
+  isInProgress: boolean;
 }) {
-  const [reason, setReason] = useState("");
   return (
     <div className="fixed inset-0 z-[1002] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-        <div className="flex items-start justify-between mb-3">
+        <div className="flex items-start justify-between mb-4">
           <h3 className="font-bold text-slate-900">
             Ești sigur că vrei să anulezi?
           </h3>
@@ -419,14 +419,14 @@ function CancelModal({
           </button>
         </div>
 
-        <textarea
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          placeholder="Scrie motivul (opțional)..."
-          rows={2}
-          maxLength={200}
-          className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm resize-none outline-none mb-4"
-        />
+        {isInProgress && (
+          <div className="mb-4 flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5 text-xs text-red-600 font-medium">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+            Anularea în timp ce colectarea este activă îți va afecta scorul de
+            reputație.
+          </div>
+        )}
+
         <div className="flex gap-2">
           <button
             onClick={onClose}
@@ -435,7 +435,7 @@ function CancelModal({
             Înapoi
           </button>
           <button
-            onClick={() => onConfirm(reason)}
+            onClick={onConfirm}
             className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-bold text-sm cursor-pointer hover:bg-red-600 transition-all"
           >
             Anulează
@@ -834,40 +834,37 @@ function DetailPanel({
     [post.id, mutate],
   );
 
-  const handleCancel = useCallback(
-    async (reason: string) => {
-      setShowCancel(false);
-      setActionLoading(true);
-      setActionError("");
+  const handleCancel = useCallback(async () => {
+    setShowCancel(false);
+    setActionLoading(true);
+    setActionError("");
 
-      const toastKey = getCancelToastKey(post.status, isAuthor);
+    const toastKey = getCancelToastKey(post.status, isAuthor);
 
-      try {
-        const res = await fetch(`/api/v1/posts/${post.id}/cancel`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reason: reason || null }),
-        });
-        const j = await res.json();
-        if (!res.ok) {
-          setActionError(j.error ?? "Eroare");
+    try {
+      const res = await fetch(`/api/v1/posts/${post.id}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const j = await res.json();
+      if (!res.ok) {
+        setActionError(j.error ?? "Eroare");
+      } else {
+        // Instant optimistic update for the acting user
+        if (isAuthor) {
+          setActiveCounts({ activePosts: 0, activePostId: null });
         } else {
-          // Instant optimistic update for the acting user
-          if (isAuthor) {
-            setActiveCounts({ activePosts: 0, activePostId: null });
-          } else {
-            setActiveCounts({ activeCollections: 0, activeCollectionId: null });
-          }
-          onRedirect(`/?toast=${toastKey}`);
+          setActiveCounts({ activeCollections: 0, activeCollectionId: null });
         }
-      } catch {
-        setActionError("Eroare de rețea.");
-      } finally {
-        setActionLoading(false);
+        onRedirect(post.status === "IN_PROGRESS" ? "/" : `/?toast=${toastKey}`);
       }
-    },
-    [post.id, post.status, isAuthor, onRedirect, setActiveCounts],
-  );
+    } catch {
+      setActionError("Eroare de rețea.");
+    } finally {
+      setActionLoading(false);
+    }
+  }, [post.id, post.status, isAuthor, onRedirect, setActiveCounts]);
 
   return (
     <div className="h-full overflow-y-auto" data-lenis-prevent>
@@ -1302,8 +1299,7 @@ function DetailPanel({
         <CancelModal
           onConfirm={handleCancel}
           onClose={() => setShowCancel(false)}
-          isAuthor={!!isAuthor}
-          status={post.status}
+          isInProgress={post.status === "IN_PROGRESS"}
         />
       )}
     </div>

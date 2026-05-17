@@ -76,6 +76,7 @@ async function getProfileSummary(userId: string) {
         totalSaved: true,
         reputationScore: true,
         ratingCount: true,
+        cancelledCount: true,
         _count: {
           select: { posts: true, claimedPosts: true, badges: true },
         },

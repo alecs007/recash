@@ -123,6 +123,7 @@ model User {
   totalSaved            Float @default(0)
   reputationScore       Float @default(0.0)
   ratingCount           Int   @default(0)
+  cancelledCount        Int   @default(0)
 
   accounts              Account[]
   sessions              Session[]

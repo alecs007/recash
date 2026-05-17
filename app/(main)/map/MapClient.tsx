@@ -6,15 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useAuthModal } from "@/context/AuthModalContext";
-import {
-  MapPin,
-  Search,
-  Loader2,
-  X,
-  Star,
-  Clock,
-  ChevronRight,
-} from "lucide-react";
+import { MapPin, Search, Loader2, X, Star, ChevronRight } from "lucide-react";
 import { LuFilter } from "react-icons/lu";
 import { FiMap } from "react-icons/fi";
 import { FaListUl } from "react-icons/fa6";
@@ -353,9 +345,8 @@ function PostCard({
           </div>
           <div className="flex items-center gap-1.5">
             {urgent && (
-              <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                <Clock className="w-2.5 h-2.5" />
-                {hoursLeft}h
+              <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+                {hoursLeft}h rămase
               </span>
             )}
             <span className="text-xs font-black text-slate-800">
@@ -497,9 +488,8 @@ function SelectedPostOverlay({
             </div>
             <div className="flex items-center gap-1.5">
               {urgent && (
-                <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                  <Clock className="w-2.5 h-2.5" />
-                  {hoursLeft}h
+                <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+                  {hoursLeft}h rămase
                 </span>
               )}
               <span className="text-xs font-black text-slate-800">

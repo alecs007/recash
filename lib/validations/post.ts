@@ -114,7 +114,3 @@ export type ReviewInput = z.infer<typeof reviewSchema>;
 export const approveClaimSchema = z.object({
   action: z.enum(["approve", "deny"]),
 });
-
-export const cancelSchema = z.object({
-  reason: z.string().max(200).trim().optional().nullable(),
-});
