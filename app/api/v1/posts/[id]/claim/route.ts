@@ -89,7 +89,7 @@ export async function POST(
       userId: session.user.id,
       type: "POST_CLAIMED",
       title: "Cerere trimisă! ⏳",
-      message: `Ai solicitat colectarea a ${post.bottleCount} sticle. Așteaptă aprobarea autorului.`,
+      message: `Ai solicitat colectarea celor ${post.bottleCount} sticle. Așteaptă aprobarea autorului.`,
       link: `/post/${id}`,
       metadata: { postId: id },
     });

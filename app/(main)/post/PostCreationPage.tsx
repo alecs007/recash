@@ -24,7 +24,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { BOTTLE_PRESETS, RON_PER_BOTTLE } from "@/lib/validations/post";
-import { toast } from "sonner";
+import { showToast } from "@/lib/toast";
 import useSWR from "swr";
 import { useSetActiveCounts } from "@/hooks/useActiveCounts";
 
@@ -1103,9 +1103,11 @@ export default function PostCreationClient({
         }).catch(() => {});
       }
 
-      toast.success("Anunțul a fost publicat!", {
-        description: "Vei fi notificat atunci când un colector face o cerere.",
-      });
+      showToast(
+        "success",
+        "Anunțul a fost publicat!",
+        "Vei fi notificat atunci când un colector face o cerere.",
+      );
 
       setActiveCounts({ activePosts: 1, activePostId: json.id });
       router.push(`/post/${json.id}`);

@@ -25,6 +25,7 @@ import { PostStatus, Post } from "@/types";
 import type { Map as LeafletMap } from "leaflet";
 import { useSetActiveCounts } from "@/hooks/useActiveCounts";
 import { useRecashSocket } from "@/hooks/useRecashSocket";
+import { showToast } from "@/lib/toast";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -810,8 +811,18 @@ function DetailPanel({
         if (!res.ok) {
           setActionError(j.error ?? "Eroare");
         } else if (action === "deny") {
+          showToast(
+            "info",
+            "Cerere refuzată",
+            "Anunțul tău este din nou disponibil pe hartă.",
+          );
           mutate();
         } else {
+          showToast(
+            "success",
+            "Cerere aprobată!",
+            "Colectorul are 30 de minute să ajungă la tine.",
+          );
           mutate();
         }
       } catch {
@@ -1320,7 +1331,7 @@ export default function PostDetailClient({
     }) => {
       if (payload.postId !== postId) return;
       if (payload.reason === "claim_denied") {
-        router.push("/");
+        router.push("/map");
       }
     };
 
