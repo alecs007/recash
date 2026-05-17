@@ -167,7 +167,7 @@ function Countdown({ deadline }: { deadline: string }) {
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <span
-          className={`text-sm font-semibold ${expired ? "text-red-500" : urgent ? "text-orange-500" : "text-slate-700"}`}
+          className={`font-semibold ${expired ? "text-red-500" : urgent ? "text-orange-500" : "text-slate-700"}`}
         >
           {expired ? "Timp expirat" : urgent ? "Grăbește-te!" : "Timp rămas"}
         </span>
