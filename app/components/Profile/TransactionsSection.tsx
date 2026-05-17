@@ -38,7 +38,7 @@ export function TransactionsSection({
   if (transactions.length === 0) return null;
 
   return (
-    <div className="mx-4 sm:mx-6 lg:mx-8 mb-8">
+    <div className="mx-4 sm:mx-6 lg:mx-8 mb-8 p-4 sm:p-6 bg-slate-50 border border-slate-100 rounded-2xl">
       <SectionHeader
         title="Tranzacții recente"
         href="/profil/tranzactii"

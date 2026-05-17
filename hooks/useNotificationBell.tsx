@@ -51,13 +51,20 @@ export function useNotificationBell(authenticated: boolean) {
     const cfg =
       NOTIF_CONFIG[notif.type as NotificationType] ?? NOTIF_CONFIG.SYSTEM;
 
-    const variant = cfg.color.includes("red")
-      ? "error"
-      : cfg.color.includes("amber") || cfg.color.includes("yellow")
-        ? "warning"
-        : cfg.color.includes("lime") || cfg.color.includes("green")
+    const variant =
+      notif.type === "RATING_RECEIVED"
+        ? "rating"
+        : notif.type === "POST_CLAIMED" && notif.title.includes("aprobată")
           ? "success"
-          : "info";
+          : notif.type === "POST_CLAIMED"
+            ? "courier"
+            : cfg.color.includes("red")
+              ? "error"
+              : cfg.color.includes("amber") || cfg.color.includes("yellow")
+                ? "warning"
+                : cfg.color.includes("lime") || cfg.color.includes("green")
+                  ? "success"
+                  : "info";
 
     showToast(variant, notif.title, notif.message, notif.link ?? undefined);
   }, []);

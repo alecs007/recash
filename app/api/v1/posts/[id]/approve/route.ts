@@ -100,7 +100,7 @@ export async function POST(
       await notifyClaimApproved(
         post.collectorId,
         id,
-        post.author.name ?? "Posterul",
+        post.author.name ?? "Autorul",
       );
 
       // Notify both post room and both users channels
@@ -128,7 +128,7 @@ export async function POST(
       await notifyClaimDenied(
         post.collectorId,
         id,
-        post.author.name ?? "Posterul",
+        post.author.name ?? "Autorul",
       );
 
       publishPostStatus({ postId: id, status: "OPEN", collectorId: null }, [

@@ -52,7 +52,7 @@ export function StarRating({
         </span>
       )}
       {cancelledCount != 0 && (
-        <span className="flex items-center gap-1 text-xs font-bold text-red-400 px-2">
+        <span className="flex items-center gap-1 text-xs font-semibold text-red-400 px-2">
           <FaBan className="w-3 h-3" /> {cancelledCount}{" "}
           {cancelledCount === 1 ? "anulare" : "anulări"} în progres
         </span>

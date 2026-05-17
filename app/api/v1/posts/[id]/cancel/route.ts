@@ -123,7 +123,14 @@ export async function POST(
       await prisma.$transaction([
         prisma.post.update({
           where: { id },
-          data: { status: "CANCELLED" },
+          data: isCollector
+            ? {
+                status: "OPEN",
+                collectorId: null,
+                claimedAt: null,
+                expiresAt: post.expiresAt,
+              }
+            : { status: "CANCELLED" },
         }),
         prisma.user.update({
           where: { id: cancellerUserId },
@@ -140,6 +147,8 @@ export async function POST(
       await invalidate(
         CacheKey.profile(cancellerUserId),
         `profile:${cancellerUserId}:summary`,
+        CacheKey.posts(post.authorId, "active"),
+        CacheKey.posts(post.authorId, "all"),
       );
       await createNotification({
         userId: cancellerUserId,
@@ -173,7 +182,9 @@ export async function POST(
           newScore,
         );
       } else if (isCollector) {
-        publishPostStatus({ postId: id, status: "CANCELLED" }, [post.authorId]);
+        publishPostStatus({ postId: id, status: "OPEN", collectorId: null }, [
+          post.authorId,
+        ]);
         await notifyInProgressCancelled(
           post.authorId,
           id,
@@ -186,7 +197,7 @@ export async function POST(
       publishPostCancelled(id, affectedUsers, {
         postId: id,
         cancelledBy,
-        newStatus: "CANCELLED",
+        newStatus: isCollector ? "OPEN" : "CANCELLED",
       });
 
       return NextResponse.json({

@@ -17,7 +17,7 @@ export function BadgesSection({ badges }: { badges: BadgeData[] }) {
   };
 
   return (
-    <div className="mx-4 sm:mx-6 lg:mx-8 mb-10">
+    <div className="mx-4 sm:mx-6 lg:mx-8 mb-10 p-4 sm:p-6 bg-slate-50 border border-slate-100 rounded-2xl">
       <SectionHeader
         title="Badge-urile mele"
         href="/profil/badges"

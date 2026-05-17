@@ -38,7 +38,7 @@ const STATUS_CONFIG: Record<PostStatus, { label: string; className: string }> =
       className: "bg-blue-100 text-blue-700",
     },
     IN_PROGRESS: {
-      label: "Colectare activă",
+      label: "Colectare în desfăşurare",
       className: "bg-amber-100 text-amber-700",
     },
     COMPLETED: { label: "Finalizat", className: "bg-lime-100 text-lime-700" },
@@ -162,7 +162,7 @@ function Countdown({ deadline }: { deadline: string }) {
   const secs = Math.floor((ms % 60000) / 1000);
   const expired = ms === 0;
   const urgent = ms < 5 * 60 * 1000 && !expired;
-  const color = expired ? "#ef4444" : urgent ? "#f97316" : "#123424";
+  const color = expired ? "#ef4444" : urgent ? "#f97316" : "#A3E635";
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -172,7 +172,7 @@ function Countdown({ deadline }: { deadline: string }) {
           {expired ? "Timp expirat" : urgent ? "Grăbește-te!" : "Timp rămas"}
         </span>
         <span
-          className={`text-3xl font-black tabular-nums tracking-tight ${expired ? "text-red-500" : urgent ? "text-orange-500" : "text-[#123424]"}`}
+          className={`text-3xl font-black tabular-nums tracking-tight ${expired ? "text-red-500" : urgent ? "text-orange-500" : "text-lime-600"}`}
         >
           {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
         </span>
@@ -222,9 +222,9 @@ function CodeDisplay({ postId }: { postId: string }) {
         {data.code.split("").map((ch: string, i: number) => (
           <div
             key={i}
-            className="w-12 h-14 bg-[#123424] rounded-xl flex items-center justify-center shadow-lg"
+            className="w-14 h-14 flex items-center justify-center bg-slate-100 rounded-lg border border-slate-200"
           >
-            <span className="text-xl font-black text-lime-400 font-mono">
+            <span className="text-3xl tabular-nums font-black text-[#123424]">
               {ch}
             </span>
           </div>
@@ -519,7 +519,7 @@ function ExpiryText({ expiresAt }: { expiresAt: string | null }) {
       const d = Math.floor(h / 24);
       setLabel(
         d > 0
-          ? `Expiră în ${d}z ${h % 24}h`
+          ? `Expiră în ${d}z ${h % 24 > 0 ? `${h % 24}h ` : ""} ${m}min`
           : `Expiră în ${h > 0 ? `${h}h ` : ""} ${m}min`,
       );
     };
@@ -869,6 +869,43 @@ function DetailPanel({
   return (
     <div className="h-full overflow-y-auto" data-lenis-prevent>
       <div className="px-6 lg:px-10 py-6 lg:py-8 space-y-0 max-w-xl lg:max-w-none">
+        {post.status === "IN_PROGRESS" && (
+          <div className="mb-7 bg-slate-50 border border-[#123424]/10 rounded-2xl p-5 space-y-5">
+            {post.expiresAt && <Countdown deadline={post.expiresAt} />}
+
+            <div className="border-t border-[#123424]/10 pt-4">
+              <p className="text-sm font-medium text-[#123424] mb-3">
+                {isAuthor
+                  ? "Codul tău de confirmare"
+                  : "Introdu codul de confirmare"}
+              </p>
+              {isAuthor ? (
+                showCode ? (
+                  <CodeDisplay postId={post.id} />
+                ) : (
+                  <button
+                    onClick={() => setShowCode(true)}
+                    className="w-full flex items-center justify-center py-3.5 rounded-xl bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all cursor-pointer"
+                  >
+                    Afișează codul
+                    <LockKeyholeOpen className="w-4 h-4 ml-2" />
+                  </button>
+                )
+              ) : (
+                <CodeEntry
+                  postId={post.id}
+                  onComplete={() => {
+                    setActiveCounts({
+                      activeCollections: 0,
+                      activeCollectionId: null,
+                    });
+                    mutate();
+                  }}
+                />
+              )}
+            </div>
+          </div>
+        )}
         <div className="flex items-center justify-between mb-7">
           <Link
             href={`/${isAuthor ? "profil/postari" : "map"}`}
@@ -1046,43 +1083,6 @@ function DetailPanel({
               <p className="text-xs text-slate-500">
                 Se așteaptă aprobarea autorului…
               </p>
-            </div>
-          </div>
-        )}
-
-        {post.status === "IN_PROGRESS" && (
-          <div className="mb-7 space-y-6">
-            {post.expiresAt && <Countdown deadline={post.expiresAt} />}
-            <div>
-              <p className="text-xs font-semibold text-slate-400 tracking-wider mb-3">
-                {isAuthor
-                  ? "Codul tău de confirmare"
-                  : "Introdu codul de confirmare"}
-              </p>
-              {isAuthor ? (
-                showCode ? (
-                  <CodeDisplay postId={post.id} />
-                ) : (
-                  <button
-                    onClick={() => setShowCode(true)}
-                    className="w-full flex items-center justify-center py-3.5 rounded-xl bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all cursor-pointer"
-                  >
-                    Afișează codul
-                    <LockKeyholeOpen className="w-4 h-4 ml-2" />
-                  </button>
-                )
-              ) : (
-                <CodeEntry
-                  postId={post.id}
-                  onComplete={() => {
-                    setActiveCounts({
-                      activeCollections: 0,
-                      activeCollectionId: null,
-                    });
-                    mutate();
-                  }}
-                />
-              )}
             </div>
           </div>
         )}

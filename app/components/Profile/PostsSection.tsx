@@ -13,7 +13,7 @@ export function PostsSection({
 }) {
   const hasMore = totalPosts > 3;
   return (
-    <div className="mx-4 sm:mx-6 lg:mx-8 mb-8">
+    <div className="mx-4 sm:mx-6 lg:mx-8 mb-8 p-4 sm:p-6 bg-slate-50 border border-slate-100 rounded-2xl">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-extrabold text-slate-900 tracking-tight">
           Postările mele
@@ -22,7 +22,7 @@ export function PostsSection({
           {hasMore && (
             <Link
               href="/profil/postari"
-              className="flex items-center gap-1 text-sm font-semibold text-lime-700 hover:text-lime-800 transition-colors"
+              className="hidden sm:flex items-center gap-1 text-sm font-semibold text-lime-700 hover:text-lime-800 transition-colors"
             >
               Toate ({totalPosts})<ChevronRight className="w-4 h-4" />
             </Link>
@@ -60,10 +60,10 @@ export function PostsSection({
           {posts.map((post) => (
             <PostCard key={post.id} post={post} />
           ))}
-          {!hasMore && (
+          {hasMore && (
             <Link
               href="/profil/postari"
-              className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-slate-100 bg-white text-sm font-semibold text-slate-500 hover:border-lime-200 hover:text-lime-700 transition-all"
+              className="sm:hidden flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-slate-100 bg-white text-sm font-semibold text-slate-500 hover:border-lime-200 hover:text-lime-700 transition-all"
             >
               Toate postările <ChevronRight className="w-4 h-4" />
             </Link>

@@ -5,12 +5,20 @@ import { X } from "lucide-react";
 import { ComponentType } from "react";
 import {
   FaBan,
-  FaCheckCircle,
+  FaCheck,
   FaExclamationTriangle,
-  FaInfoCircle,
+  FaInfo,
+  FaTruck,
+  FaStar,
 } from "react-icons/fa";
 
-export type ToastVariant = "success" | "info" | "warning" | "error";
+export type ToastVariant =
+  | "success"
+  | "info"
+  | "warning"
+  | "error"
+  | "courier"
+  | "rating";
 
 type VariantCfg = {
   Icon: ComponentType<{ className?: string }>;
@@ -21,13 +29,13 @@ type VariantCfg = {
 
 const VARIANT_CONFIG: Record<ToastVariant, VariantCfg> = {
   success: {
-    Icon: FaCheckCircle,
+    Icon: FaCheck,
     color: "text-lime-700",
     bg: "bg-lime-50",
     border: "border-lime-200",
   },
   info: {
-    Icon: FaInfoCircle,
+    Icon: FaInfo,
     color: "text-blue-600",
     bg: "bg-blue-50",
     border: "border-blue-200",
@@ -43,6 +51,18 @@ const VARIANT_CONFIG: Record<ToastVariant, VariantCfg> = {
     color: "text-red-500",
     bg: "bg-red-50",
     border: "border-red-200",
+  },
+  courier: {
+    Icon: FaTruck,
+    color: "text-blue-600",
+    bg: "bg-blue-50",
+    border: "border-blue-200",
+  },
+  rating: {
+    Icon: FaStar,
+    color: "text-yellow-500",
+    bg: "bg-yellow-50",
+    border: "border-yellow-200",
   },
 };
 
