@@ -135,6 +135,22 @@ function ensureLeaflet(): Promise<void> {
     }
 
     const loadCluster = () => {
+      if (_clusterReady) {
+        resolve();
+        return;
+      }
+      const existing = document.querySelector(
+        'script[src*="leaflet.markercluster"]',
+      );
+      if (existing) {
+        const poll = setInterval(() => {
+          if (_clusterReady) {
+            clearInterval(poll);
+            resolve();
+          }
+        }, 50);
+        return;
+      }
       const clusterScript = document.createElement("script");
       clusterScript.src =
         "https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js";
@@ -173,14 +189,9 @@ function ensureLeaflet(): Promise<void> {
 }
 
 function useLeaflet() {
-  const [ready, setReady] = useState(
-    () =>
-      typeof window !== "undefined" &&
-      !!(window as unknown as { L?: LeafletLib }).L,
-  );
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (ready) return;
     let cancelled = false;
     ensureLeaflet()
       .then(() => {
@@ -190,7 +201,7 @@ function useLeaflet() {
     return () => {
       cancelled = true;
     };
-  }, [ready]);
+  }, []);
 
   return ready;
 }
@@ -710,47 +721,67 @@ function PostMap({
     const post = posts.find((p) => p.id === selectedId);
     if (!post) return;
 
-    const doPan = () => {
+    const timer = setTimeout(() => {
       const map = mapRef.current;
       if (!map) return;
-      const isMobile = window.innerWidth < 640;
-      if (isMobile) {
-        map.invalidateSize({ animate: false });
-        const leafletMap = map as unknown as {
-          latLngToContainerPoint: (latlng: [number, number]) => {
-            x: number;
-            y: number;
-          };
-          containerPointToLatLng: (point: { x: number; y: number }) => {
-            lat: number;
-            lng: number;
-          };
-          panTo: (
-            latlng: { lat: number; lng: number } | [number, number],
-            options?: object,
-          ) => void;
+
+      const leafletMap = map as unknown as {
+        getZoom: () => number;
+        flyTo: (
+          latlng: [number, number],
+          zoom: number,
+          options?: object,
+        ) => void;
+        invalidateSize: (opts?: object) => void;
+        latLngToContainerPoint: (latlng: [number, number]) => {
+          x: number;
+          y: number;
         };
-        const L = (
-          window as unknown as {
-            L: { point: (x: number, y: number) => { x: number; y: number } };
-          }
-        ).L;
-        const targetPoint = leafletMap.latLngToContainerPoint([
-          post.latitude,
-          post.longitude,
-        ]);
-        const offsetPoint = L.point(targetPoint.x, targetPoint.y + 120);
-        const offsetLatLng = leafletMap.containerPointToLatLng(offsetPoint);
-        leafletMap.panTo(offsetLatLng, { animate: true, duration: 0.4 });
+        containerPointToLatLng: (point: { x: number; y: number }) => {
+          lat: number;
+          lng: number;
+        };
+      };
+
+      const TARGET_ZOOM = 15;
+      const zoom = Math.max(leafletMap.getZoom(), TARGET_ZOOM);
+
+      const isMobile = window.innerWidth < 640;
+
+      if (isMobile) {
+        leafletMap.invalidateSize({ animate: false });
+
+        requestAnimationFrame(() => {
+          const fresh = mapRef.current;
+          if (!fresh) return;
+          const freshMap = fresh as unknown as typeof leafletMap;
+          const L = (
+            window as unknown as {
+              L: { point: (x: number, y: number) => { x: number; y: number } };
+            }
+          ).L;
+          const targetPoint = freshMap.latLngToContainerPoint([
+            post.latitude,
+            post.longitude,
+          ]);
+
+          const offsetPoint = L.point(targetPoint.x, targetPoint.y + 180);
+          const offsetLatLng = freshMap.containerPointToLatLng(offsetPoint);
+          freshMap.flyTo([offsetLatLng.lat, offsetLatLng.lng], zoom, {
+            animate: true,
+            duration: 0.8,
+            easeLinearity: 0.1,
+          });
+        });
       } else {
-        map.panTo([post.latitude, post.longitude], {
+        leafletMap.flyTo([post.latitude, post.longitude], zoom, {
           animate: true,
-          duration: 0.4,
+          duration: 0.8,
+          easeLinearity: 0.1,
         });
       }
-    };
+    }, 80);
 
-    const timer = setTimeout(doPan, 50);
     return () => clearTimeout(timer);
   }, [selectedId, posts]);
 
