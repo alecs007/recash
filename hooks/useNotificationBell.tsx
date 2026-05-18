@@ -84,7 +84,7 @@ export function useNotificationBell(authenticated: boolean) {
   }, [authenticated, on, off, handleNewNotification]);
 
   const resetExtra = useCallback(() => {
-    mutate(undefined, { revalidate: true });
+    mutate((current) => ({ unreadCount: 0, ...current }), { revalidate: true });
   }, [mutate]);
 
   return {

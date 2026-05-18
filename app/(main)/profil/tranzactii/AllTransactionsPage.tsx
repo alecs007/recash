@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, MapPin } from "lucide-react";
 import { Pagination } from "@/app/components/UI/Pagination";
+import { PageTransition } from "@/app/components/UI/PageTransition";
 import useSWR from "swr";
 
 type Transaction = {
@@ -120,127 +121,128 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
           </button>
         ))}
       </div>
+      <PageTransition page={isLoading ? -1 : page}>
+        {isLoading ? (
+          <Skeleton />
+        ) : transactions.length === 0 ? (
+          <div className="text-center py-16">
+            <Image
+              src="/images/bottle-sad.svg"
+              alt="Nicio postare"
+              width={64}
+              height={64}
+              priority
+              className="mx-auto h-24 w-24"
+            />
+            <p className="font-bold text-slate-900 text-lg mb-2">
+              Nicio tranzacție găsită
+            </p>
+            <p className="text-slate-500 text-sm">
+              {roleFilter === "all" &&
+                "Tranzacțiile vor apărea după finalizarea primului schimb."}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {transactions.map((t) => {
+              const isPoster = t.posterId === userId;
+              const other = isPoster ? t.collector : t.poster;
+              const earning = isPoster ? t.posterEarning : t.collectorEarning;
 
-      {isLoading ? (
-        <Skeleton />
-      ) : transactions.length === 0 ? (
-        <div className="text-center py-16">
-          <Image
-            src="/images/bottle-sad.svg"
-            alt="Nicio postare"
-            width={64}
-            height={64}
-            priority
-            className="mx-auto h-24 w-24"
-          />
-          <p className="font-bold text-slate-900 text-lg mb-2">
-            Nicio tranzacție găsită
-          </p>
-          <p className="text-slate-500 text-sm">
-            {roleFilter === "all" &&
-              "Tranzacțiile vor apărea după finalizarea primului schimb."}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {transactions.map((t) => {
-            const isPoster = t.posterId === userId;
-            const other = isPoster ? t.collector : t.poster;
-            const earning = isPoster ? t.posterEarning : t.collectorEarning;
+              const ratingIGave = isPoster ? t.posterRating : t.collectorRating;
+              const ratingIReceived = isPoster
+                ? t.collectorRating
+                : t.posterRating;
 
-            const ratingIGave = isPoster ? t.posterRating : t.collectorRating;
-            const ratingIReceived = isPoster
-              ? t.collectorRating
-              : t.posterRating;
-
-            return (
-              <Link
-                key={t.id}
-                href={`/post/${t.post.id}`}
-                className="block bg-white rounded-2xl border border-slate-100 p-4 hover:border-lime-200 hover:shadow-sm transition-all"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-lime-50 border border-lime-200 flex items-center justify-center overflow-hidden shrink-0">
-                      {other?.image ? (
-                        <Image
-                          src={other.image}
-                          alt={other.name ?? ""}
-                          width={40}
-                          height={40}
-                          className="object-cover"
-                        />
-                      ) : (
-                        <span className="text-sm font-bold text-lime-700">
-                          {other?.name?.[0] ?? "?"}
-                        </span>
-                      )}
-                    </div>
-                    <div>
-                      <div className="font-semibold text-sm text-slate-900">
-                        {other?.name ?? "Utilizator necunoscut"}
+              return (
+                <Link
+                  key={t.id}
+                  href={`/post/${t.post.id}`}
+                  className="block bg-white rounded-2xl border border-slate-100 p-4 hover:border-lime-200 hover:shadow-sm transition-all"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-lime-50 border border-lime-200 flex items-center justify-center overflow-hidden shrink-0">
+                        {other?.image ? (
+                          <Image
+                            src={other.image}
+                            alt={other.name ?? ""}
+                            width={40}
+                            height={40}
+                            className="object-cover"
+                          />
+                        ) : (
+                          <span className="text-sm font-bold text-lime-700">
+                            {other?.name?.[0] ?? "?"}
+                          </span>
+                        )}
                       </div>
-                      <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                        <MapPin className="w-3 h-3" />
-                        {t.post.locationName ?? "Locație necunoscută"}
+                      <div>
+                        <div className="font-semibold text-sm text-slate-900">
+                          {other?.name ?? "Utilizator necunoscut"}
+                        </div>
+                        <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                          <MapPin className="w-3 h-3" />
+                          {t.post.locationName ?? "Locație necunoscută"}
+                        </div>
+                        <div className="text-xs text-slate-400 mt-0.5">
+                          {new Date(t.completedAt).toLocaleDateString("ro-RO", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </div>
                       </div>
-                      <div className="text-xs text-slate-400 mt-0.5">
-                        {new Date(t.completedAt).toLocaleDateString("ro-RO", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-right shrink-0">
-                    <div className="text-lg font-black text-lime-600">
-                      +{earning.toFixed(2)} RON
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      {t.bottleCount} sticle | {t.actualValue.toFixed(2)} RON
-                      total
                     </div>
 
-                    <div className="flex flex-col items-end gap-1 mt-1.5">
-                      {ratingIReceived !== null &&
-                        ratingIReceived !== undefined && (
+                    <div className="text-right shrink-0">
+                      <div className="text-lg font-black text-lime-600">
+                        +{earning.toFixed(2)} RON
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        {t.bottleCount} sticle | {t.actualValue.toFixed(2)} RON
+                        total
+                      </div>
+
+                      <div className="flex flex-col items-end gap-1 mt-1.5">
+                        {ratingIReceived !== null &&
+                          ratingIReceived !== undefined && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-[9px] text-slate-400 font-medium">
+                                Rating-ul primit
+                              </span>
+                              <Stars rating={ratingIReceived} />
+                            </div>
+                          )}
+                        {ratingIGave !== null && ratingIGave !== undefined && (
                           <div className="flex items-center gap-1">
                             <span className="text-[9px] text-slate-400 font-medium">
-                              Rating-ul primit
+                              Rating-ul tău
                             </span>
-                            <Stars rating={ratingIReceived} />
+                            <Stars rating={ratingIGave} />
                           </div>
                         )}
-                      {ratingIGave !== null && ratingIGave !== undefined && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-[9px] text-slate-400 font-medium">
-                            Rating-ul tău
-                          </span>
-                          <Stars rating={ratingIGave} />
-                        </div>
-                      )}
+                      </div>
                     </div>
                   </div>
-                </div>
-                {t.post.description && t.post.description.length > 0 && (
-                  <p className="text-xs text-slate-500 italic truncate flex-1 mt-2 px-1">
-                    &quot;{t.post.description}&quot;
-                  </p>
-                )}
-              </Link>
-            );
-          })}
-          {totalPages > 1 && (
-            <Pagination
-              page={page}
-              totalPages={totalPages}
-              onPageChange={setPage}
-            />
-          )}
-        </div>
-      )}
+                  {t.post.description && t.post.description.length > 0 && (
+                    <p className="text-xs text-slate-500 italic truncate flex-1 mt-2 px-1">
+                      &quot;{t.post.description}&quot;
+                    </p>
+                  )}
+                </Link>
+              );
+            })}
+            {totalPages > 1 && (
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
+            )}
+          </div>
+        )}
+      </PageTransition>
     </div>
   );
 }

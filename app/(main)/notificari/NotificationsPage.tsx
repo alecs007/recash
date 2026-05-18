@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useLayoutEffect, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { ArrowLeft, Bell, BellOff, CheckCheck, Loader2 } from "lucide-react";
 import useSWR, { mutate as globalMutate } from "swr";
@@ -9,6 +9,7 @@ import { Notification } from "@prisma/client";
 import { Pagination } from "@/app/components/UI/Pagination";
 import { useRecashSocket } from "@/hooks/useRecashSocket";
 import { useNotificationBell } from "@/hooks/useNotificationBell";
+import { PageTransition } from "@/app/components/UI/PageTransition";
 
 type ApiResponse = {
   notifications: Notification[];
@@ -127,7 +128,7 @@ export default function NotificationsPage() {
   // Reset the header bell's extra-unread counter when this page is open
   const { resetExtra } = useNotificationBell(true);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     resetExtra();
   }, [resetExtra]);
 
@@ -241,45 +242,50 @@ export default function NotificationsPage() {
           </button>
         ))}
       </div>
-
-      {isLoading ? (
-        <Skeleton />
-      ) : notifications.length === 0 ? (
-        <div className="text-center py-20">
-          <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-            {filter === "unread" ? (
-              <BellOff className="w-7 h-7 text-slate-400" />
-            ) : (
-              <Bell className="w-7 h-7 text-slate-400" />
+      <PageTransition page={isLoading ? -1 : page}>
+        {isLoading ? (
+          <Skeleton />
+        ) : notifications.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+              {filter === "unread" ? (
+                <BellOff className="w-7 h-7 text-slate-400" />
+              ) : (
+                <Bell className="w-7 h-7 text-slate-400" />
+              )}
+            </div>
+            <p className="font-bold text-slate-900 text-lg mb-1">
+              {filter === "unread"
+                ? "Nicio notificare necitită"
+                : "Nicio notificare"}
+            </p>
+            <p className="text-sm text-slate-500">
+              {filter === "unread"
+                ? "Ești la curent cu tot ce se întâmplă."
+                : "Notificările vor apărea după prima activitate."}
+            </p>
+          </div>
+        ) : (
+          <div>
+            <div className="space-y-2.5">
+              {notifications.map((n) => (
+                <NotificationCard
+                  key={n.id}
+                  notif={n}
+                  onClick={handleMarkRead}
+                />
+              ))}
+            </div>
+            {totalPages > 1 && (
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
             )}
           </div>
-          <p className="font-bold text-slate-900 text-lg mb-1">
-            {filter === "unread"
-              ? "Nicio notificare necitită"
-              : "Nicio notificare"}
-          </p>
-          <p className="text-sm text-slate-500">
-            {filter === "unread"
-              ? "Ești la curent cu tot ce se întâmplă."
-              : "Notificările vor apărea după prima activitate."}
-          </p>
-        </div>
-      ) : (
-        <div>
-          <div className="space-y-2.5">
-            {notifications.map((n) => (
-              <NotificationCard key={n.id} notif={n} onClick={handleMarkRead} />
-            ))}
-          </div>
-          {totalPages > 1 && (
-            <Pagination
-              page={page}
-              totalPages={totalPages}
-              onPageChange={setPage}
-            />
-          )}
-        </div>
-      )}
+        )}
+      </PageTransition>
     </div>
   );
 }

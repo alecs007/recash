@@ -7,6 +7,7 @@ import { ArrowLeft, Plus } from "lucide-react";
 import { PostCard } from "@/app/components/UI/PostCard";
 import { Post } from "@/types";
 import { Pagination } from "@/app/components/UI/Pagination";
+import { PageTransition } from "@/app/components/UI/PageTransition";
 import useSWR from "swr";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -105,52 +106,54 @@ export default function AllPostsPage() {
         ))}
       </div>
 
-      {isLoading ? (
-        <Skeleton />
-      ) : posts.length === 0 ? (
-        <div className="text-center py-16">
-          <Image
-            src="/images/bottle-sad.svg"
-            alt="Nicio postare"
-            width={64}
-            height={64}
-            priority
-            className="mx-auto h-24 w-24"
-          />
-          <p className="font-bold text-slate-900 text-lg mb-1">
-            Nicio postare găsită
-          </p>
-          <p className="text-sm text-slate-500">
-            {statusFilter === "all"
-              ? "Postează sticlele tale pentru a câștiga bani."
-              : "Nu există postări cu acest status."}
-          </p>
-          {statusFilter === "all" && (
-            <Link
-              href="/post"
-              className="inline-flex items-center gap-2 bg-[#123424] text-white font-semibold px-5 py-2.5 rounded-full text-sm hover:bg-[#1a4d36] transition-colors mt-2"
-            >
-              <Plus className="w-4 h-4" /> Postează acum
-            </Link>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <p className="text-xs text-slate-400 font-medium px-1">
-            {total} {total === 1 ? "postare găsită" : "postari găsite"}
-          </p>
-          {posts.map((post) => (
-            <PostCard key={post.id} post={post} />
-          ))}
-          {totalPages > 1 && (
-            <Pagination
-              page={page}
-              totalPages={totalPages}
-              onPageChange={setPage}
+      <PageTransition page={isLoading ? -1 : page}>
+        {isLoading ? (
+          <Skeleton />
+        ) : posts.length === 0 ? (
+          <div className="text-center py-16">
+            <Image
+              src="/images/bottle-sad.svg"
+              alt="Nicio postare"
+              width={64}
+              height={64}
+              priority
+              className="mx-auto h-24 w-24"
             />
-          )}
-        </div>
-      )}
+            <p className="font-bold text-slate-900 text-lg mb-1">
+              Nicio postare găsită
+            </p>
+            <p className="text-sm text-slate-500">
+              {statusFilter === "all"
+                ? "Postează sticlele tale pentru a câștiga bani."
+                : "Nu există postări cu acest status."}
+            </p>
+            {statusFilter === "all" && (
+              <Link
+                href="/post"
+                className="inline-flex items-center gap-2 bg-[#123424] text-white font-semibold px-5 py-2.5 rounded-full text-sm hover:bg-[#1a4d36] transition-colors mt-2"
+              >
+                <Plus className="w-4 h-4" /> Postează acum
+              </Link>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-xs text-slate-400 font-medium px-1">
+              {total} {total === 1 ? "postare găsită" : "postari găsite"}
+            </p>
+            {posts.map((post) => (
+              <PostCard key={post.id} post={post} />
+            ))}
+            {totalPages > 1 && (
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
+            )}
+          </div>
+        )}
+      </PageTransition>
     </div>
   );
 }
