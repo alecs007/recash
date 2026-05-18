@@ -430,7 +430,10 @@ function SelectedPostOverlay({
   };
 
   return (
-    <div className="absolute bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 pointer-events-auto z-[1000]">
+    <div
+      data-post-overlay
+      className="absolute bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 pointer-events-auto z-[1000]"
+    >
       <div className="bg-white rounded-2xl border-2 border-lime-400 shadow-md shadow-lime-100/60 p-4">
         <button
           onClick={onClose}
@@ -721,6 +724,9 @@ function PostMap({
     const post = posts.find((p) => p.id === selectedId);
     if (!post) return;
 
+    const isMobile = window.innerWidth < 640;
+    const delay = isMobile ? 150 : 80;
+
     const timer = setTimeout(() => {
       const map = mapRef.current;
       if (!map) return;
@@ -733,54 +739,22 @@ function PostMap({
           options?: object,
         ) => void;
         invalidateSize: (opts?: object) => void;
-        latLngToContainerPoint: (latlng: [number, number]) => {
-          x: number;
-          y: number;
-        };
-        containerPointToLatLng: (point: { x: number; y: number }) => {
-          lat: number;
-          lng: number;
-        };
       };
 
       const TARGET_ZOOM = 15;
       const zoom = Math.max(leafletMap.getZoom(), TARGET_ZOOM);
 
-      const isMobile = window.innerWidth < 640;
-
       if (isMobile) {
         leafletMap.invalidateSize({ animate: false });
-
-        requestAnimationFrame(() => {
-          const fresh = mapRef.current;
-          if (!fresh) return;
-          const freshMap = fresh as unknown as typeof leafletMap;
-          const L = (
-            window as unknown as {
-              L: { point: (x: number, y: number) => { x: number; y: number } };
-            }
-          ).L;
-          const targetPoint = freshMap.latLngToContainerPoint([
-            post.latitude,
-            post.longitude,
-          ]);
-
-          const offsetPoint = L.point(targetPoint.x, targetPoint.y + 180);
-          const offsetLatLng = freshMap.containerPointToLatLng(offsetPoint);
-          freshMap.flyTo([offsetLatLng.lat, offsetLatLng.lng], zoom, {
-            animate: true,
-            duration: 0.8,
-            easeLinearity: 0.1,
-          });
-        });
-      } else {
-        leafletMap.flyTo([post.latitude, post.longitude], zoom, {
-          animate: true,
-          duration: 0.8,
-          easeLinearity: 0.1,
-        });
       }
-    }, 80);
+
+      leafletMap.flyTo([post.latitude, post.longitude], zoom, {
+        animate: true,
+        duration: 0.8,
+        easeLinearity: 0.1,
+        paddingBottomLeft: isMobile ? [0, 220] : [0, 0],
+      });
+    }, delay);
 
     return () => clearTimeout(timer);
   }, [selectedId, posts]);
