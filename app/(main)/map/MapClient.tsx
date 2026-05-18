@@ -725,7 +725,6 @@ function PostMap({
     if (!post) return;
 
     const isMobile = window.innerWidth < 640;
-    const delay = isMobile ? 150 : 80;
 
     const timer = setTimeout(() => {
       const map = mapRef.current;
@@ -733,28 +732,38 @@ function PostMap({
 
       const leafletMap = map as unknown as {
         getZoom: () => number;
+        getCenter: () => { lat: number; lng: number };
+        stop: () => void;
         flyTo: (
           latlng: [number, number],
           zoom: number,
           options?: object,
         ) => void;
-        invalidateSize: (opts?: object) => void;
       };
 
-      const TARGET_ZOOM = 15;
-      const zoom = Math.max(leafletMap.getZoom(), TARGET_ZOOM);
+      leafletMap.stop();
 
-      if (isMobile) {
-        leafletMap.invalidateSize({ animate: false });
-      }
+      const TARGET_ZOOM = 15;
+      const currentZoom = leafletMap.getZoom();
+      const zoom = Math.max(currentZoom, TARGET_ZOOM);
+      const center = leafletMap.getCenter();
+
+      const dist = Math.sqrt(
+        Math.pow(center.lat - post.latitude, 2) +
+          Math.pow(center.lng - post.longitude, 2),
+      );
+      const zoomDelta = Math.abs(currentZoom - zoom);
+      const duration = Math.min(1.2, Math.max(0.4, dist * 8 + zoomDelta * 0.2));
 
       leafletMap.flyTo([post.latitude, post.longitude], zoom, {
         animate: true,
-        duration: 0.8,
-        easeLinearity: 0.1,
+        duration,
+        easeLinearity: 0.2,
+        minZoom: Math.min(currentZoom, zoom),
+        noMoveStart: true,
         paddingBottomLeft: isMobile ? [0, 220] : [0, 0],
       });
-    }, delay);
+    }, 50);
 
     return () => clearTimeout(timer);
   }, [selectedId, posts]);
