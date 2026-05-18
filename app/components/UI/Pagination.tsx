@@ -14,7 +14,7 @@ export function Pagination({
       <button
         onClick={() => {
           onPageChange(Math.max(1, page - 1));
-          window.scrollTo(0, 0);
+          window.scrollTo({ top: 0, behavior: "smooth" });
         }}
         disabled={page === 1}
         className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 border border-slate-200 hover:border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
@@ -27,7 +27,7 @@ export function Pagination({
       <button
         onClick={() => {
           onPageChange(Math.min(totalPages, page + 1));
-          window.scrollTo(0, 0);
+          window.scrollTo({ top: 0, behavior: "smooth" });
         }}
         disabled={page === totalPages}
         className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 border border-slate-200 hover:border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"

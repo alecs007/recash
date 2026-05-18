@@ -202,7 +202,7 @@ export default function NotificationsPage() {
         </div>
 
         {isLoading ? (
-          <div className="h-8 w-44 bg-slate-100 animate-pulse rounded-xl" />
+          <div />
         ) : unreadCount > 0 ? (
           <button
             onClick={handleMarkAllRead}
