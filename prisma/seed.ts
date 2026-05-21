@@ -3,6 +3,136 @@ import { fakerRO } from "@faker-js/faker";
 
 const prisma = new PrismaClient();
 
+// ── Name pools ────────────────────────────────────────────────────────────────
+
+const femaleFirstNames = [
+  "Maria",
+  "Elena",
+  "Ana",
+  "Ioana",
+  "Andreea",
+  "Alexandra",
+  "Cristina",
+  "Gabriela",
+  "Mihaela",
+  "Roxana",
+  "Alina",
+  "Raluca",
+  "Simona",
+  "Laura",
+  "Ileana",
+  "Luminița",
+  "Florina",
+  "Daniela",
+  "Nicoleta",
+  "Georgiana",
+  "Teodora",
+  "Bianca",
+  "Larisa",
+  "Denisa",
+  "Valentina",
+  "Corina",
+  "Lavinia",
+  "Oana",
+  "Diana",
+  "Adelina",
+];
+
+const maleFirstNames = [
+  "Andrei",
+  "Alexandru",
+  "Mihai",
+  "Cristian",
+  "Ion",
+  "George",
+  "Bogdan",
+  "Florin",
+  "Marian",
+  "Daniel",
+  "Radu",
+  "Vlad",
+  "Sorin",
+  "Lucian",
+  "Ionuț",
+  "Cătălin",
+  "Adrian",
+  "Constantin",
+  "Dragoș",
+  "Nicolae",
+  "Tudor",
+  "Cosmin",
+  "Claudiu",
+  "Laurențiu",
+  "Vasile",
+  "Gabriel",
+  "Valentin",
+  "Silviu",
+  "Octavian",
+  "Traian",
+];
+
+const lastNames = [
+  "Popescu",
+  "Ionescu",
+  "Popa",
+  "Constantin",
+  "Gheorghe",
+  "Stoica",
+  "Dumitrescu",
+  "Stan",
+  "Matei",
+  "Mihai",
+  "Florescu",
+  "Moldovan",
+  "Ștefan",
+  "Rusu",
+  "Petrescu",
+  "Neagu",
+  "Bogdan",
+  "Dima",
+  "Marin",
+  "Dobre",
+  "Sandu",
+  "Tudor",
+  "Nistor",
+  "Ilie",
+  "Radu",
+  "Dragomir",
+  "Vasilescu",
+  "Toma",
+  "Lazar",
+  "Cojocaru",
+];
+
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+type Gender = "female" | "male";
+
+function generatePerson(index: number): { name: string; gender: Gender } {
+  // Alternate genders so the dataset is roughly 50/50
+  const gender: Gender = index % 2 === 0 ? "female" : "male";
+  const firstName =
+    gender === "female" ? pick(femaleFirstNames) : pick(maleFirstNames);
+  return { name: `${firstName} ${pick(lastNames)}`, gender };
+}
+
+/**
+ * DiceBear v7 avatars — gender-appropriate illustrated portraits.
+ *   female → "lorelei"  (feminine illustrated style)
+ *   male   → "micah"    (masculine illustrated style)
+ * The `seed` keeps each avatar stable and unique per user.
+ */
+// Replace avatarUrl() function:
+function avatarUrl(gender: Gender, index: number): string {
+  const g = gender === "female" ? "female" : "male";
+  const seed = (index % 99) + 1; // 1-99
+  return `https://randomuser.me/api/portraits/${g === "female" ? "women" : "men"}/${seed}.jpg`;
+}
+
+// ── Locations (unchanged) ─────────────────────────────────────────────────────
+
 const uniqueLocations = [
   {
     name: "Drumul Taberei",
@@ -246,6 +376,8 @@ const uniqueLocations = [
   },
 ];
 
+// ── Seed ──────────────────────────────────────────────────────────────────────
+
 async function main() {
   console.log("🧹 Reseting database...");
 
@@ -253,7 +385,6 @@ async function main() {
   await prisma.notification.deleteMany();
   await prisma.badge.deleteMany();
   await prisma.post.deleteMany();
-
   await prisma.session.deleteMany();
   await prisma.account.deleteMany();
   await prisma.user.deleteMany();
@@ -263,6 +394,8 @@ async function main() {
 
   console.log("👤 Creating 121 unique users...");
   for (let i = 0; i < 121; i++) {
+    const { name, gender } = generatePerson(i);
+
     let email = fakerRO.internet.email().toLowerCase();
     while (usedEmails.has(email)) {
       email = fakerRO.internet.email().toLowerCase();
@@ -271,10 +404,10 @@ async function main() {
 
     const user = await prisma.user.create({
       data: {
-        name: fakerRO.person.fullName(),
-        email: email,
+        name,
+        email,
         emailVerified: new Date(),
-        image: `https://i.pravatar.cc/150?u=${email}`,
+        image: avatarUrl(gender, i), // gender-appropriate avatar, unique per user
         role: UserRole.BOTH,
         reputationScore: parseFloat(
           (Math.random() * (5.0 - 2.2) + 2.2).toFixed(1),
@@ -298,7 +431,6 @@ async function main() {
   for (let i = 0; i < createdUsers.length; i++) {
     const author = createdUsers[i];
 
-    // Safety check: ensure author exists before attempting to link a post to them
     if (!author || !author.id) {
       console.warn(
         `⚠️ Skipping post creation for index ${i} due to missing user ID.`,
@@ -310,15 +442,12 @@ async function main() {
     const bottleCount = fakerRO.helpers.arrayElement([
       12, 24, 33, 45, 60, 85, 121,
     ]);
+    const createdAt = fakerRO.date.recent({ days: 10 });
 
     await prisma.post.create({
       data: {
         authorId: author.id,
-        status: fakerRO.helpers.weightedArrayElement([
-          { weight: 8, value: PostStatus.OPEN },
-          { weight: 1, value: PostStatus.CANCELLED },
-          { weight: 1, value: PostStatus.COMPLETED },
-        ]),
+        status: PostStatus.OPEN, // ← fix
         description: fakerRO.helpers.arrayElement([
           "Ambalaje SGR strânse cu grijă.",
           "Doze și PET-uri amestecate.",
@@ -330,18 +459,16 @@ async function main() {
           "Aproximativ 2-3 saci.",
           "",
         ]),
-        bottleCount: bottleCount,
+        bottleCount,
         estimatedValue: bottleCount * 0.5,
         collectorSharePercent: fakerRO.helpers.arrayElement([30, 50, 75, 100]),
         images: [],
-
         latitude: location.lat + (Math.random() - 0.5) * 0.02,
         longitude: location.lng + (Math.random() - 0.5) * 0.02,
         locationName: location.name,
         address: location.address,
-
-        createdAt: fakerRO.date.recent({ days: 10 }),
-        expiresAt: fakerRO.date.soon({ days: 6 }),
+        createdAt,
+        expiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000), // ← fix
       },
     });
   }
