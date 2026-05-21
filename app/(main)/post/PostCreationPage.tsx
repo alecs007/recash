@@ -753,7 +753,7 @@ function StepDetails({
   return (
     <div className="space-y-6">
       <div>
-        <FieldLabel>Cum vrei să imparți valoarea?</FieldLabel>
+        <FieldLabel>Cum vrei să împarți valoarea?</FieldLabel>
         <div className="mt-4">
           <div className="relative h-6 flex items-center mb-4">
             <div className="absolute w-full h-3 rounded-full overflow-hidden flex shadow-inner bg-slate-200">
