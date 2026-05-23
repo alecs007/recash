@@ -14,7 +14,7 @@ export function Pagination({
     scrollToTop();
     setTimeout(() => {
       onPageChange(newPage);
-    }, 300);
+    }, 500);
   };
 
   return (
