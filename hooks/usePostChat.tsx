@@ -18,7 +18,6 @@ export function usePostChat(
   userId: string,
   isParticipant: boolean,
   isOpen: boolean,
-  onUnreadChange?: (updater: (n: number) => number) => void,
 ) {
   const { on, off } = useRecashSocket();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -26,31 +25,46 @@ export function usePostChat(
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState("");
   const [unread, setUnread] = useState(0);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
 
-  const loadedRef = useRef(false);
-  const partnerTypingTimer = useRef<ReturnType<typeof setTimeout>>();
+  const fetchedForPost = useRef<string | null>(null);
+  const partnerTypingTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
   const lastTypingSent = useRef(0);
 
-  // Initial load
+  const isOpenRef = useRef(isOpen);
   useEffect(() => {
-    if (!isParticipant || loadedRef.current) return;
-    loadedRef.current = true;
-    fetch(`/api/v1/posts/${postId}/chat`)
-      .then((r) => r.json())
-      .then((d) => {
-        setMessages(d.messages ?? []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [postId, isParticipant]);
-
-  // Clear unread when opened
-  useEffect(() => {
-    if (isOpen) setUnread(0);
+    isOpenRef.current = isOpen;
   }, [isOpen]);
 
-  // WS: new message
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
+    if (isOpen) {
+      setUnread(0);
+    }
+  }
+
+  useEffect(() => {
+    if (!isParticipant) return;
+    if (fetchedForPost.current === postId) return;
+    fetchedForPost.current = postId;
+    setLoading(true);
+    setMessages([]);
+    fetch(`/api/v1/posts/${postId}/chat`)
+      .then((r) => {
+        if (!r.ok) throw new Error("fetch failed");
+        return r.json() as Promise<{ messages?: ChatMessage[] }>;
+      })
+      .then((d) => setMessages(d.messages ?? []))
+      .catch(() => {
+        // Non-fatal — messages will still arrive via WS
+      })
+      .finally(() => setLoading(false));
+  }, [postId, isParticipant]);
+
+  // WS: new chat message
   const handleMsg = useCallback(
     (payload: ChatMessage) => {
       if (payload.postId !== postId) return;
@@ -60,19 +74,15 @@ export function usePostChat(
       if (payload.senderId !== userId) {
         setIsPartnerTyping(false);
         clearTimeout(partnerTypingTimer.current);
-        if (!isOpen) {
+        if (!isOpenRef.current) {
           setUnread((n) => n + 1);
-          onUnreadChange?.((n) => n + 1);
-        } else {
-          setUnread(0);
-          onUnreadChange?.(() => 0);
         }
       }
     },
-    [postId, userId, isOpen, onUnreadChange],
+    [postId, userId],
   );
 
-  // WS: typing
+  // WS: partner typing indicator
   const handleTyping = useCallback(
     (payload: { postId: string; senderId: string }) => {
       if (payload.postId !== postId || payload.senderId === userId) return;
@@ -95,7 +105,6 @@ export function usePostChat(
     };
   }, [on, off, handleMsg, handleTyping]);
 
-  // Client-side typing debounce (fire at most once per 2s)
   const sendTyping = useCallback(() => {
     const now = Date.now();
     if (now - lastTypingSent.current < 2000) return;
@@ -116,10 +125,11 @@ export function usePostChat(
           body: JSON.stringify({ text }),
         });
         if (!res.ok) {
-          const j = await res.json();
+          const j = (await res.json()) as { error?: string };
           setSendError(j.error ?? "Eroare la trimitere");
           return false;
         }
+        setSendError("");
         return true;
       } catch {
         setSendError("Eroare de rețea");

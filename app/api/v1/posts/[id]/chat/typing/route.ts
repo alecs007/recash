@@ -3,6 +3,9 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redis } from "@/lib/redis";
 import { publishChatTyping } from "@/lib/pubsub";
+import { rateLimit } from "@/lib/rate-limit";
+
+const TYPING_RL = { limit: 30, windowSec: 60 };
 
 export async function POST(
   _req: Request,
@@ -11,6 +14,9 @@ export async function POST(
   const session = await auth();
   if (!session?.user?.id)
     return NextResponse.json({ ok: false }, { status: 401 });
+
+  const rl = await rateLimit(session.user.id, TYPING_RL);
+  if (!rl.ok) return rl.response;
 
   const { id: postId } = await params;
 
@@ -26,10 +32,9 @@ export async function POST(
   )
     return NextResponse.json({ ok: false }, { status: 403 });
 
-  // Server-side debounce — publish at most once per 2s per user per post
   const key = `typing:${postId}:${session.user.id}`;
   const set = await redis.set(key, 1, "EX", 2, "NX");
-  if (!set) return NextResponse.json({ ok: true }); // already published recently
+  if (!set) return NextResponse.json({ ok: true });
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },

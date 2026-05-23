@@ -10,7 +10,9 @@ export type WsEventType =
   | "post:code_ready"
   | "post:completed"
   | "post:cancelled"
-  | "post:rating_updated";
+  | "post:rating_updated"
+  | "chat:message"
+  | "chat:typing";
 
 type Handler<T = unknown> = (payload: T) => void;
 
@@ -31,7 +33,6 @@ function _safeSend(msg: string) {
   } else if (_ws.readyState === WebSocket.CONNECTING) {
     _queue.push(msg);
   }
-  // CLOSING / CLOSED → drop; rooms re-joined on next reconnect
 }
 
 function _dispatch(type: string, payload: unknown) {
@@ -48,8 +49,7 @@ function _dispatch(type: string, payload: unknown) {
 
 let _connecting = false;
 function _connect(token: string) {
-  // Idempotent: skip if we already have a live socket with this exact token.
-  if (_connecting) return; // ← guard concurrent calls
+  if (_connecting) return;
   if (
     _wsToken === token &&
     _ws !== null &&
@@ -61,7 +61,6 @@ function _connect(token: string) {
 
   _connecting = true;
 
-  // Tear down any stale socket without triggering the reconnect path.
   if (_ws) {
     _ws.onopen = null;
     _ws.onmessage = null;
@@ -87,15 +86,13 @@ function _connect(token: string) {
   _ws = sock;
 
   sock.onopen = () => {
-    _connecting = false; // ← release
-    _reconnectDelay = 1_000; // reset back-off on success
+    _connecting = false;
+    _reconnectDelay = 1_000;
 
-    // Flush messages queued while CONNECTING
     while (_queue.length > 0) {
       sock.send(_queue.shift()!);
     }
 
-    // Re-join every post room (critical after reconnect)
     for (const postId of _wantedRooms) {
       sock.send(
         JSON.stringify({ type: "subscribe_post", payload: { postId } }),
@@ -114,16 +111,15 @@ function _connect(token: string) {
   };
 
   sock.onerror = () => {
-    /* onclose always follows onerror — handled there */
+    /* onclose always follows */
   };
 
   sock.onclose = (ev) => {
-    _connecting = false; // ← release on failure too
+    _connecting = false;
     _tokenPromise = null;
     _wsToken = null;
 
     if (ev.code === 4001) {
-      // Server explicitly rejected auth — don't loop, user needs to re-login.
       console.warn("[ws] server rejected auth (4001)");
       return;
     }
@@ -131,9 +127,6 @@ function _connect(token: string) {
     _scheduleReconnect();
   };
 }
-
-// ─── Reconnect ────────────────────────────────────────────────────────────────
-// Async so it can fetch a fresh token before connecting.
 
 function _scheduleReconnect() {
   if (_reconnectTimer) return;
@@ -164,8 +157,6 @@ function _disconnect() {
   _queue.length = 0;
 }
 
-// ─── Room management ──────────────────────────────────────────────────────────
-
 function _subscribePost(postId: string) {
   _wantedRooms.add(postId);
   _safeSend(JSON.stringify({ type: "subscribe_post", payload: { postId } }));
@@ -175,11 +166,6 @@ function _unsubscribePost(postId: string) {
   _wantedRooms.delete(postId);
   _safeSend(JSON.stringify({ type: "unsubscribe_post", payload: { postId } }));
 }
-
-// ─── Token fetching ───────────────────────────────────────────────────────────
-// Deduplicated per connection attempt: multiple hook instances on the same
-// mount share one promise.  Cleared on socket close so reconnects get a fresh
-// single-use token.
 
 let _tokenPromise: Promise<string | null> | null = null;
 
@@ -196,8 +182,6 @@ async function _fetchToken(): Promise<string | null> {
 
   return _tokenPromise;
 }
-
-// ─── React hook ───────────────────────────────────────────────────────────────
 
 export function useRecashSocket() {
   const { data: session, status } = useSession();

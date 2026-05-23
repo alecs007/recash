@@ -1,6 +1,7 @@
 import { redis } from "./redis";
 
 export type WsEventType =
+  | "connected"
   | "notification:new"
   | "post:status_changed"
   | "post:code_ready"

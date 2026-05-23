@@ -69,7 +69,7 @@ export function usePostLive(postId: string) {
     // Poll every 10 s purely as a safety net — WS events arrive much faster
     const id = setInterval(
       () => mutate(undefined, { revalidate: true }),
-      60_000,
+      120_000,
     );
     return () => clearInterval(id);
   }, [isActive, mutate]);

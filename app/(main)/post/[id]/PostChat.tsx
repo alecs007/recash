@@ -2,7 +2,12 @@
 
 import { useEffect, useRef, useState, useCallback, KeyboardEvent } from "react";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
+import {
+  motion,
+  AnimatePresence,
+  type Variants,
+  type Transition,
+} from "framer-motion";
 import { X, Send, MessageCircle, Loader2 } from "lucide-react";
 import { usePostChat, type ChatMessage } from "@/hooks/usePostChat";
 
@@ -119,7 +124,6 @@ function MessageBubble({
   );
 }
 
-// Groups consecutive messages from the same sender
 function groupMessages(msgs: ChatMessage[]) {
   return msgs.map((msg, i) => ({
     msg,
@@ -136,7 +140,38 @@ interface PostChatProps {
   isParticipant: boolean;
   partnerName: string | null;
   partnerImage: string | null;
+  partnerRole: string;
 }
+
+const EXIT_TRANSITION: Transition = {
+  duration: 0.28,
+  ease: [0.4, 0, 1, 1] as [number, number, number, number],
+};
+
+const panelVariants: Variants = {
+  hidden: {
+    y: "100%",
+    opacity: 0,
+    scale: 0.97,
+  },
+  visible: {
+    y: 0,
+    opacity: 1,
+    scale: 1,
+    transition: {
+      type: "spring",
+      damping: 28,
+      stiffness: 260,
+      mass: 1,
+    },
+  },
+  exit: {
+    y: "100%",
+    opacity: 0,
+    scale: 0.97,
+    transition: EXIT_TRANSITION,
+  },
+};
 
 export function PostChat({
   postId,
@@ -146,6 +181,7 @@ export function PostChat({
   isParticipant,
   partnerName,
   partnerImage,
+  partnerRole,
 }: PostChatProps) {
   const {
     messages,
@@ -162,7 +198,6 @@ export function PostChat({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const grouped = groupMessages(messages);
 
-  // Scroll to bottom when messages change or panel opens
   useEffect(() => {
     if (isOpen) {
       requestAnimationFrame(() => {
@@ -171,16 +206,14 @@ export function PostChat({
     }
   }, [messages, isPartnerTyping, isOpen]);
 
-  // Focus input when opened
   useEffect(() => {
-    if (isOpen) setTimeout(() => inputRef.current?.focus(), 120);
+    if (isOpen) setTimeout(() => inputRef.current?.focus(), 320);
   }, [isOpen]);
 
   const handleSend = useCallback(async () => {
     const trimmed = text.trim();
     if (!trimmed || sending) return;
     setText("");
-    // Reset textarea height
     if (inputRef.current) inputRef.current.style.height = "42px";
     await sendMessage(trimmed);
   }, [text, sending, sendMessage]);
@@ -188,14 +221,13 @@ export function PostChat({
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      void handleSend();
     }
   };
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value.slice(0, MAX_TEXT);
     setText(val);
-    // Auto-resize
     e.target.style.height = "42px";
     e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
     if (val) sendTyping();
@@ -212,35 +244,25 @@ export function PostChat({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/40 z-[1498] lg:hidden"
+            transition={{ duration: 0.25 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[1498] lg:hidden"
             onClick={onClose}
           />
 
           <motion.div
             key="panel"
-            initial={{ y: "100%", opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: "100%", opacity: 0 }}
-            transition={{
-              type: "spring",
-              damping: 32,
-              stiffness: 320,
-              mass: 0.9,
-            }}
+            variants={panelVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
             className={[
               "flex flex-col bg-white",
-              // Mobile: fixed full screen
               "fixed inset-0 z-[1499]",
-              // Desktop: absolute panel overlay
               "lg:absolute lg:inset-0 lg:z-10",
             ].join(" ")}
           >
             <div className="shrink-0 flex items-center gap-3 px-4 py-3.5 border-b border-slate-100">
-              <div className="relative shrink-0">
-                <Avatar name={partnerName} image={partnerImage} size={36} />
-                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-lime-400 border-2 border-white" />
-              </div>
+              <Avatar name={partnerName} image={partnerImage} size={36} />
 
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-slate-900 leading-tight truncate">
@@ -250,7 +272,7 @@ export function PostChat({
                   {isPartnerTyping ? (
                     <span className="text-lime-600 font-medium">Scrie...</span>
                   ) : (
-                    "Activ acum"
+                    partnerRole
                   )}
                 </p>
               </div>
@@ -325,7 +347,6 @@ export function PostChat({
               <div ref={bottomRef} />
             </div>
 
-            {/* Send error */}
             <AnimatePresence>
               {sendError && (
                 <motion.p
@@ -348,7 +369,7 @@ export function PostChat({
                     onChange={handleTextChange}
                     onKeyDown={handleKeyDown}
                     placeholder={`Mesaj către ${firstName}…`}
-                    className="w-full resize-none px-3.5 py-2.5 rounded-2xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none text-sm text-slate-900 placeholder:text-slate-400 transition-shadow bg-slate-50 overflow-y-auto"
+                    className="w-full resize-none px-3.5 py-2.5 rounded-2xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none text-slate-900 placeholder:text-slate-400 transition-shadow bg-slate-50 overflow-y-auto"
                     style={{ height: 42, minHeight: 42, maxHeight: 120 }}
                   />
                   {text.length > MAX_TEXT * 0.8 && (
@@ -366,7 +387,7 @@ export function PostChat({
 
                 <motion.button
                   whileTap={{ scale: 0.88 }}
-                  onClick={handleSend}
+                  onClick={() => void handleSend()}
                   disabled={!text.trim() || sending}
                   className="w-10 h-10 rounded-full bg-[#123424] flex items-center justify-center shrink-0 cursor-pointer hover:bg-[#1a4d36] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   aria-label="Trimite"
@@ -416,11 +437,9 @@ export function ChatTriggerButton({
             className="relative flex items-center gap-2.5 bg-[#123424] text-white pl-3.5 pr-4 py-2.5 lg:pl-4 rounded-full shadow-lg shadow-black/20 cursor-pointer hover:bg-[#1a4d36] transition-colors"
           >
             <MessageCircle className="w-4 h-4 text-lime-400 shrink-0" />
-
             <span className="text-sm font-semibold whitespace-nowrap">
               Vorbește cu {firstName}
             </span>
-
             {unread > 0 && (
               <motion.span
                 initial={{ scale: 0 }}

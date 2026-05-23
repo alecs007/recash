@@ -3,9 +3,19 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit, RL } from "@/lib/rate-limit";
 import { publishChatMessage } from "@/lib/pubsub";
+import { z } from "zod";
 
-const MAX_TEXT = 500;
 const MAX_MESSAGES = 100;
+
+const CHAT_WRITE_RL = { limit: 30, windowSec: 60 };
+
+const sendMessageSchema = z.object({
+  text: z
+    .string({ error: "Textul este obligatoriu" })
+    .min(1, "Mesajul nu poate fi gol")
+    .max(500, "Mesajul poate avea maxim 500 de caractere")
+    .transform((s) => s.trim()),
+});
 
 async function assertParticipant(postId: string, userId: string) {
   const post = await prisma.post.findUnique({
@@ -73,7 +83,7 @@ export async function POST(
   if (!session?.user?.id)
     return NextResponse.json({ error: "Neautentificat" }, { status: 401 });
 
-  const rl = await rateLimit(session.user.id, RL.write);
+  const rl = await rateLimit(session.user.id, CHAT_WRITE_RL);
   if (!rl.ok) return rl.response;
 
   const { id: postId } = await params;
@@ -87,23 +97,20 @@ export async function POST(
       { status: 409 },
     );
 
-  let body: unknown;
+  let rawBody: unknown;
   try {
-    body = await req.json();
+    rawBody = await req.json();
   } catch {
     return NextResponse.json({ error: "Cerere invalidă" }, { status: 400 });
   }
 
-  const text =
-    typeof (body as Record<string, unknown>).text === "string"
-      ? ((body as Record<string, unknown>).text as string).trim()
-      : "";
+  const parsed = sendMessageSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    const message = parsed.error?.message ?? "Date invalide";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
 
-  if (!text || text.length > MAX_TEXT)
-    return NextResponse.json(
-      { error: `Mesajul trebuie să aibă între 1 și ${MAX_TEXT} caractere` },
-      { status: 400 },
-    );
+  const { text } = parsed.data;
 
   try {
     const [msg, sender] = await Promise.all([

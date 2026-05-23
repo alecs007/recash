@@ -1393,7 +1393,7 @@ function DetailPanel({
         <>
           <ChatTriggerButton
             isOpen={chatOpen}
-            unread={chatUnread} // vezi mai jos
+            unread={chatUnread}
             partnerName={
               isAuthor ? (post.collector?.name ?? null) : post.author.name
             }
@@ -1410,6 +1410,9 @@ function DetailPanel({
             }
             partnerImage={
               isAuthor ? (post.collector?.image ?? null) : post.author.image
+            }
+            partnerRole={
+              isAuthor ? "Colectorul sticlelor" : "Autorul anunțului"
             }
           />
         </>
