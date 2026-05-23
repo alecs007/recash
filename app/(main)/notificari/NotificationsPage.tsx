@@ -140,6 +140,7 @@ export default function NotificationsPage() {
   } = useSWR<ApiResponse>(apiUrl, fetcher, {
     refreshInterval: 0, // WS drives updates
     revalidateOnFocus: true,
+    keepPreviousData: true,
   });
 
   // When a new notification arrives via WS, refresh this list too

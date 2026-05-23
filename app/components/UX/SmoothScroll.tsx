@@ -11,7 +11,7 @@ let _lenis: Lenis | null = null;
 
 export function scrollToTop(immediate = false) {
   if (_lenis) {
-    _lenis.scrollTo(0, { immediate, duration: immediate ? 0 : 0.5 });
+    _lenis.scrollTo(0, { immediate });
   } else {
     window.scrollTo({ top: 0, behavior: immediate ? "instant" : "smooth" });
   }
