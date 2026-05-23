@@ -11,8 +11,10 @@ export function Pagination({
   onPageChange: (p: number) => void;
 }) {
   const handlePageChange = (newPage: number) => {
-    onPageChange(newPage);
     scrollToTop();
+    setTimeout(() => {
+      onPageChange(newPage);
+    }, 300);
   };
 
   return (
