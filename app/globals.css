@@ -10,6 +10,7 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans);
   overscroll-behavior-x: none;
+  overscroll-behavior-y: none;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -18,6 +19,7 @@ html {
   width: 100%;
   -webkit-text-size-adjust: 100%;
   scrollbar-gutter: stable;
+  overscroll-behavior-y: none;
 }
 
 input,

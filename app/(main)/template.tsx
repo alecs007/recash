@@ -51,7 +51,7 @@ export default function Template({ children }: { children: React.ReactNode }) {
   const isMapPage = pathname === "/map";
 
   useEffect(() => {
-    scrollToTop(true);
+    scrollToTop();
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
   }, [pathname]);
