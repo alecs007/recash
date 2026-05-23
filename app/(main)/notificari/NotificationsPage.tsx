@@ -202,9 +202,7 @@ export default function NotificationsPage() {
           </h1>
         </div>
 
-        {isLoading ? (
-          <div />
-        ) : unreadCount > 0 ? (
+        {unreadCount > 0 && (
           <button
             onClick={handleMarkAllRead}
             disabled={markingAll}
@@ -217,7 +215,7 @@ export default function NotificationsPage() {
             )}
             Marchează toate ca citite
           </button>
-        ) : null}
+        )}
       </div>
 
       <div className="flex gap-2 mb-5">
@@ -235,7 +233,7 @@ export default function NotificationsPage() {
             }`}
           >
             {f.label}
-            {f.value === "unread" && unreadCount > 0 && !isLoading && (
+            {f.value === "unread" && unreadCount > 0 && (
               <span className="ml-1.5 bg-lime-400 text-[#123424] text-[9px] font-black px-1.5 py-0.5 rounded-full">
                 {unreadCount}
               </span>
