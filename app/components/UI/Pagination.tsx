@@ -11,9 +11,10 @@ export function Pagination({
   onPageChange: (p: number) => void;
 }) {
   const handlePageChange = (newPage: number) => {
+    scrollToTop(true);
     onPageChange(newPage);
-    setTimeout(() => scrollToTop(true), 150);
   };
+
   return (
     <div className="flex items-center justify-center gap-2 pt-4">
       <button

@@ -243,7 +243,7 @@ export default function NotificationsPage() {
           </button>
         ))}
       </div>
-      <PageTransition page={isLoading ? -1 : page}>
+      <PageTransition page={page}>
         {isLoading ? (
           <Skeleton />
         ) : notifications.length === 0 ? (
