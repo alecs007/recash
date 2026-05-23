@@ -27,6 +27,7 @@ import type { Map as LeafletMap } from "leaflet";
 import { useSetActiveCounts } from "@/hooks/useActiveCounts";
 import { useRecashSocket } from "@/hooks/useRecashSocket";
 import { showToast } from "@/lib/toast";
+import { createPortal } from "react-dom";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -404,7 +405,7 @@ function CancelModal({
   onClose: () => void;
   isInProgress: boolean;
 }) {
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
         <div className="flex items-start justify-between mb-4">
@@ -442,7 +443,8 @@ function CancelModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
