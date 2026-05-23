@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback, KeyboardEvent } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import {
   motion,
@@ -150,7 +151,7 @@ const EXIT_TRANSITION: Transition = {
 
 const panelVariants: Variants = {
   hidden: {
-    y: 20, // Subtle downward offset instead of full 100%
+    y: 20,
     opacity: 0,
     scale: 0.95,
   },
@@ -162,7 +163,7 @@ const panelVariants: Variants = {
       type: "spring",
       damping: 25,
       stiffness: 350,
-      mass: 0.8, // Faster, snappier feel
+      mass: 0.8,
     },
   },
   exit: {
@@ -183,6 +184,9 @@ export function PostChat({
   partnerImage,
   partnerRole,
 }: PostChatProps) {
+  const [mounted, setMounted] = useState(false);
+  const [isMobile, setIsMobile] = useState(true);
+
   const {
     messages,
     loading,
@@ -199,14 +203,43 @@ export function PostChat({
   const grouped = groupMessages(messages);
 
   useEffect(() => {
-    if (isOpen) {
-      const originalStyle = window.getComputedStyle(document.body).overflow;
+    setMounted(true);
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    checkMobile(); // Check pe mount
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Blocare scroll nativă (mai ales pentru varianta de mobil)
+  useEffect(() => {
+    if (isOpen && isMobile) {
+      const scrollY = window.scrollY;
+
+      const originalHtmlOverflow = document.documentElement.style.overflow;
+      const originalBodyOverflow = document.body.style.overflow;
+      const originalPosition = document.body.style.position;
+      const originalTop = document.body.style.top;
+      const originalWidth = document.body.style.width;
+
+      document.documentElement.style.overflow = "hidden";
       document.body.style.overflow = "hidden";
+
+      // Fix specific iOS pentru a împiedica rubber-banding când e deschis portalul
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = "100%";
+
       return () => {
-        document.body.style.overflow = originalStyle;
+        document.documentElement.style.overflow = originalHtmlOverflow;
+        document.body.style.overflow = originalBodyOverflow;
+
+        document.body.style.position = originalPosition;
+        document.body.style.top = originalTop;
+        document.body.style.width = originalWidth;
+        window.scrollTo(0, scrollY);
       };
     }
-  }, [isOpen]);
+  }, [isOpen, isMobile]);
 
   useEffect(() => {
     if (isOpen) {
@@ -245,17 +278,21 @@ export function PostChat({
 
   const firstName = partnerName?.split(" ")[0] ?? "partener";
 
-  return (
+  if (!mounted) return null;
+
+  // Împachetăm conținutul chat-ului pentru a fi returnat fie direct, fie prin Portal
+  const chatContent = (
     <AnimatePresence>
       {isOpen && (
         <>
+          {/* Backdrop (doar pe mobil vizibil) */}
           <motion.div
             key="backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[1498] lg:hidden"
+            className="fixed inset-0 h-[100dvh] bg-black/40 backdrop-blur-[2px] z-[9998] lg:hidden touch-none"
             onClick={onClose}
           />
 
@@ -267,9 +304,9 @@ export function PostChat({
             exit="exit"
             className={[
               "flex flex-col bg-white",
-              "fixed inset-0 z-[1499]",
-              "lg:absolute lg:inset-0 lg:z-10",
-              "origin-bottom lg:origin-center", // Expands nicely from its anchor
+              "fixed top-0 left-0 w-full h-[100dvh] z-[9999]", // Pe mobil: portal fullscreen
+              "lg:absolute lg:inset-0 lg:h-auto lg:w-auto lg:z-10", // Pe desktop: stă cum era, în părintele său
+              "origin-bottom lg:origin-center",
             ].join(" ")}
           >
             <div className="shrink-0 flex items-center gap-3 px-4 py-3.5 border-b border-slate-100">
@@ -298,7 +335,7 @@ export function PostChat({
             </div>
 
             <div
-              className="flex-1 overflow-y-auto px-4 py-5 space-y-1.5 min-h-0"
+              className="flex-1 overflow-y-auto overscroll-y-contain px-4 py-5 space-y-1.5 min-h-0"
               data-lenis-prevent
             >
               {loading ? (
@@ -379,7 +416,7 @@ export function PostChat({
                     value={text}
                     onChange={handleTextChange}
                     onKeyDown={handleKeyDown}
-                    placeholder="Trimite un mesaj..."
+                    placeholder={`Mesaj către ${firstName}…`}
                     className="w-full resize-none px-3.5 py-2.5 rounded-2xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none text-slate-900 placeholder:text-slate-400 transition-shadow bg-slate-50 overflow-y-auto"
                     style={{ height: 46, minHeight: 46, maxHeight: 120 }}
                   />
@@ -416,6 +453,9 @@ export function PostChat({
       )}
     </AnimatePresence>
   );
+
+  // Returnăm Portal pe mobil, și inline pe desktop (așa cum era layout-ul inițial)
+  return isMobile ? createPortal(chatContent, document.body) : chatContent;
 }
 
 export function ChatTriggerButton({
@@ -430,20 +470,29 @@ export function ChatTriggerButton({
   onClick: () => void;
 }) {
   const firstName = partnerName?.split(" ")[0] ?? "partener";
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
 
   return (
     <AnimatePresence>
       {!isOpen && (
         <motion.div
-          initial={{ scale: 0.7, opacity: 0, y: 8 }}
+          key="chat-trigger-btn"
+          // Am înlocuit type="spring" cu o apariție "easeOut" mult mai fină și mai calmă
+          initial={{ scale: 0.95, opacity: 0, y: 15 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.7, opacity: 0, y: 8 }}
-          transition={{ type: "spring", damping: 20, stiffness: 300 }}
-          className="fixed bottom-6 right-4 z-[1497] lg:absolute lg:bottom-6 lg:right-6 lg:z-20"
+          exit={{ scale: 0.95, opacity: 0, y: 15 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          className="fixed bottom-6 right-4 z-[9990] lg:absolute lg:bottom-6 lg:right-6"
         >
           <motion.button
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.93 }}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.95 }}
             onClick={onClick}
             className="relative flex items-center gap-2.5 bg-[#123424] text-white pl-3.5 pr-4 py-2.5 lg:pl-4 rounded-full shadow-lg shadow-black/20 cursor-pointer hover:bg-[#1a4d36] transition-colors"
           >
@@ -455,6 +504,7 @@ export function ChatTriggerButton({
               <motion.span
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
+                transition={{ type: "spring", bounce: 0.5 }}
                 className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none border-2 border-white"
               >
                 {unread > 9 ? "9+" : unread}
