@@ -144,15 +144,15 @@ interface PostChatProps {
 }
 
 const EXIT_TRANSITION: Transition = {
-  duration: 0.28,
-  ease: [0.4, 0, 1, 1] as [number, number, number, number],
+  duration: 0.2,
+  ease: "easeOut",
 };
 
 const panelVariants: Variants = {
   hidden: {
-    y: "100%",
+    y: 20, // Subtle downward offset instead of full 100%
     opacity: 0,
-    scale: 0.97,
+    scale: 0.95,
   },
   visible: {
     y: 0,
@@ -160,15 +160,15 @@ const panelVariants: Variants = {
     scale: 1,
     transition: {
       type: "spring",
-      damping: 28,
-      stiffness: 260,
-      mass: 1,
+      damping: 25,
+      stiffness: 350,
+      mass: 0.8, // Faster, snappier feel
     },
   },
   exit: {
-    y: "100%",
+    y: 10,
     opacity: 0,
-    scale: 0.97,
+    scale: 0.98,
     transition: EXIT_TRANSITION,
   },
 };
@@ -197,6 +197,16 @@ export function PostChat({
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const grouped = groupMessages(messages);
+
+  useEffect(() => {
+    if (isOpen) {
+      const originalStyle = window.getComputedStyle(document.body).overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalStyle;
+      };
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -244,7 +254,7 @@ export function PostChat({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
+            transition={{ duration: 0.2 }}
             className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[1498] lg:hidden"
             onClick={onClose}
           />
@@ -259,6 +269,7 @@ export function PostChat({
               "flex flex-col bg-white",
               "fixed inset-0 z-[1499]",
               "lg:absolute lg:inset-0 lg:z-10",
+              "origin-bottom lg:origin-center", // Expands nicely from its anchor
             ].join(" ")}
           >
             <div className="shrink-0 flex items-center gap-3 px-4 py-3.5 border-b border-slate-100">
@@ -361,16 +372,16 @@ export function PostChat({
             </AnimatePresence>
 
             <div className="shrink-0 border-t border-slate-100 px-4 py-3 bg-white">
-              <div className="flex items-end gap-2.5">
+              <div className="flex items-center justify-center gap-2.5">
                 <div className="flex-1 relative">
                   <textarea
                     ref={inputRef}
                     value={text}
                     onChange={handleTextChange}
                     onKeyDown={handleKeyDown}
-                    placeholder={`Mesaj către ${firstName}…`}
+                    placeholder="Trimite un mesaj..."
                     className="w-full resize-none px-3.5 py-2.5 rounded-2xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none text-slate-900 placeholder:text-slate-400 transition-shadow bg-slate-50 overflow-y-auto"
-                    style={{ height: 42, minHeight: 42, maxHeight: 120 }}
+                    style={{ height: 46, minHeight: 46, maxHeight: 120 }}
                   />
                   {text.length > MAX_TEXT * 0.8 && (
                     <span
@@ -389,7 +400,7 @@ export function PostChat({
                   whileTap={{ scale: 0.88 }}
                   onClick={() => void handleSend()}
                   disabled={!text.trim() || sending}
-                  className="w-10 h-10 rounded-full bg-[#123424] flex items-center justify-center shrink-0 cursor-pointer hover:bg-[#1a4d36] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  className="w-10 h-10 mb-1 rounded-full bg-[#123424] flex items-center justify-center shrink-0 cursor-pointer hover:bg-[#1a4d36] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   aria-label="Trimite"
                 >
                   {sending ? (
