@@ -124,6 +124,7 @@ model User {
   reputationScore       Float @default(0.0)
   ratingCount           Int   @default(0)
   cancelledCount        Int   @default(0)
+  sentMessages ChatMessage[] @relation("SentMessages")
 
   accounts              Account[]
   sessions              Session[]
@@ -269,4 +270,16 @@ model Notification {
   // Combined: unread notifications for a user sorted by date
   // (covers the ?unread=true query efficiently)
   @@index([userId, read, createdAt(sort: Desc)])
+}
+
+model ChatMessage {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  postId    String   @db.ObjectId
+  senderId  String   @db.ObjectId
+  text      String
+  createdAt DateTime @default(now())
+
+  sender User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt(sort: Asc)])
 }

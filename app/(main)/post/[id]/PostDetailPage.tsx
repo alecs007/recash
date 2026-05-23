@@ -26,6 +26,8 @@ import { PostStatus, Post } from "@/types";
 import type { Map as LeafletMap } from "leaflet";
 import { useSetActiveCounts } from "@/hooks/useActiveCounts";
 import { useRecashSocket } from "@/hooks/useRecashSocket";
+import { PostChat, ChatTriggerButton } from "./PostChat";
+import { usePostChat } from "@/hooks/usePostChat";
 import { showToast } from "@/lib/toast";
 import { createPortal } from "react-dom";
 
@@ -721,12 +723,14 @@ function getCancelToastKey(status: PostStatus, isAuthor: boolean): string {
 
 function DetailPanel({
   post,
+  userId,
   isAuthor,
   isCollector,
   mutate,
   onRedirect,
 }: {
   post: Post;
+  userId: string;
   isAuthor: boolean;
   isCollector: boolean;
   mutate: () => void;
@@ -738,6 +742,15 @@ function DetailPanel({
   const [actionError, setActionError] = useState("");
   const [justReviewed, setJustReviewed] = useState(false);
   const setActiveCounts = useSetActiveCounts();
+
+  const [chatOpen, setChatOpen] = useState(false);
+
+  const { unread: chatUnread } = usePostChat(
+    post.id,
+    userId,
+    (isAuthor || isCollector) && post.status === "IN_PROGRESS",
+    chatOpen,
+  );
 
   const statusCfg = STATUS_CONFIG[post.status];
   const posterPct = 100 - post.collectorSharePercent;
@@ -864,312 +877,265 @@ function DetailPanel({
   }, [post.id, post.status, isAuthor, onRedirect, setActiveCounts]);
 
   return (
-    <div className="h-full overflow-y-auto" data-lenis-prevent>
-      <div className="px-6 lg:px-10 py-6 lg:py-8 space-y-0 max-w-xl lg:max-w-none">
-        {/* ── BACK BUTTON + STATUS ── */}
-        <div className="flex items-center justify-between mb-7">
-          <Link
-            href={`/${isAuthor ? "profil/postari" : "map"}`}
-            className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-700 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {isAuthor ? "Postările mele" : "Harta de colectare"}
-          </Link>
-          <span
-            className={`text-xs font-bold px-3 py-1.5 rounded-full ${statusCfg.className}`}
-          >
-            {statusCfg.label}
-          </span>
-        </div>
-
-        {/* ── OPEN (autor): visible message + cancel ── */}
-        {post.status === "OPEN" && isAuthor && (
-          <div className="mb-7 space-y-3">
-            <p className="text-sm text-slate-600 leading-relaxed">
-              Anunțul tău este vizibil pe hartă. Vei fi notificat imediat ce un
-              colector face o cerere.
-            </p>
-            <button
-              onClick={() => setShowCancel(true)}
-              disabled={actionLoading}
-              className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
+    <div className="h-full relative">
+      <div className="h-full overflow-y-auto" data-lenis-prevent>
+        <div className="px-6 lg:px-10 py-6 lg:py-8 space-y-0 max-w-xl lg:max-w-none">
+          {/* ── BACK BUTTON + STATUS ── */}
+          <div className="flex items-center justify-between mb-7">
+            <Link
+              href={`/${isAuthor ? "profil/postari" : "map"}`}
+              className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-700 transition-colors"
             >
-              Anulează anunțul
-            </button>
-            <div className="h-px bg-slate-100 mt-4" />
+              <ArrowLeft className="w-4 h-4" />
+              {isAuthor ? "Postările mele" : "Harta de colectare"}
+            </Link>
+            <span
+              className={`text-xs font-bold px-3 py-1.5 rounded-full ${statusCfg.className}`}
+            >
+              {statusCfg.label}
+            </span>
           </div>
-        )}
 
-        {/* ── CLAIMED (autor): collector card + approve/deny + cancel ── */}
-        {post.status === "CLAIMED" && isAuthor && post.collector && (
-          <div className="mb-7 space-y-4">
-            <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
-              <div className="w-11 h-11 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
-                {post.collector.image ? (
-                  <Image
-                    src={post.collector.image}
-                    alt={post.collector.name ?? ""}
-                    width={44}
-                    height={44}
-                    priority
-                    className="object-cover w-full h-full"
-                  />
-                ) : (
-                  <span className="text-sm font-bold text-slate-500">
-                    {post.collector.name?.[0] ?? "?"}
-                  </span>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-bold text-slate-900 truncate">
-                    {post.collector.name ?? "Colector"}
-                  </p>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <Star className="w-3 h-3 text-[#FFDF00] fill-[#FFDF00]" />
-                    <span className="text-xs text-slate-500">
-                      {post.collector.reputationScore.toFixed(1)}{" "}
-                      <span className="text-slate-400">
-                        ({post.collector.ratingCount})
-                      </span>
-                    </span>
-                  </div>
-                </div>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Vrea să colecteze sticlele tale. Odată aprobat, va avea 30 min
-                  la dispoziție să ajungă.
-                </p>
-              </div>
-            </div>
-            {actionError && (
-              <p className="text-sm text-red-500 font-medium">{actionError}</p>
-            )}
-            <div className="flex gap-3">
+          {/* ── OPEN (autor): visible message + cancel ── */}
+          {post.status === "OPEN" && isAuthor && (
+            <div className="mb-7 space-y-3">
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Anunțul tău este vizibil pe hartă. Vei fi notificat imediat ce
+                un colector face o cerere.
+              </p>
               <button
-                onClick={() => handleApprove("deny")}
+                onClick={() => setShowCancel(true)}
                 disabled={actionLoading}
-                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-slate-200 text-slate-700 font-semibold text-sm hover:border-red-200 hover:text-red-600 hover:bg-red-50 transition-all disabled:opacity-40 cursor-pointer"
+                className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
               >
-                <XCircle className="w-4 h-4" /> Refuză
+                Anulează anunțul
               </button>
-              <button
-                onClick={() => handleApprove("approve")}
-                disabled={actionLoading}
-                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all disabled:opacity-40 cursor-pointer shadow-sm"
-              >
-                {actionLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <CheckCircle className="w-4 h-4" />
-                )}
-                Aprobă
-              </button>
+              <div className="h-px bg-slate-100 mt-4" />
             </div>
-            {actionError && (
-              <p className="text-sm text-red-500 font-medium">{actionError}</p>
-            )}
-            <button
-              onClick={() => setShowCancel(true)}
-              disabled={actionLoading}
-              className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
-            >
-              Anulează anunțul
-            </button>
-            <div className="h-px bg-slate-100 mt-2" />
-          </div>
-        )}
+          )}
 
-        {/* ── CLAIMED (colector): waiting + cancel ── */}
-        {post.status === "CLAIMED" && isCollector && (
-          <div className="mb-7 space-y-3">
-            <div className="flex items-center gap-3">
-              <Clock className="w-5 h-5 text-blue-400 animate-pulse shrink-0" />
-              <div>
-                <p className="text-sm font-semibold text-slate-800">
-                  Cererea ta a fost trimisă
-                </p>
-                <p className="text-xs text-slate-500">
-                  Se așteaptă aprobarea autorului…
-                </p>
-              </div>
-            </div>
-            {actionError && (
-              <p className="text-sm text-red-500 font-medium">{actionError}</p>
-            )}
-            <button
-              onClick={() => setShowCancel(true)}
-              disabled={actionLoading}
-              className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
-            >
-              Anulează cererea
-            </button>
-            <div className="h-px bg-slate-100 mt-2" />
-          </div>
-        )}
-
-        {/* ── IN_PROGRESS: countdown + code + cancel ── */}
-        {post.status === "IN_PROGRESS" && (
-          <div className="mb-7 space-y-5">
-            <div className="bg-slate-50 border border-[#123424]/10 rounded-2xl p-5 space-y-5">
-              {post.expiresAt && <Countdown deadline={post.expiresAt} />}
-              <div className="border-t border-[#123424]/10 pt-4">
-                <p className="text-sm font-medium text-[#123424] mb-3">
-                  {isAuthor
-                    ? "Codul tău de confirmare"
-                    : "Introdu codul de confirmare"}
-                </p>
-                {isAuthor ? (
-                  showCode ? (
-                    <CodeDisplay postId={post.id} />
+          {/* ── CLAIMED (autor): collector card + approve/deny + cancel ── */}
+          {post.status === "CLAIMED" && isAuthor && post.collector && (
+            <div className="mb-7 space-y-4">
+              <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
+                <div className="w-11 h-11 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
+                  {post.collector.image ? (
+                    <Image
+                      src={post.collector.image}
+                      alt={post.collector.name ?? ""}
+                      width={44}
+                      height={44}
+                      priority
+                      className="object-cover w-full h-full"
+                    />
                   ) : (
-                    <button
-                      onClick={() => setShowCode(true)}
-                      className="w-full flex items-center justify-center py-3.5 rounded-xl bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all cursor-pointer"
-                    >
-                      Afișează codul
-                      <LockKeyholeOpen className="w-4 h-4 ml-2" />
-                    </button>
-                  )
-                ) : (
-                  <CodeEntry
-                    postId={post.id}
-                    onComplete={() => {
-                      setActiveCounts({
-                        activeCollections: 0,
-                        activeCollectionId: null,
-                      });
-                      mutate();
-                    }}
-                  />
-                )}
-              </div>
-              {actionError && (
-                <div className="border-t border-[#123424]/10 pt-4">
-                  <p className="text-sm text-red-500 font-medium">
-                    {actionError}
-                  </p>
-                </div>
-              )}
-              <div className="border-t border-[#123424]/10 pt-4">
-                <button
-                  onClick={() => setShowCancel(true)}
-                  disabled={actionLoading}
-                  className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
-                >
-                  {isAuthor ? "Anulează colectarea" : "Renunță la colectare"}
-                </button>
-              </div>
-            </div>{" "}
-            <div className="h-px bg-slate-100 mb-7 mt-7" />
-          </div>
-        )}
-
-        {/* ── COMPLETED: summary + rating — before post info ── */}
-        {post.status === "COMPLETED" && post.transaction && (
-          <div className="mb-7 space-y-5">
-            <div className="bg-lime-50 border border-lime-200 rounded-2xl p-4 space-y-2.5">
-              <div className="flex items-center gap-2 mb-3">
-                <CheckCircle className="w-4 h-4 text-lime-600" />
-                <span className="text-sm font-bold text-lime-800">
-                  Tranzacție finalizată
-                </span>
-                <span className="text-xs text-lime-500 ml-auto">
-                  {new Date(post.transaction.completedAt).toLocaleDateString(
-                    "ro-RO",
-                    {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    },
+                    <span className="text-sm font-bold text-slate-500">
+                      {post.collector.name?.[0] ?? "?"}
+                    </span>
                   )}
-                </span>
-              </div>
-              {[
-                [
-                  "Sticle colectate",
-                  `${Math.round(post.transaction.actualValue / 0.5)} buc`,
-                ],
-                [
-                  "Valoare totală",
-                  `${post.transaction.actualValue.toFixed(2)} RON`,
-                ],
-                [
-                  isAuthor ? "Ai primit" : "Ai câștigat",
-                  `+${myActualEarning?.toFixed(2)} RON`,
-                ],
-              ].map(([label, value], i) => (
-                <div key={i} className="flex justify-between text-sm">
-                  <span className="text-slate-500">{label}</span>
-                  <span
-                    className={`font-bold ${i === 2 ? "text-lime-700" : "text-slate-800"}`}
-                  >
-                    {value}
-                  </span>
                 </div>
-              ))}
-            </div>
-
-            <div className="space-y-4">
-              {ratingIReceived && (
-                <div className="bg-white border border-slate-100 rounded-2xl p-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">
-                        Rating-ul primit de la{" "}
-                        <span className="font-semibold text-slate-800">
-                          {targetName}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-bold text-slate-900 truncate">
+                      {post.collector.name ?? "Colector"}
+                    </p>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <Star className="w-3 h-3 text-[#FFDF00] fill-[#FFDF00]" />
+                      <span className="text-xs text-slate-500">
+                        {post.collector.reputationScore.toFixed(1)}{" "}
+                        <span className="text-slate-400">
+                          ({post.collector.ratingCount})
                         </span>
                       </span>
-                      <div className="flex items-center gap-0.5">
-                        {[1, 2, 3, 4, 5].map((i) => (
-                          <svg key={i} className="w-4 h-4" viewBox="0 0 20 20">
-                            <path
-                              fill={
-                                i <= ratingIReceived ? "#FFDF00" : "#e2e8f0"
-                              }
-                              d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-                            />
-                          </svg>
-                        ))}
-                      </div>
                     </div>
-                    {reviewIReceived && (
-                      <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 italic text-slate-700 text-sm">
-                        &quot;{reviewIReceived}&quot;
-                      </div>
-                    )}
                   </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Vrea să colecteze sticlele tale. Odată aprobat, va avea 30
+                    min la dispoziție să ajungă.
+                  </p>
                 </div>
+              </div>
+              {actionError && (
+                <p className="text-sm text-red-500 font-medium">
+                  {actionError}
+                </p>
               )}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleApprove("deny")}
+                  disabled={actionLoading}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-slate-200 text-slate-700 font-semibold text-sm hover:border-red-200 hover:text-red-600 hover:bg-red-50 transition-all disabled:opacity-40 cursor-pointer"
+                >
+                  <XCircle className="w-4 h-4" /> Refuză
+                </button>
+                <button
+                  onClick={() => handleApprove("approve")}
+                  disabled={actionLoading}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all disabled:opacity-40 cursor-pointer shadow-sm"
+                >
+                  {actionLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4" />
+                  )}
+                  Aprobă
+                </button>
+              </div>
+              {actionError && (
+                <p className="text-sm text-red-500 font-medium">
+                  {actionError}
+                </p>
+              )}
+              <button
+                onClick={() => setShowCancel(true)}
+                disabled={actionLoading}
+                className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
+              >
+                Anulează anunțul
+              </button>
+              <div className="h-px bg-slate-100 mt-2" />
+            </div>
+          )}
 
-              <div className="relative">
-                {!ratingIGave && !justReviewed ? (
-                  <div className="transition-all duration-500 ease-in-out opacity-100 translate-y-0">
-                    <ReviewForm
+          {/* ── CLAIMED (colector): waiting + cancel ── */}
+          {post.status === "CLAIMED" && isCollector && (
+            <div className="mb-7 space-y-3">
+              <div className="flex items-center gap-3">
+                <Clock className="w-5 h-5 text-blue-400 animate-pulse shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">
+                    Cererea ta a fost trimisă
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Se așteaptă aprobarea autorului…
+                  </p>
+                </div>
+              </div>
+              {actionError && (
+                <p className="text-sm text-red-500 font-medium">
+                  {actionError}
+                </p>
+              )}
+              <button
+                onClick={() => setShowCancel(true)}
+                disabled={actionLoading}
+                className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
+              >
+                Anulează cererea
+              </button>
+              <div className="h-px bg-slate-100 mt-2" />
+            </div>
+          )}
+
+          {/* ── IN_PROGRESS: countdown + code + cancel ── */}
+          {post.status === "IN_PROGRESS" && (
+            <div className="mb-7 space-y-5">
+              <div className="bg-slate-50 border border-[#123424]/10 rounded-2xl p-5 space-y-5">
+                {post.expiresAt && <Countdown deadline={post.expiresAt} />}
+                <div className="border-t border-[#123424]/10 pt-4">
+                  <p className="text-sm font-medium text-[#123424] mb-3">
+                    {isAuthor
+                      ? "Codul tău de confirmare"
+                      : "Introdu codul de confirmare"}
+                  </p>
+                  {isAuthor ? (
+                    showCode ? (
+                      <CodeDisplay postId={post.id} />
+                    ) : (
+                      <button
+                        onClick={() => setShowCode(true)}
+                        className="w-full flex items-center justify-center py-3.5 rounded-xl bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all cursor-pointer"
+                      >
+                        Afișează codul
+                        <LockKeyholeOpen className="w-4 h-4 ml-2" />
+                      </button>
+                    )
+                  ) : (
+                    <CodeEntry
                       postId={post.id}
-                      targetName={targetName}
-                      alreadyReviewed={false}
-                      onDone={handleReviewDone}
+                      onComplete={() => {
+                        setActiveCounts({
+                          activeCollections: 0,
+                          activeCollectionId: null,
+                        });
+                        mutate();
+                      }}
                     />
+                  )}
+                </div>
+                {actionError && (
+                  <div className="border-t border-[#123424]/10 pt-4">
+                    <p className="text-sm text-red-500 font-medium">
+                      {actionError}
+                    </p>
                   </div>
-                ) : (
-                  <div
-                    className={`bg-white border border-slate-100 rounded-2xl p-4 transition-[opacity,transform] duration-700 ease-out ${
-                      ratingIGave || justReviewed
-                        ? "opacity-100 translate-y-0"
-                        : "opacity-0 translate-y-4 pointer-events-none"
-                    }`}
-                    style={{
-                      position:
-                        ratingIGave || justReviewed ? "relative" : "absolute",
-                      visibility:
-                        ratingIGave || justReviewed ? "visible" : "hidden",
-                    }}
+                )}
+                <div className="border-t border-[#123424]/10 pt-4">
+                  <button
+                    onClick={() => setShowCancel(true)}
+                    disabled={actionLoading}
+                    className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
                   >
+                    {isAuthor ? "Anulează colectarea" : "Renunță la colectare"}
+                  </button>
+                </div>
+              </div>{" "}
+              <div className="h-px bg-slate-100 mb-7 mt-7" />
+            </div>
+          )}
+
+          {/* ── COMPLETED: summary + rating — before post info ── */}
+          {post.status === "COMPLETED" && post.transaction && (
+            <div className="mb-7 space-y-5">
+              <div className="bg-lime-50 border border-lime-200 rounded-2xl p-4 space-y-2.5">
+                <div className="flex items-center gap-2 mb-3">
+                  <CheckCircle className="w-4 h-4 text-lime-600" />
+                  <span className="text-sm font-bold text-lime-800">
+                    Tranzacție finalizată
+                  </span>
+                  <span className="text-xs text-lime-500 ml-auto">
+                    {new Date(post.transaction.completedAt).toLocaleDateString(
+                      "ro-RO",
+                      {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      },
+                    )}
+                  </span>
+                </div>
+                {[
+                  [
+                    "Sticle colectate",
+                    `${Math.round(post.transaction.actualValue / 0.5)} buc`,
+                  ],
+                  [
+                    "Valoare totală",
+                    `${post.transaction.actualValue.toFixed(2)} RON`,
+                  ],
+                  [
+                    isAuthor ? "Ai primit" : "Ai câștigat",
+                    `+${myActualEarning?.toFixed(2)} RON`,
+                  ],
+                ].map(([label, value], i) => (
+                  <div key={i} className="flex justify-between text-sm">
+                    <span className="text-slate-500">{label}</span>
+                    <span
+                      className={`font-bold ${i === 2 ? "text-lime-700" : "text-slate-800"}`}
+                    >
+                      {value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-4">
+                {ratingIReceived && (
+                  <div className="bg-white border border-slate-100 rounded-2xl p-4">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-slate-600">
-                          Rating-ul tău pentru{" "}
+                          Rating-ul primit de la{" "}
                           <span className="font-semibold text-slate-800">
                             {targetName}
                           </span>
@@ -1183,9 +1149,7 @@ function DetailPanel({
                             >
                               <path
                                 fill={
-                                  i <= (ratingIGave || 0)
-                                    ? "#FFDF00"
-                                    : "#e2e8f0"
+                                  i <= ratingIReceived ? "#FFDF00" : "#e2e8f0"
                                 }
                                 d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
                               />
@@ -1193,176 +1157,262 @@ function DetailPanel({
                           ))}
                         </div>
                       </div>
-
-                      {reviewIGave && (
+                      {reviewIReceived && (
                         <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 italic text-slate-700 text-sm">
-                          &quot;{reviewIGave}&quot;
-                        </div>
-                      )}
-
-                      {justReviewed && (
-                        <div className="flex items-center gap-2 text-[11px] text-lime-600 font-medium bg-lime-50 w-fit px-2 py-1 rounded-lg">
-                          <CheckCircle className="w-3 h-3" />
-                          Feedback trimis cu succes
+                          &quot;{reviewIReceived}&quot;
                         </div>
                       )}
                     </div>
                   </div>
                 )}
+
+                <div className="relative">
+                  {!ratingIGave && !justReviewed ? (
+                    <div className="transition-all duration-500 ease-in-out opacity-100 translate-y-0">
+                      <ReviewForm
+                        postId={post.id}
+                        targetName={targetName}
+                        alreadyReviewed={false}
+                        onDone={handleReviewDone}
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      className={`bg-white border border-slate-100 rounded-2xl p-4 transition-[opacity,transform] duration-700 ease-out ${
+                        ratingIGave || justReviewed
+                          ? "opacity-100 translate-y-0"
+                          : "opacity-0 translate-y-4 pointer-events-none"
+                      }`}
+                      style={{
+                        position:
+                          ratingIGave || justReviewed ? "relative" : "absolute",
+                        visibility:
+                          ratingIGave || justReviewed ? "visible" : "hidden",
+                      }}
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-slate-600">
+                            Rating-ul tău pentru{" "}
+                            <span className="font-semibold text-slate-800">
+                              {targetName}
+                            </span>
+                          </span>
+                          <div className="flex items-center gap-0.5">
+                            {[1, 2, 3, 4, 5].map((i) => (
+                              <svg
+                                key={i}
+                                className="w-4 h-4"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fill={
+                                    i <= (ratingIGave || 0)
+                                      ? "#FFDF00"
+                                      : "#e2e8f0"
+                                  }
+                                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+                                />
+                              </svg>
+                            ))}
+                          </div>
+                        </div>
+
+                        {reviewIGave && (
+                          <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 italic text-slate-700 text-sm">
+                            &quot;{reviewIGave}&quot;
+                          </div>
+                        )}
+
+                        {justReviewed && (
+                          <div className="flex items-center gap-2 text-[11px] text-lime-600 font-medium bg-lime-50 w-fit px-2 py-1 rounded-lg">
+                            <CheckCircle className="w-3 h-3" />
+                            Feedback trimis cu succes
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="h-px bg-slate-100 mb-7 mt-7" />
+            </div>
+          )}
+
+          {/* ── POST INFO ── */}
+          <div className="mb-7">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-2">
+              <div className="flex items-baseline gap-2">
+                <h1 className="text-4xl font-black text-[#123424] tracking-tight tabular-nums leading-none">
+                  {post.bottleCount}
+                </h1>
+                <span className="text-lg text-slate-400">sticle</span>
+              </div>
+
+              <div className="w-px h-8 bg-slate-200" />
+
+              <div className="flex items-baseline gap-1.5 ">
+                <span className="text-3xl font-black text-lime-700 tabular-nums leading-none">
+                  {(post.bottleCount * 0.5).toFixed(2)}
+                </span>
+                <span className="text-sm text-slate-400 uppercase tracking-wider">
+                  ron
+                </span>
               </div>
             </div>
-
-            <div className="h-px bg-slate-100 mb-7 mt-7" />
-          </div>
-        )}
-
-        {/* ── POST INFO ── */}
-        <div className="mb-7">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-2">
-            <div className="flex items-baseline gap-2">
-              <h1 className="text-4xl font-black text-[#123424] tracking-tight tabular-nums leading-none">
-                {post.bottleCount}
-              </h1>
-              <span className="text-lg text-slate-400">sticle</span>
-            </div>
-
-            <div className="w-px h-8 bg-slate-200" />
-
-            <div className="flex items-baseline gap-1.5 ">
-              <span className="text-3xl font-black text-lime-700 tabular-nums leading-none">
-                {(post.bottleCount * 0.5).toFixed(2)}
-              </span>
-              <span className="text-sm text-slate-400 uppercase tracking-wider">
-                ron
-              </span>
-            </div>
-          </div>
-          {post.locationName && (
-            <div className="flex items-center gap-1.5 text-slate-500 mb-1">
-              <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-              <span className="text-sm">{post.locationName}</span>
-            </div>
-          )}
-          {post.description && (
-            <p className="text-sm text-slate-600 mt-4 whitespace-pre-wrap">
-              {post.description}
-            </p>
-          )}
-          <div className="flex items-center gap-4 text-xs text-slate-400 mt-4">
-            <span className="flex items-center gap-1">
-              <Calendar className="w-3 h-3" /> Publicat în{" "}
-              {new Date(post.createdAt).toLocaleDateString("ro-RO", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
-            </span>
-            {post.status === "OPEN" && post.expiresAt && (
-              <div className="flex items-center gap-1.5 text-slate-400">
-                <Clock className="w-3 h-3" />
-                <ExpiryText expiresAt={post.expiresAt} />
+            {post.locationName && (
+              <div className="flex items-center gap-1.5 text-slate-500 mb-1">
+                <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                <span className="text-sm">{post.locationName}</span>
               </div>
             )}
-            {post.completedAt && (
+            {post.description && (
+              <p className="text-sm text-slate-600 mt-4 whitespace-pre-wrap">
+                {post.description}
+              </p>
+            )}
+            <div className="flex items-center gap-4 text-xs text-slate-400 mt-4">
               <span className="flex items-center gap-1">
-                <CheckCircle className="w-3 h-3 text-lime-400" />
-                Finalizat în{" "}
-                {new Date(post.completedAt).toLocaleDateString("ro-RO", {
+                <Calendar className="w-3 h-3" /> Publicat în{" "}
+                {new Date(post.createdAt).toLocaleDateString("ro-RO", {
                   day: "numeric",
-                  month: "short",
+                  month: "long",
+                  year: "numeric",
                 })}
               </span>
+              {post.status === "OPEN" && post.expiresAt && (
+                <div className="flex items-center gap-1.5 text-slate-400">
+                  <Clock className="w-3 h-3" />
+                  <ExpiryText expiresAt={post.expiresAt} />
+                </div>
+              )}
+              {post.completedAt && (
+                <span className="flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3 text-lime-400" />
+                  Finalizat în{" "}
+                  {new Date(post.completedAt).toLocaleDateString("ro-RO", {
+                    day: "numeric",
+                    month: "short",
+                  })}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="h-px bg-slate-100 mb-7" />
+
+          {/* ── EARNINGS SPLIT ── */}
+          <div className="mb-7">
+            {post.status === "COMPLETED" && myActualEarning !== null ? (
+              <>
+                <div className="flex items-baseline gap-2 mb-1">
+                  <span className="text-sm text-slate-500">{myLabel}</span>
+                  <span className="text-4xl font-black text-lime-600 leading-none">
+                    +{myActualEarning.toFixed(2)}
+                  </span>
+                  <span className="text-lg text-slate-400 font-light">RON</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-baseline gap-2 mb-1">
+                  <span className="text-sm text-slate-500">{myLabel}</span>
+                  <span className="text-4xl font-black text-lime-600 leading-none">
+                    +{myEarning.toFixed(2)}
+                  </span>
+                  <span className="text-lg text-slate-400 font-light">RON</span>
+                </div>
+              </>
             )}
-          </div>
-        </div>
-
-        <div className="h-px bg-slate-100 mb-7" />
-
-        {/* ── EARNINGS SPLIT ── */}
-        <div className="mb-7">
-          {post.status === "COMPLETED" && myActualEarning !== null ? (
-            <>
-              <div className="flex items-baseline gap-2 mb-1">
-                <span className="text-sm text-slate-500">{myLabel}</span>
-                <span className="text-4xl font-black text-lime-600 leading-none">
-                  +{myActualEarning.toFixed(2)}
-                </span>
-                <span className="text-lg text-slate-400 font-light">RON</span>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex items-baseline gap-2 mb-1">
-                <span className="text-sm text-slate-500">{myLabel}</span>
-                <span className="text-4xl font-black text-lime-600 leading-none">
-                  +{myEarning.toFixed(2)}
-                </span>
-                <span className="text-lg text-slate-400 font-light">RON</span>
-              </div>
-            </>
-          )}
-          <div className="mt-3 h-2.5 bg-slate-100 rounded-full overflow-hidden flex">
-            <div
-              className="h-full bg-[#123424] rounded-l-full"
-              style={{ width: `${posterPct}%` }}
-            />
-            <div
-              className="h-full bg-lime-400 rounded-r-full"
-              style={{ width: `${post.collectorSharePercent}%` }}
-            />
-          </div>
-          <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-            <span>
-              Autorul {posterPct}% ({posterEarning.toFixed(2)} RON)
-            </span>
-            <span>
-              Colectorul {post.collectorSharePercent}% (
-              {collectorEarning.toFixed(2)} RON)
-            </span>
-          </div>
-        </div>
-
-        <div className="h-px bg-slate-100 mb-7" />
-
-        {/* ── PARTICIPANTS ── */}
-        <div className="space-y-4 mb-7">
-          <PersonRow
-            user={post.author}
-            role="Autor"
-            showPhone={isCollector && post.status === "IN_PROGRESS"}
-          />
-          {showCollector && post.collector ? (
-            <PersonRow
-              user={post.collector}
-              role="Colector"
-              showPhone={isAuthor && post.status === "IN_PROGRESS"}
-            />
-          ) : post.status === "OPEN" ? (
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full border-2 border-dashed border-slate-200 flex items-center justify-center">
-                <span className="text-slate-300 text-base">?</span>
-              </div>
-              <span className="text-sm text-slate-400">
-                Se așteaptă un colector...
+            <div className="mt-3 h-2.5 bg-slate-100 rounded-full overflow-hidden flex">
+              <div
+                className="h-full bg-[#123424] rounded-l-full"
+                style={{ width: `${posterPct}%` }}
+              />
+              <div
+                className="h-full bg-lime-400 rounded-r-full"
+                style={{ width: `${post.collectorSharePercent}%` }}
+              />
+            </div>
+            <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+              <span>
+                Autorul {posterPct}% ({posterEarning.toFixed(2)} RON)
+              </span>
+              <span>
+                Colectorul {post.collectorSharePercent}% (
+                {collectorEarning.toFixed(2)} RON)
               </span>
             </div>
-          ) : null}
+          </div>
+
+          <div className="h-px bg-slate-100 mb-7" />
+
+          {/* ── PARTICIPANTS ── */}
+          <div className="space-y-4 mb-7">
+            <PersonRow
+              user={post.author}
+              role="Autor"
+              showPhone={isCollector && post.status === "IN_PROGRESS"}
+            />
+            {showCollector && post.collector ? (
+              <PersonRow
+                user={post.collector}
+                role="Colector"
+                showPhone={isAuthor && post.status === "IN_PROGRESS"}
+              />
+            ) : post.status === "OPEN" ? (
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full border-2 border-dashed border-slate-200 flex items-center justify-center">
+                  <span className="text-slate-300 text-base">?</span>
+                </div>
+                <span className="text-sm text-slate-400">
+                  Se așteaptă un colector...
+                </span>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="h-px bg-slate-100 mb-7" />
+
+          {/* ── NAVIGATION ── */}
+          <div className="mb-4">
+            <NavButtons lat={post.latitude} lng={post.longitude} />
+          </div>
         </div>
 
-        <div className="h-px bg-slate-100 mb-7" />
-
-        {/* ── NAVIGATION ── */}
-        <div className="mb-4">
-          <NavButtons lat={post.latitude} lng={post.longitude} />
-        </div>
-      </div>
-
-      {showCancel && (
-        <CancelModal
-          onConfirm={handleCancel}
-          onClose={() => setShowCancel(false)}
-          isInProgress={post.status === "IN_PROGRESS"}
-        />
+        {showCancel && (
+          <CancelModal
+            onConfirm={handleCancel}
+            onClose={() => setShowCancel(false)}
+            isInProgress={post.status === "IN_PROGRESS"}
+          />
+        )}
+      </div>{" "}
+      {post.status === "IN_PROGRESS" && (isAuthor || isCollector) && (
+        <>
+          <ChatTriggerButton
+            isOpen={chatOpen}
+            unread={chatUnread} // vezi mai jos
+            partnerName={
+              isAuthor ? (post.collector?.name ?? null) : post.author.name
+            }
+            onClick={() => setChatOpen(true)}
+          />
+          <PostChat
+            postId={post.id}
+            userId={userId}
+            isOpen={chatOpen}
+            onClose={() => setChatOpen(false)}
+            isParticipant
+            partnerName={
+              isAuthor ? (post.collector?.name ?? null) : post.author.name
+            }
+            partnerImage={
+              isAuthor ? (post.collector?.image ?? null) : post.author.image
+            }
+          />
+        </>
       )}
     </div>
   );
@@ -1426,6 +1476,7 @@ export default function PostDetailClient({
         <div className="flex-1 bg-white">
           <DetailPanel
             post={post}
+            userId={userId}
             isAuthor={!!isAuthor}
             isCollector={!!isCollector}
             mutate={mutate}
@@ -1445,6 +1496,7 @@ export default function PostDetailClient({
         <div className="flex-1 bg-white border-l border-slate-100 overflow-hidden">
           <DetailPanel
             post={post}
+            userId={userId}
             isAuthor={!!isAuthor}
             isCollector={!!isCollector}
             mutate={mutate}

@@ -6,7 +6,9 @@ export type WsEventType =
   | "post:code_ready"
   | "post:completed"
   | "post:cancelled"
-  | "post:rating_updated";
+  | "post:rating_updated"
+  | "chat:message"
+  | "chat:typing";
 
 export interface WsEvent<T = unknown> {
   type: WsEventType;
@@ -135,4 +137,34 @@ export function publishRatingUpdated(
   for (const uid of affectedUserIds) {
     publishToUser(uid, event);
   }
+}
+
+export interface ChatMessagePayload {
+  id: string;
+  postId: string;
+  senderId: string;
+  senderName: string | null;
+  senderImage: string | null;
+  text: string;
+  createdAt: string;
+}
+
+export function publishChatMessage(
+  postId: string,
+  payload: ChatMessagePayload,
+): void {
+  publishToPost(postId, { type: "chat:message" as WsEventType, payload });
+}
+
+export interface ChatTypingPayload {
+  postId: string;
+  senderId: string;
+  senderName: string | null;
+}
+
+export function publishChatTyping(
+  postId: string,
+  payload: ChatTypingPayload,
+): void {
+  publishToPost(postId, { type: "chat:typing" as WsEventType, payload });
 }
