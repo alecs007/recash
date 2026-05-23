@@ -851,7 +851,6 @@ function DetailPanel({
       if (!res.ok) {
         setActionError(j.error ?? "Eroare");
       } else {
-        // Instant optimistic update for the acting user
         if (isAuthor) {
           setActiveCounts({ activePosts: 0, activePostId: null });
         } else {
@@ -869,6 +868,23 @@ function DetailPanel({
   return (
     <div className="h-full overflow-y-auto" data-lenis-prevent>
       <div className="px-6 lg:px-10 py-6 lg:py-8 space-y-0 max-w-xl lg:max-w-none">
+        {/* ── BACK BUTTON + STATUS — always at the top ── */}
+        <div className="flex items-center justify-between mb-7">
+          <Link
+            href={`/${isAuthor ? "profil/postari" : "map"}`}
+            className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-700 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            {isAuthor ? "Postările mele" : "Harta de colectare"}
+          </Link>
+          <span
+            className={`text-xs font-bold px-3 py-1.5 rounded-full ${statusCfg.className}`}
+          >
+            {statusCfg.label}
+          </span>
+        </div>
+
+        {/* ── IN_PROGRESS: countdown + code — before post info ── */}
         {post.status === "IN_PROGRESS" && (
           <div className="mb-7 bg-slate-50 border border-[#123424]/10 rounded-2xl p-5 space-y-5">
             {post.expiresAt && <Countdown deadline={post.expiresAt} />}
@@ -906,138 +922,58 @@ function DetailPanel({
             </div>
           </div>
         )}
-        <div className="flex items-center justify-between mb-7">
-          <Link
-            href={`/${isAuthor ? "profil/postari" : "map"}`}
-            className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-700 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {isAuthor ? "Postările mele" : "Harta de colectare"}
-          </Link>
-          <span
-            className={`text-xs font-bold px-3 py-1.5 rounded-full ${statusCfg.className}`}
-          >
-            {statusCfg.label}
-          </span>
-        </div>
 
-        <div className="mb-7">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-2">
-            <div className="flex items-baseline gap-2">
-              <h1 className="text-4xl font-black text-[#123424] tracking-tight tabular-nums leading-none">
-                {post.bottleCount}
-              </h1>
-              <span className="text-lg text-slate-400">sticle</span>
-            </div>
-
-            <div className="w-px h-8 bg-slate-200" />
-
-            <div className="flex items-baseline gap-1.5 ">
-              <span className="text-3xl font-black text-lime-700 tabular-nums leading-none">
-                {(post.bottleCount * 0.5).toFixed(2)}
-              </span>
-              <span className="text-sm text-slate-400 uppercase tracking-wider">
-                ron
-              </span>
-            </div>
-          </div>
-          {post.locationName && (
-            <div className="flex items-center gap-1.5 text-slate-500 mb-1">
-              <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-              <span className="text-sm">{post.locationName}</span>
-            </div>
-          )}
-          {post.description && (
-            <p className="text-sm text-slate-600 mt-4 whitespace-pre-wrap">
-              {post.description}
-            </p>
-          )}
-          <div className="flex items-center gap-4 text-xs text-slate-400 mt-4">
-            <span className="flex items-center gap-1">
-              <Calendar className="w-3 h-3" /> Publicat în{" "}
-              {new Date(post.createdAt).toLocaleDateString("ro-RO", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
-            </span>
-            {post.status === "OPEN" && post.expiresAt && (
-              <div className="flex items-center gap-1.5 text-slate-400">
-                <Clock className="w-3 h-3" />
-                <ExpiryText expiresAt={post.expiresAt} />
-              </div>
-            )}
-            {post.completedAt && (
-              <span className="flex items-center gap-1">
-                <CheckCircle className="w-3 h-3 text-lime-400" />
-                Finalizat în{" "}
-                {new Date(post.completedAt).toLocaleDateString("ro-RO", {
-                  day: "numeric",
-                  month: "short",
-                })}
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div className="h-px bg-slate-100 mb-7" />
-
-        <div className="mb-7">
-          {post.status === "COMPLETED" && myActualEarning !== null ? (
-            <>
-              <div className="flex items-baseline gap-2 mb-1">
-                <span className="text-sm text-slate-500">{myLabel}</span>
-                <span className="text-4xl font-black text-lime-600 leading-none">
-                  +{myActualEarning.toFixed(2)}
-                </span>
-                <span className="text-lg text-slate-400 font-light">RON</span>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex items-baseline gap-2 mb-1">
-                <span className="text-sm text-slate-500">{myLabel}</span>
-                <span className="text-4xl font-black text-lime-600 leading-none">
-                  +{myEarning.toFixed(2)}
-                </span>
-                <span className="text-lg text-slate-400 font-light">RON</span>
-              </div>
-            </>
-          )}
-          <div className="mt-3 h-2.5 bg-slate-100 rounded-full overflow-hidden flex">
-            <div
-              className="h-full bg-[#123424] rounded-l-full"
-              style={{ width: `${posterPct}%` }}
-            />
-            <div
-              className="h-full bg-lime-400 rounded-r-full"
-              style={{ width: `${post.collectorSharePercent}%` }}
-            />
-          </div>
-          <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-            <span>
-              Autorul {posterPct}% ({posterEarning.toFixed(2)} RON)
-            </span>
-            <span>
-              Colectorul {post.collectorSharePercent}% (
-              {collectorEarning.toFixed(2)} RON)
-            </span>
-          </div>
-        </div>
-
-        <div className="h-px bg-slate-100 mb-7" />
-
-        {post.status === "OPEN" && isAuthor && (
-          <div className="mb-7">
-            <p className="text-sm text-slate-500 leading-relaxed">
-              Anunțul tău este vizibil pe hartă. Vei fi notificat imediat ce un
-              colector face o cerere.
-            </p>
-          </div>
-        )}
-
+        {/* ── CLAIMED (autor): collector card + approve/deny — before post info ── */}
         {post.status === "CLAIMED" && isAuthor && post.collector && (
           <div className="mb-7 space-y-4">
+            {/* Collector preview with avatar + reputation */}
+            <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
+              <div className="w-11 h-11 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
+                {post.collector.image ? (
+                  <Image
+                    src={post.collector.image}
+                    alt={post.collector.name ?? ""}
+                    width={44}
+                    height={44}
+                    priority
+                    className="object-cover w-full h-full"
+                  />
+                ) : (
+                  <span className="text-sm font-bold text-slate-500">
+                    {post.collector.name?.[0] ?? "?"}
+                  </span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-slate-900 truncate">
+                  {post.collector.name ?? "Colector"}
+                </p>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <Star className="w-3 h-3 text-[#FFDF00] fill-[#FFDF00]" />
+                  <span className="text-xs text-slate-500">
+                    {post.collector.reputationScore.toFixed(1)}{" "}
+                    <span className="text-slate-400">
+                      ({post.collector.ratingCount}{" "}
+                      {post.collector.ratingCount === 1
+                        ? "recenzie"
+                        : "recenzii"}
+                      )
+                    </span>
+                  </span>
+                </div>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="text-[10px] text-slate-400 leading-none mb-0.5">
+                  vrea să colecteze
+                </p>
+                <p className="text-base font-black text-slate-800">
+                  {post.bottleCount}{" "}
+                  <span className="text-xs font-normal text-slate-400">
+                    sticle
+                  </span>
+                </p>
+              </div>
+            </div>
             <div>
               <p className="text-sm font-semibold text-slate-900 mb-0.5">
                 {post.collector.name} vrea să colecteze
@@ -1073,6 +1009,7 @@ function DetailPanel({
           </div>
         )}
 
+        {/* ── CLAIMED (colector): waiting state — before post info ── */}
         {post.status === "CLAIMED" && isCollector && (
           <div className="mb-7 flex items-center gap-3">
             <Clock className="w-5 h-5 text-blue-400 animate-pulse shrink-0" />
@@ -1087,6 +1024,7 @@ function DetailPanel({
           </div>
         )}
 
+        {/* ── COMPLETED: summary + rating — before post info ── */}
         {post.status === "COMPLETED" && post.transaction && (
           <div className="mb-7 space-y-5">
             <div className="bg-lime-50 border border-lime-200 rounded-2xl p-4 space-y-2.5">
@@ -1236,10 +1174,129 @@ function DetailPanel({
           </div>
         )}
 
+        {/* ── POST INFO ── */}
+        <div className="mb-7">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-2">
+            <div className="flex items-baseline gap-2">
+              <h1 className="text-4xl font-black text-[#123424] tracking-tight tabular-nums leading-none">
+                {post.bottleCount}
+              </h1>
+              <span className="text-lg text-slate-400">sticle</span>
+            </div>
+
+            <div className="w-px h-8 bg-slate-200" />
+
+            <div className="flex items-baseline gap-1.5 ">
+              <span className="text-3xl font-black text-lime-700 tabular-nums leading-none">
+                {(post.bottleCount * 0.5).toFixed(2)}
+              </span>
+              <span className="text-sm text-slate-400 uppercase tracking-wider">
+                ron
+              </span>
+            </div>
+          </div>
+          {post.locationName && (
+            <div className="flex items-center gap-1.5 text-slate-500 mb-1">
+              <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+              <span className="text-sm">{post.locationName}</span>
+            </div>
+          )}
+          {post.description && (
+            <p className="text-sm text-slate-600 mt-4 whitespace-pre-wrap">
+              {post.description}
+            </p>
+          )}
+          <div className="flex items-center gap-4 text-xs text-slate-400 mt-4">
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" /> Publicat în{" "}
+              {new Date(post.createdAt).toLocaleDateString("ro-RO", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
+            </span>
+            {post.status === "OPEN" && post.expiresAt && (
+              <div className="flex items-center gap-1.5 text-slate-400">
+                <Clock className="w-3 h-3" />
+                <ExpiryText expiresAt={post.expiresAt} />
+              </div>
+            )}
+            {post.completedAt && (
+              <span className="flex items-center gap-1">
+                <CheckCircle className="w-3 h-3 text-lime-400" />
+                Finalizat în{" "}
+                {new Date(post.completedAt).toLocaleDateString("ro-RO", {
+                  day: "numeric",
+                  month: "short",
+                })}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="h-px bg-slate-100 mb-7" />
+
+        {/* ── EARNINGS SPLIT ── */}
+        <div className="mb-7">
+          {post.status === "COMPLETED" && myActualEarning !== null ? (
+            <>
+              <div className="flex items-baseline gap-2 mb-1">
+                <span className="text-sm text-slate-500">{myLabel}</span>
+                <span className="text-4xl font-black text-lime-600 leading-none">
+                  +{myActualEarning.toFixed(2)}
+                </span>
+                <span className="text-lg text-slate-400 font-light">RON</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-baseline gap-2 mb-1">
+                <span className="text-sm text-slate-500">{myLabel}</span>
+                <span className="text-4xl font-black text-lime-600 leading-none">
+                  +{myEarning.toFixed(2)}
+                </span>
+                <span className="text-lg text-slate-400 font-light">RON</span>
+              </div>
+            </>
+          )}
+          <div className="mt-3 h-2.5 bg-slate-100 rounded-full overflow-hidden flex">
+            <div
+              className="h-full bg-[#123424] rounded-l-full"
+              style={{ width: `${posterPct}%` }}
+            />
+            <div
+              className="h-full bg-lime-400 rounded-r-full"
+              style={{ width: `${post.collectorSharePercent}%` }}
+            />
+          </div>
+          <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+            <span>
+              Autorul {posterPct}% ({posterEarning.toFixed(2)} RON)
+            </span>
+            <span>
+              Colectorul {post.collectorSharePercent}% (
+              {collectorEarning.toFixed(2)} RON)
+            </span>
+          </div>
+        </div>
+
+        <div className="h-px bg-slate-100 mb-7" />
+
+        {/* ── OPEN: status message ── */}
+        {post.status === "OPEN" && isAuthor && (
+          <div className="mb-7">
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Anunțul tău este vizibil pe hartă. Vei fi notificat imediat ce un
+              colector face o cerere.
+            </p>
+          </div>
+        )}
+
         {actionError && !["CLAIMED"].includes(post.status) && (
           <p className="text-sm text-red-500 font-medium mb-5">{actionError}</p>
         )}
 
+        {/* ── CANCEL LINK ── */}
         {canCancel && (
           <div className="mb-7">
             <button
@@ -1264,6 +1321,7 @@ function DetailPanel({
           <div className="h-px bg-slate-100 mb-7" />
         )}
 
+        {/* ── PARTICIPANTS ── */}
         <div className="space-y-4 mb-7">
           <PersonRow
             user={post.author}
@@ -1290,6 +1348,7 @@ function DetailPanel({
 
         <div className="h-px bg-slate-100 mb-7" />
 
+        {/* ── NAVIGATION ── */}
         <div className="mb-4">
           <NavButtons lat={post.latitude} lng={post.longitude} />
         </div>
