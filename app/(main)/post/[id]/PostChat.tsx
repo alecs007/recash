@@ -89,8 +89,17 @@ function MessageBubble({
   partnerName,
 }: BubbleProps) {
   return (
-    <div
-      className={`flex items-end gap-2 ${isMe ? "flex-row-reverse" : "flex-row"}`}
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      transition={{
+        type: "spring",
+        stiffness: 400,
+        damping: 30,
+      }}
+      className={`flex items-end gap-2 origin-bottom ${isMe ? "flex-row-reverse" : "flex-row"}`}
     >
       {!isMe && (
         <div className="w-7 shrink-0 self-end">
@@ -121,7 +130,7 @@ function MessageBubble({
           </span>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -198,7 +207,7 @@ export function PostChat({
   } = usePostChat(postId, userId, isParticipant, isOpen);
 
   const [text, setText] = useState("");
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const grouped = groupMessages(messages);
 
@@ -242,11 +251,34 @@ export function PostChat({
   }, [isOpen, isMobile]);
 
   useEffect(() => {
-    if (isOpen) {
-      requestAnimationFrame(() => {
-        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-      });
+    if (!isOpen) return;
+
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const targetScroll = container.scrollHeight - container.clientHeight;
+    const startScroll = container.scrollTop;
+    const distance = targetScroll - startScroll;
+
+    if (distance <= 0) return;
+
+    const duration = 400;
+    let start: number | null = null;
+
+    function step(timestamp: number) {
+      if (!start) start = timestamp;
+      const progress = Math.min((timestamp - start) / duration, 1);
+
+      const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+
+      container!.scrollTop = startScroll + distance * ease;
+
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      }
     }
+
+    requestAnimationFrame(step);
   }, [messages, isPartnerTyping, isOpen]);
 
   useEffect(() => {
@@ -280,7 +312,7 @@ export function PostChat({
 
   if (!mounted) return null;
 
-  // Împachetăm conținutul chat-ului pentru a fi returnat fie direct, fie prin Portal
+  // Împachetăm conținutul chat-ului
   const chatContent = (
     <AnimatePresence>
       {isOpen && (
@@ -304,8 +336,8 @@ export function PostChat({
             exit="exit"
             className={[
               "flex flex-col bg-white",
-              "fixed top-0 left-0 w-full h-[100dvh] z-[9999]", // Pe mobil: portal fullscreen
-              "lg:absolute lg:inset-0 lg:h-auto lg:w-auto lg:z-10", // Pe desktop: stă cum era, în părintele său
+              "fixed top-0 left-0 w-full h-[100dvh] z-[9999]",
+              "lg:absolute lg:inset-0 lg:h-auto lg:w-auto lg:z-10",
               "origin-bottom lg:origin-center",
             ].join(" ")}
           >
@@ -335,64 +367,71 @@ export function PostChat({
             </div>
 
             <div
-              className="flex-1 overflow-y-auto overscroll-y-contain px-4 py-5 space-y-1.5 min-h-0"
+              ref={scrollContainerRef}
+              className="flex-1 overflow-y-auto overscroll-y-contain px-4 py-5 space-y-2 min-h-0"
               data-lenis-prevent
             >
-              {loading ? (
-                <div className="flex items-center justify-center h-32">
-                  <Loader2 className="w-5 h-5 animate-spin text-slate-300" />
-                </div>
-              ) : messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-12 px-6">
-                  <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center">
-                    <MessageCircle className="w-5 h-5 text-slate-300" />
+              <AnimatePresence initial={false} mode="popLayout">
+                {loading ? (
+                  <div className="flex items-center justify-center h-32">
+                    <Loader2 className="w-5 h-5 animate-spin text-slate-300" />
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-600 mb-1">
-                      Niciun mesaj
-                    </p>
-                    <p className="text-xs text-slate-400 leading-relaxed">
-                      Coordonează colectarea direct cu {firstName}.
-                    </p>
+                ) : messages.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-12 px-6">
+                    <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center">
+                      <MessageCircle className="w-5 h-5 text-slate-300" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-600 mb-1">
+                        Niciun mesaj
+                      </p>
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        Coordonează colectarea direct cu {firstName}.
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <>
-                  {grouped.map(({ msg, isFirst, isLast }) => (
-                    <MessageBubble
-                      key={msg.id}
-                      msg={msg}
-                      isMe={msg.senderId === userId}
-                      showAvatar={isFirst}
-                      isLastInGroup={isLast}
-                      partnerImage={partnerImage}
-                      partnerName={partnerName}
-                    />
-                  ))}
+                ) : (
+                  <>
+                    {grouped.map(({ msg, isFirst, isLast }) => (
+                      <MessageBubble
+                        key={msg.id}
+                        msg={msg}
+                        isMe={msg.senderId === userId}
+                        showAvatar={isFirst}
+                        isLastInGroup={isLast}
+                        partnerImage={partnerImage}
+                        partnerName={partnerName}
+                      />
+                    ))}
 
-                  <AnimatePresence>
-                    {isPartnerTyping && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 4 }}
-                        transition={{ duration: 0.15 }}
-                        className="flex items-end gap-2"
-                      >
-                        <div className="w-7 shrink-0 self-end">
-                          <Avatar
-                            name={partnerName}
-                            image={partnerImage}
-                            size={28}
-                          />
-                        </div>
-                        <TypingBubble />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </>
-              )}
-              <div ref={bottomRef} />
+                    <AnimatePresence mode="popLayout">
+                      {isPartnerTyping && (
+                        <motion.div
+                          key="typing-indicator"
+                          layout
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{
+                            opacity: 0,
+                            height: 0,
+                            transition: { duration: 0.2 },
+                          }}
+                          className="flex items-end gap-2 origin-bottom-left pb-10"
+                        >
+                          <div className="w-7 shrink-0 self-end">
+                            <Avatar
+                              name={partnerName}
+                              image={partnerImage}
+                              size={28}
+                            />
+                          </div>
+                          <TypingBubble />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </>
+                )}
+              </AnimatePresence>
             </div>
 
             <AnimatePresence>
@@ -454,7 +493,6 @@ export function PostChat({
     </AnimatePresence>
   );
 
-  // Returnăm Portal pe mobil, și inline pe desktop (așa cum era layout-ul inițial)
   return isMobile ? createPortal(chatContent, document.body) : chatContent;
 }
 
@@ -483,11 +521,14 @@ export function ChatTriggerButton({
       {!isOpen && (
         <motion.div
           key="chat-trigger-btn"
-          // Am înlocuit type="spring" cu o apariție "easeOut" mult mai fină și mai calmă
-          initial={{ scale: 0.95, opacity: 0, y: 15 }}
+          initial={{ scale: 0.85, opacity: 0, y: 24 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.95, opacity: 0, y: 15 }}
-          transition={{ duration: 0.35, ease: "easeOut" }}
+          exit={{ scale: 0.9, opacity: 0, y: 15 }}
+          transition={{
+            duration: 0.45,
+            ease: [0.16, 1, 0.3, 1],
+            delay: 0.15,
+          }}
           className="fixed bottom-6 right-4 z-[9990] lg:absolute lg:bottom-6 lg:right-6"
         >
           <motion.button
