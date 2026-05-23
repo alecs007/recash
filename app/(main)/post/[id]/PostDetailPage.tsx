@@ -405,7 +405,7 @@ function CancelModal({
   isInProgress: boolean;
 }) {
   return (
-    <div className="fixed inset-0 z-[1002] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[1010] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
         <div className="flex items-start justify-between mb-4">
           <h3 className="font-bold text-slate-900">
