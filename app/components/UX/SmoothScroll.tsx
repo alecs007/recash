@@ -7,6 +7,16 @@ interface SmoothScrollProps {
   children: ReactNode;
 }
 
+let _lenis: Lenis | null = null;
+
+export function scrollToTop() {
+  if (_lenis) {
+    _lenis.scrollTo(0, { immediate: true });
+  } else {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }
+}
+
 export default function SmoothScroll({ children }: SmoothScrollProps) {
   const rafIdRef = useRef<number | null>(null);
   const lenisRef = useRef<Lenis | null>(null);
@@ -17,6 +27,7 @@ export default function SmoothScroll({ children }: SmoothScrollProps) {
       smoothWheel: true,
     });
     lenisRef.current = lenis;
+    _lenis = lenis;
 
     function raf(time: number) {
       lenis.raf(time);
@@ -31,12 +42,11 @@ export default function SmoothScroll({ children }: SmoothScrollProps) {
     resizeObserver.observe(document.body);
 
     return () => {
-      if (rafIdRef.current) {
-        cancelAnimationFrame(rafIdRef.current);
-      }
+      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
       lenis.destroy();
       resizeObserver.disconnect();
       lenisRef.current = null;
+      _lenis = null;
     };
   }, []);
 

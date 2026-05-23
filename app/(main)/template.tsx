@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { showToast } from "@/lib/toast";
+import { scrollToTop } from "@/app/components/UX/SmoothScroll";
 
 type ToastLevel = "success" | "info" | "warning" | "error";
 
@@ -50,7 +51,7 @@ export default function Template({ children }: { children: React.ReactNode }) {
   const isMapPage = pathname === "/map";
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "instant" });
+    scrollToTop();
   }, [pathname]);
 
   useEffect(() => {

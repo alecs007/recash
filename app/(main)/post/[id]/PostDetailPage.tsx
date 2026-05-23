@@ -405,7 +405,7 @@ function CancelModal({
   isInProgress: boolean;
 }) {
   return (
-    <div className="fixed inset-0 z-[1010] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
         <div className="flex items-start justify-between mb-4">
           <h3 className="font-bold text-slate-900">
@@ -883,7 +883,7 @@ function DetailPanel({
         {/* ── OPEN (autor): visible message + cancel ── */}
         {post.status === "OPEN" && isAuthor && (
           <div className="mb-7 space-y-3">
-            <p className="text-sm text-slate-500 leading-relaxed">
+            <p className="text-sm text-slate-600 leading-relaxed">
               Anunțul tău este vizibil pe hartă. Vei fi notificat imediat ce un
               colector face o cerere.
             </p>
