@@ -51,7 +51,7 @@ export default function Template({ children }: { children: React.ReactNode }) {
   const isMapPage = pathname === "/map";
 
   useEffect(() => {
-    scrollToTop(true);
+    scrollToTop();
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
   }, [pathname]);
@@ -71,11 +71,11 @@ export default function Template({ children }: { children: React.ReactNode }) {
   return (
     <motion.div
       key={pathname}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      initial={isMapPage ? { opacity: 0 } : { opacity: 0, scale: 0.98, y: 8 }}
+      animate={isMapPage ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
+      exit={isMapPage ? { opacity: 0 } : { opacity: 0, scale: 1.02, y: -8 }}
       transition={{
-        duration: isMapPage ? 0.8 : 0.15,
+        duration: 0.8,
         ease: [0.22, 1, 0.36, 1],
       }}
       style={{ width: "100%" }}

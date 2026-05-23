@@ -9,11 +9,15 @@ interface SmoothScrollProps {
 
 let _lenis: Lenis | null = null;
 
-export function scrollToTop(immediate = false) {
+export function scrollToTop() {
   if (_lenis) {
-    _lenis.scrollTo(0, { immediate });
+    _lenis.stop();
+    window.scrollTo({ top: 0, behavior: "instant" });
+    requestAnimationFrame(() => {
+      _lenis?.start();
+    });
   } else {
-    window.scrollTo({ top: 0, behavior: immediate ? "instant" : "smooth" });
+    window.scrollTo({ top: 0, behavior: "instant" });
   }
 }
 
