@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
 
 interface Props {
   page: number;
@@ -8,19 +8,33 @@ interface Props {
 }
 
 export function PageTransition({ page, children }: Props) {
+  const [visible, setVisible] = useState(true);
+  const [displayed, setDisplayed] = useState(children);
+  const prevPage = useRef(page);
+
+  useEffect(() => {
+    if (page === prevPage.current) {
+      setDisplayed(children);
+      return;
+    }
+
+    setVisible(false);
+    const t = setTimeout(() => {
+      setDisplayed(children);
+      prevPage.current = page;
+      setVisible(true);
+    }, 180);
+    return () => clearTimeout(t);
+  }, [page, children]);
+
   return (
-    <div className="relative">
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={page}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2, ease: "easeOut" }}
-        >
-          {children}
-        </motion.div>
-      </AnimatePresence>
+    <div
+      style={{
+        opacity: visible ? 1 : 0,
+        transition: "opacity 0.18s ease",
+      }}
+    >
+      {displayed}
     </div>
   );
 }
