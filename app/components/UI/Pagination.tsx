@@ -12,7 +12,7 @@ export function Pagination({
 }) {
   const handlePageChange = (newPage: number) => {
     scrollToTop(false);
-    setTimeout(() => onPageChange(newPage), 500);
+    setTimeout(() => onPageChange(newPage), 300);
   };
 
   return (

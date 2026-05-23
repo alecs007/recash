@@ -209,7 +209,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <header className="sticky top-0 z-[1001] backdrop-blur-md bg-white">
+      <header className="sticky top-0 z-[1001] bg-white">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <Image
