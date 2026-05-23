@@ -106,7 +106,7 @@ export default function AllPostsPage() {
         ))}
       </div>
 
-      <PageTransition page={page}>
+      <PageTransition page={isLoading ? -1 : page}>
         {isLoading ? (
           <Skeleton />
         ) : posts.length === 0 ? (

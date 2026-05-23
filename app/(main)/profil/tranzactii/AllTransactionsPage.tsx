@@ -121,7 +121,7 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
           </button>
         ))}
       </div>
-      <PageTransition page={page}>
+      <PageTransition page={isLoading ? -1 : page}>
         {isLoading ? (
           <Skeleton />
         ) : transactions.length === 0 ? (

@@ -177,11 +177,28 @@ export default function NotificationsPage() {
 
   const handleMarkAllRead = async () => {
     setMarkingAll(true);
+
+    revalidate(
+      (current: ApiResponse | undefined) =>
+        current
+          ? {
+              ...current,
+              unreadCount: 0,
+              notifications: current.notifications.map((n) => ({
+                ...n,
+                read: true,
+              })),
+            }
+          : current,
+      { revalidate: false },
+    );
+
     await fetch("/api/v1/profile/notifications", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ markAllRead: true }),
     });
+
     revalidate();
     invalidateBell();
     setMarkingAll(false);
@@ -241,7 +258,7 @@ export default function NotificationsPage() {
           </button>
         ))}
       </div>
-      <PageTransition page={page}>
+      <PageTransition page={isLoading ? -1 : page}>
         {isLoading ? (
           <Skeleton />
         ) : notifications.length === 0 ? (
