@@ -788,10 +788,6 @@ function DetailPanel({
       post.status === "CANCELLED" ||
       (post.status === "CLAIMED" && isAuthor));
 
-  const canCancel =
-    ["OPEN", "CLAIMED", "IN_PROGRESS"].includes(post.status) &&
-    (isAuthor || isCollector);
-
   const handleReviewDone = () => {
     setJustReviewed(true);
     mutate();
@@ -868,7 +864,7 @@ function DetailPanel({
   return (
     <div className="h-full overflow-y-auto" data-lenis-prevent>
       <div className="px-6 lg:px-10 py-6 lg:py-8 space-y-0 max-w-xl lg:max-w-none">
-        {/* ── BACK BUTTON + STATUS — always at the top ── */}
+        {/* ── BACK BUTTON + STATUS ── */}
         <div className="flex items-center justify-between mb-7">
           <Link
             href={`/${isAuthor ? "profil/postari" : "map"}`}
@@ -884,49 +880,27 @@ function DetailPanel({
           </span>
         </div>
 
-        {/* ── IN_PROGRESS: countdown + code — before post info ── */}
-        {post.status === "IN_PROGRESS" && (
-          <div className="mb-7 bg-slate-50 border border-[#123424]/10 rounded-2xl p-5 space-y-5">
-            {post.expiresAt && <Countdown deadline={post.expiresAt} />}
-
-            <div className="border-t border-[#123424]/10 pt-4">
-              <p className="text-sm font-medium text-[#123424] mb-3">
-                {isAuthor
-                  ? "Codul tău de confirmare"
-                  : "Introdu codul de confirmare"}
-              </p>
-              {isAuthor ? (
-                showCode ? (
-                  <CodeDisplay postId={post.id} />
-                ) : (
-                  <button
-                    onClick={() => setShowCode(true)}
-                    className="w-full flex items-center justify-center py-3.5 rounded-xl bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all cursor-pointer"
-                  >
-                    Afișează codul
-                    <LockKeyholeOpen className="w-4 h-4 ml-2" />
-                  </button>
-                )
-              ) : (
-                <CodeEntry
-                  postId={post.id}
-                  onComplete={() => {
-                    setActiveCounts({
-                      activeCollections: 0,
-                      activeCollectionId: null,
-                    });
-                    mutate();
-                  }}
-                />
-              )}
-            </div>
+        {/* ── OPEN (autor): visible message + cancel ── */}
+        {post.status === "OPEN" && isAuthor && (
+          <div className="mb-7 space-y-3">
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Anunțul tău este vizibil pe hartă. Vei fi notificat imediat ce un
+              colector face o cerere.
+            </p>
+            <button
+              onClick={() => setShowCancel(true)}
+              disabled={actionLoading}
+              className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
+            >
+              Anulează anunțul
+            </button>
+            <div className="h-px bg-slate-100 mt-4" />
           </div>
         )}
 
-        {/* ── CLAIMED (autor): collector card + approve/deny — before post info ── */}
+        {/* ── CLAIMED (autor): collector card + approve/deny + cancel ── */}
         {post.status === "CLAIMED" && isAuthor && post.collector && (
           <div className="mb-7 space-y-4">
-            {/* Collector preview with avatar + reputation */}
             <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
               <div className="w-11 h-11 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
                 {post.collector.image ? (
@@ -945,42 +919,25 @@ function DetailPanel({
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-slate-900 truncate">
-                  {post.collector.name ?? "Colector"}
-                </p>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <Star className="w-3 h-3 text-[#FFDF00] fill-[#FFDF00]" />
-                  <span className="text-xs text-slate-500">
-                    {post.collector.reputationScore.toFixed(1)}{" "}
-                    <span className="text-slate-400">
-                      ({post.collector.ratingCount}{" "}
-                      {post.collector.ratingCount === 1
-                        ? "recenzie"
-                        : "recenzii"}
-                      )
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-bold text-slate-900 truncate">
+                    {post.collector.name ?? "Colector"}
+                  </p>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Star className="w-3 h-3 text-[#FFDF00] fill-[#FFDF00]" />
+                    <span className="text-xs text-slate-500">
+                      {post.collector.reputationScore.toFixed(1)}{" "}
+                      <span className="text-slate-400">
+                        ({post.collector.ratingCount})
+                      </span>
                     </span>
-                  </span>
+                  </div>
                 </div>
-              </div>
-              <div className="shrink-0 text-right">
-                <p className="text-[10px] text-slate-400 leading-none mb-0.5">
-                  vrea să colecteze
-                </p>
-                <p className="text-base font-black text-slate-800">
-                  {post.bottleCount}{" "}
-                  <span className="text-xs font-normal text-slate-400">
-                    sticle
-                  </span>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Vrea să colecteze sticlele tale. Odată aprobat, va avea 30 min
+                  la dispoziție să ajungă.
                 </p>
               </div>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-900 mb-0.5">
-                {post.collector.name} vrea să colecteze
-              </p>
-              <p className="text-xs text-slate-500">
-                Odată aprobat, colectorul are la dispoziție 30 min să ajungă.
-              </p>
             </div>
             {actionError && (
               <p className="text-sm text-red-500 font-medium">{actionError}</p>
@@ -1006,21 +963,102 @@ function DetailPanel({
                 Aprobă
               </button>
             </div>
+            {actionError && (
+              <p className="text-sm text-red-500 font-medium">{actionError}</p>
+            )}
+            <button
+              onClick={() => setShowCancel(true)}
+              disabled={actionLoading}
+              className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
+            >
+              Anulează anunțul
+            </button>
+            <div className="h-px bg-slate-100 mt-2" />
           </div>
         )}
 
-        {/* ── CLAIMED (colector): waiting state — before post info ── */}
+        {/* ── CLAIMED (colector): waiting + cancel ── */}
         {post.status === "CLAIMED" && isCollector && (
-          <div className="mb-7 flex items-center gap-3">
-            <Clock className="w-5 h-5 text-blue-400 animate-pulse shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-slate-800">
-                Cererea ta a fost trimisă
-              </p>
-              <p className="text-xs text-slate-500">
-                Se așteaptă aprobarea autorului…
-              </p>
+          <div className="mb-7 space-y-3">
+            <div className="flex items-center gap-3">
+              <Clock className="w-5 h-5 text-blue-400 animate-pulse shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-slate-800">
+                  Cererea ta a fost trimisă
+                </p>
+                <p className="text-xs text-slate-500">
+                  Se așteaptă aprobarea autorului…
+                </p>
+              </div>
             </div>
+            {actionError && (
+              <p className="text-sm text-red-500 font-medium">{actionError}</p>
+            )}
+            <button
+              onClick={() => setShowCancel(true)}
+              disabled={actionLoading}
+              className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
+            >
+              Anulează cererea
+            </button>
+            <div className="h-px bg-slate-100 mt-2" />
+          </div>
+        )}
+
+        {/* ── IN_PROGRESS: countdown + code + cancel ── */}
+        {post.status === "IN_PROGRESS" && (
+          <div className="mb-7 space-y-5">
+            <div className="bg-slate-50 border border-[#123424]/10 rounded-2xl p-5 space-y-5">
+              {post.expiresAt && <Countdown deadline={post.expiresAt} />}
+              <div className="border-t border-[#123424]/10 pt-4">
+                <p className="text-sm font-medium text-[#123424] mb-3">
+                  {isAuthor
+                    ? "Codul tău de confirmare"
+                    : "Introdu codul de confirmare"}
+                </p>
+                {isAuthor ? (
+                  showCode ? (
+                    <CodeDisplay postId={post.id} />
+                  ) : (
+                    <button
+                      onClick={() => setShowCode(true)}
+                      className="w-full flex items-center justify-center py-3.5 rounded-xl bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all cursor-pointer"
+                    >
+                      Afișează codul
+                      <LockKeyholeOpen className="w-4 h-4 ml-2" />
+                    </button>
+                  )
+                ) : (
+                  <CodeEntry
+                    postId={post.id}
+                    onComplete={() => {
+                      setActiveCounts({
+                        activeCollections: 0,
+                        activeCollectionId: null,
+                      });
+                      mutate();
+                    }}
+                  />
+                )}
+              </div>
+              {actionError && (
+                <div className="border-t border-[#123424]/10 pt-4">
+                  <p className="text-sm text-red-500 font-medium">
+                    {actionError}
+                  </p>
+                </div>
+              )}
+              <div className="border-t border-[#123424]/10 pt-4">
+                <button
+                  onClick={() => setShowCancel(true)}
+                  disabled={actionLoading}
+                  className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
+                >
+                  {isAuthor ? "Anulează colectarea" : "Renunță la colectare"}
+                </button>
+              </div>
+            </div>{" "}
+            <div className="h-px bg-slate-100 mb-7 mt-7" />
           </div>
         )}
 
@@ -1171,6 +1209,8 @@ function DetailPanel({
                 )}
               </div>
             </div>
+
+            <div className="h-px bg-slate-100 mb-7 mt-7" />
           </div>
         )}
 
@@ -1281,45 +1321,6 @@ function DetailPanel({
         </div>
 
         <div className="h-px bg-slate-100 mb-7" />
-
-        {/* ── OPEN: status message ── */}
-        {post.status === "OPEN" && isAuthor && (
-          <div className="mb-7">
-            <p className="text-sm text-slate-500 leading-relaxed">
-              Anunțul tău este vizibil pe hartă. Vei fi notificat imediat ce un
-              colector face o cerere.
-            </p>
-          </div>
-        )}
-
-        {actionError && !["CLAIMED"].includes(post.status) && (
-          <p className="text-sm text-red-500 font-medium mb-5">{actionError}</p>
-        )}
-
-        {/* ── CANCEL LINK ── */}
-        {canCancel && (
-          <div className="mb-7">
-            <button
-              onClick={() => setShowCancel(true)}
-              disabled={actionLoading}
-              className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
-            >
-              {post.status === "IN_PROGRESS" &&
-                isAuthor &&
-                "Anulează colectarea"}
-              {post.status === "IN_PROGRESS" &&
-                isCollector &&
-                "Renunță la colectare"}
-              {post.status === "CLAIMED" && isCollector && "Anulează cererea"}
-              {isAuthor && post.status === "OPEN" && "Anulează anunțul"}
-              {isAuthor && post.status === "CLAIMED" && "Anulează anunțul"}
-            </button>
-          </div>
-        )}
-
-        {post.status != "CANCELLED" && post.status != "EXPIRED" && (
-          <div className="h-px bg-slate-100 mb-7" />
-        )}
 
         {/* ── PARTICIPANTS ── */}
         <div className="space-y-4 mb-7">
