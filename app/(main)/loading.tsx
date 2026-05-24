@@ -3,23 +3,10 @@
 import { useEffect } from "react";
 
 const MIN_MS = 700;
-const FADE_MS = 320;
+const FADE_MS = 300;
 
 export default function Loading() {
   useEffect(() => {
-    const STYLE_ID = "recash-loading-keyframes";
-    if (!document.getElementById(STYLE_ID)) {
-      const s = document.createElement("style");
-      s.id = STYLE_ID;
-      s.textContent = `
-        @keyframes rcLoadingTilt {
-          0%,100% { transform: rotate(-13deg) translate(-2px, 0px);   }
-          50%      { transform: rotate( 11deg) translate( 2px, -7px);  }
-        }
-      `;
-      document.head.appendChild(s);
-    }
-
     const overlay = document.createElement("div");
     Object.assign(overlay.style, {
       position: "fixed",
@@ -28,7 +15,7 @@ export default function Loading() {
       right: "0",
       bottom: "0",
       zIndex: "9998",
-      background: "#ffffff",
+      background: "#fff",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -38,16 +25,11 @@ export default function Loading() {
     });
 
     const img = document.createElement("img");
-    img.src = "/images/loading.avif";
-    img.width = 150;
-    img.height = 150;
+    img.src = "/images/loading-gif.gif";
+    img.width = 170;
+    img.height = 170;
     img.draggable = false;
     img.alt = "";
-    Object.assign(img.style, {
-      display: "block",
-      animation: `rcLoadingTilt 0.55s ease-in-out infinite`,
-      transformOrigin: "50% 90%",
-    });
 
     overlay.appendChild(img);
     document.body.appendChild(overlay);
@@ -70,11 +52,8 @@ export default function Loading() {
     }, MIN_MS);
 
     return () => {
-      if (minPassed) {
-        exit();
-      } else {
-        pendingExit = true;
-      }
+      if (minPassed) exit();
+      else pendingExit = true;
     };
   }, []);
 
