@@ -361,6 +361,10 @@ function StepBottles({
               type="button"
               whileTap={{ scale: 0.95 }}
               onClick={() => onChange({ bottleCount: preset.value })}
+              initial={{
+                borderColor: "#f1f5f9", 
+                backgroundColor: "#ffffff", 
+              }}
               animate={{
                 borderColor: isActive ? "#a3e635" : "#f1f5f9",
                 backgroundColor: isActive ? "#f7fee7" : "#ffffff",
