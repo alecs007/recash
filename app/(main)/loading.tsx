@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-const MIN_MS = 700;
+const MIN_MS = 1000;
 const FADE_MS = 300;
 
 export default function Loading() {
