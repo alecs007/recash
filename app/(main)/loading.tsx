@@ -2,8 +2,8 @@
 
 import { useEffect } from "react";
 
-const MIN_MS = 1000;
-const FADE_MS = 400;
+const MIN_MS = 900;
+const FADE_MS = 300;
 
 export default function Loading() {
   useEffect(() => {
