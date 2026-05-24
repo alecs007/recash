@@ -1397,6 +1397,9 @@ function DetailPanel({
             partnerName={
               isAuthor ? (post.collector?.name ?? null) : post.author.name
             }
+            partnerImage={
+              isAuthor ? (post.collector?.image ?? null) : post.author.image
+            }
             onClick={() => setChatOpen(true)}
           />
           <PostChat
