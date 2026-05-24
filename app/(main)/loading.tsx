@@ -34,7 +34,7 @@ export default function Loading() {
     video.muted = true;
     video.playsInline = true;
 
-    video.playbackRate = 1.4;
+    video.playbackRate = 1.2;
 
     video.style.pointerEvents = "none";
     video.setAttribute("aria-hidden", "true");
