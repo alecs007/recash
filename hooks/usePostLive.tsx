@@ -58,21 +58,21 @@ export function usePostLive(postId: string) {
   // Additional safety-net poll for active posts when WS is down.
   // Only runs when: WS URL is set (WS is intended), post IS active, and the
   // WS singleton appears to be disconnected.
-  const isActive = post ? LIVE_STATUSES.has(post.status) : false;
+  // const isActive = post ? LIVE_STATUSES.has(post.status) : false;
 
-  useEffect(() => {
-    // If no WS configured, SWR refreshInterval above already handles polling
-    if (!WS_URL) return;
-    // If post is not in an active state, no need for the safety net
-    if (!isActive) return;
+  // useEffect(() => {
+  //   // If no WS configured, SWR refreshInterval above already handles polling
+  //   if (!WS_URL) return;
+  //   // If post is not in an active state, no need for the safety net
+  //   if (!isActive) return;
 
-    // Poll every 10 s purely as a safety net — WS events arrive much faster
-    const id = setInterval(
-      () => mutate(undefined, { revalidate: true }),
-      120_000,
-    );
-    return () => clearInterval(id);
-  }, [isActive, mutate]);
+  //   // Poll every 10 s purely as a safety net — WS events arrive much faster
+  //   const id = setInterval(
+  //     () => mutate(undefined, { revalidate: true }),
+  //     120_000,
+  //   );
+  //   return () => clearInterval(id);
+  // }, [isActive, mutate]);
 
   return { post, mutate, isLoading };
 }

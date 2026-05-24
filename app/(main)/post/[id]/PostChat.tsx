@@ -81,8 +81,8 @@ function TypingBubble({
       transition={{ type: "spring", stiffness: 350, damping: 26 }}
       className="flex items-end gap-2"
     >
-      <div className="w-7 shrink-0 self-start mt-0">
-        <Avatar name={partnerName} image={partnerImage} size={28} />
+      <div className="w-8 shrink-0 self-start mt-1">
+        <Avatar name={partnerName} image={partnerImage} size={32} />
       </div>
       <div className="flex items-center gap-[3px] px-4 py-3 bg-slate-100 rounded-2xl rounded-bl-[4px] shadow-sm">
         {[0, 1, 2].map((i) => (
@@ -123,11 +123,11 @@ function ScrollPill({
           exit={{ opacity: 0, scale: 0.8, y: 6 }}
           transition={{ type: "spring", stiffness: 420, damping: 28 }}
           onClick={onClick}
-          className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-white border border-slate-200 shadow-sm px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer z-10 whitespace-nowrap"
+          className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer z-10 whitespace-nowrap"
         >
           {unread > 0 ? (
             <span className="text-lime-700">
-              {unread} mesaj{unread > 1 ? "e" : ""} noi
+              {unread} mesaj{unread > 1 ? "e noi" : " nou"}
             </span>
           ) : (
             <>
@@ -176,9 +176,9 @@ function MessageBubble({
       style={{ originX: isMe ? 1 : 0, originY: 1 }}
     >
       {!isMe && (
-        <div className="w-7 shrink-0 self-start mt-0">
+        <div className="w-8 shrink-0 self-start mt-1">
           {showAvatar && (
-            <Avatar name={partnerName} image={partnerImage} size={28} />
+            <Avatar name={partnerName} image={partnerImage} size={32} />
           )}
         </div>
       )}
@@ -713,7 +713,7 @@ export function PostChat({
             </AnimatePresence>
 
             {/* ── Input bar ── */}
-            <div className="shrink-0 border-t border-slate-100 px-3 py-3 bg-white">
+            <div className="shrink-0 border-t border-slate-100 px-5 py-4 bg-white">
               <div className="flex items-center gap-2">
                 <div className="flex-1 relative">
                   <textarea
