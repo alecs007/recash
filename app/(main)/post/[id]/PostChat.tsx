@@ -11,7 +11,14 @@ import {
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
-import { X, Send, MessageCircle, Loader2, ChevronDown } from "lucide-react";
+import {
+  X,
+  Send,
+  MessageCircle,
+  MessageCircleMore,
+  Loader2,
+  ChevronDown,
+} from "lucide-react";
 import { usePostChat, type ChatMessage } from "@/hooks/usePostChat";
 
 const MAX_TEXT = 500;
@@ -74,8 +81,7 @@ function TypingBubble({
       transition={{ type: "spring", stiffness: 350, damping: 26 }}
       className="flex items-end gap-2"
     >
-      {/* same avatar slot as partner messages */}
-      <div className="w-7 shrink-0 self-end mb-1">
+      <div className="w-7 shrink-0 self-start mt-0">
         <Avatar name={partnerName} image={partnerImage} size={28} />
       </div>
       <div className="flex items-center gap-[3px] px-4 py-3 bg-slate-100 rounded-2xl rounded-bl-[4px] shadow-sm">
@@ -117,7 +123,7 @@ function ScrollPill({
           exit={{ opacity: 0, scale: 0.8, y: 6 }}
           transition={{ type: "spring", stiffness: 420, damping: 28 }}
           onClick={onClick}
-          className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-white border border-slate-200 shadow-md px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer z-10 whitespace-nowrap"
+          className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-white border border-slate-200 shadow-sm px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer z-10 whitespace-nowrap"
         >
           {unread > 0 ? (
             <span className="text-lime-700">
@@ -126,7 +132,7 @@ function ScrollPill({
           ) : (
             <>
               <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
-              <span className="text-slate-600">Jos</span>
+              <span className="text-slate-600">Mergi jos</span>
             </>
           )}
         </motion.button>
@@ -145,6 +151,7 @@ function MessageBubble({
   partnerImage,
   partnerName,
   doAnimate,
+  isPending,
 }: {
   msg: ChatMessage;
   isMe: boolean;
@@ -153,20 +160,23 @@ function MessageBubble({
   partnerImage: string | null;
   partnerName: string | null;
   doAnimate: boolean;
+  isPending: boolean;
 }) {
   return (
     <motion.div
-      // Only newly arrived messages get an entrance animation.
-      // Initial batch renders without any animation to avoid jitter.
-      initial={doAnimate ? { opacity: 0, y: 12, scale: 0.95 } : false}
+      initial={doAnimate ? { opacity: 1, y: 10, scale: 0.97 } : false}
       animate={doAnimate ? { opacity: 1, y: 0, scale: 1 } : undefined}
-      transition={{ type: "spring", stiffness: 380, damping: 28 }}
+      transition={{
+        type: "spring",
+        stiffness: 380,
+        damping: 28,
+        delay: isPending ? 0.1 : 0,
+      }}
       className={`flex items-end gap-2 ${isMe ? "flex-row-reverse" : "flex-row"}`}
       style={{ originX: isMe ? 1 : 0, originY: 1 }}
     >
-      {/* Avatar slot always reserved for partner messages so columns don't shift */}
       {!isMe && (
-        <div className="w-7 shrink-0 self-end mb-1">
+        <div className="w-7 shrink-0 self-start mt-0">
           {showAvatar && (
             <Avatar name={partnerName} image={partnerImage} size={28} />
           )}
@@ -265,35 +275,41 @@ export function PostChat({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Refs — don't need to trigger re-renders
-  const prevMsgLen = useRef(0);
-  const isAtBottomRef = useRef(true); // shadow isAtBottom for use in effects
+  // Refs — purely for reading in effects, never accessed in render phase
+  const isAtBottomRef = useRef(true);
   const initialScrollDoneRef = useRef(false);
-  // Track which IDs have been through an animation cycle already
-  const seenIdsRef = useRef<Set<string>>(new Set());
-  const initialLoadDoneRef = useRef(false); // true after first load completes
+  const initialLoadDoneRef = useRef(false);
+  const stableCountRef = useRef(0);
+  const lingerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lingeringTypingRef = useRef(false);
+
+  // State arrays and sets safe for conditional rendering
+  const [seenIds, setSeenIds] = useState<Set<string>>(() => new Set());
+  const [pendingAnimIds, setPendingAnimIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [lingeringTyping, setLingeringTyping] = useState(false);
 
   const grouped = useMemo(() => groupMessages(messages), [messages]);
 
   // ── Mount / responsive ────────────────────────────────────────────────────
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     const check = () => setIsMobile(window.innerWidth < 1024);
-    check();
+    check(); // synchronously set the mobile state on mount
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // ── Reset state when chat closes ──────────────────────────────────────────
+  // ── Reset scroll/visibility state when chat closes ────────────────────────
 
   useEffect(() => {
     if (!isOpen) {
       setContentVisible(false);
       initialScrollDoneRef.current = false;
       initialLoadDoneRef.current = false;
-      seenIdsRef.current = new Set();
-      prevMsgLen.current = 0;
       setUnreadWhileScrolled(0);
       setIsAtBottom(true);
       isAtBottomRef.current = true;
@@ -325,7 +341,6 @@ export function PostChat({
       el.scrollTop = el.scrollHeight;
       return;
     }
-    // Simple smooth scroll via rAF
     const start = el.scrollTop;
     const end = el.scrollHeight - el.clientHeight;
     const dist = end - start;
@@ -350,23 +365,26 @@ export function PostChat({
     if (atBottom) setUnreadWhileScrolled(0);
   }, []);
 
-  // ── Initial scroll — happens once after panel opens and messages load ──────
-  // We wait for the panel spring animation to settle (~300ms) then snap to bottom.
-  // Content stays invisible until the snap is done.
+  // ── Initial scroll — snap to bottom after panel opens ────────────────────
 
   useEffect(() => {
     if (!isOpen || loading || initialScrollDoneRef.current) return;
 
     const timer = setTimeout(() => {
-      scrollToBottom(false); // instant snap
+      scrollToBottom(false);
       initialScrollDoneRef.current = true;
       setContentVisible(true);
 
-      // Mark all initial messages as seen (no animation for them)
-      messages.forEach((m) => seenIdsRef.current.add(m.id));
+      // Mark all currently visible messages as "seen" so they don't animate
+      setSeenIds((prev) => {
+        const next = new Set(prev);
+        messages.forEach((m) => next.add(m.id));
+        return next;
+      });
+
+      stableCountRef.current = messages.length;
       initialLoadDoneRef.current = true;
-      prevMsgLen.current = messages.length;
-    }, 80); // after first rAF paint inside the panel
+    }, 80);
 
     return () => clearTimeout(timer);
   }, [isOpen, loading, messages, scrollToBottom]);
@@ -376,33 +394,43 @@ export function PostChat({
   useEffect(() => {
     if (!initialLoadDoneRef.current) return;
     const curr = messages.length;
-    const prev = prevMsgLen.current;
+    const prev = stableCountRef.current;
     if (curr <= prev) return;
-    prevMsgLen.current = curr;
 
-    if (isAtBottomRef.current) {
-      scrollToBottom(true);
-    } else {
-      setUnreadWhileScrolled((n) => n + (curr - prev));
+    // Handle Pending Animations: new messages arriving while typing indicator exits
+    if (lingeringTypingRef.current) {
+      const ids = messages
+        .slice(prev)
+        .filter((m) => !seenIds.has(m.id))
+        .map((m) => m.id);
+
+      if (ids.length > 0) {
+        setPendingAnimIds((prevIds) => new Set([...prevIds, ...ids]));
+      }
     }
 
-    // Mark new messages as seen after their animation (350ms spring)
-    const newMsgs = messages.slice(prev);
-    const timer = setTimeout(() => {
-      newMsgs.forEach((m) => seenIdsRef.current.add(m.id));
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [messages, scrollToBottom]);
+    stableCountRef.current = curr;
+    const newCount = curr - prev;
+
+    if (isAtBottomRef.current) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          scrollToBottom(true);
+        });
+      });
+    } else {
+      setUnreadWhileScrolled((n) => n + newCount);
+    }
+  }, [messages, seenIds, scrollToBottom]);
 
   // Scroll when typing indicator appears
   useEffect(() => {
     if (isPartnerTyping && isAtBottomRef.current) {
-      scrollToBottom(true);
+      requestAnimationFrame(() => scrollToBottom(true));
     }
   }, [isPartnerTyping, scrollToBottom]);
 
   // ── Textarea auto-resize ──────────────────────────────────────────────────
-  // Drive height purely from the text value. When empty → collapse to MIN_H.
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -411,7 +439,7 @@ export function PostChat({
       el.style.height = `${MIN_H}px`;
       return;
     }
-    el.style.height = `${MIN_H}px`; // collapse first so scrollHeight is accurate
+    el.style.height = `${MIN_H}px`;
     el.style.height = `${Math.min(el.scrollHeight, MAX_H)}px`;
   }, [text]);
 
@@ -428,7 +456,7 @@ export function PostChat({
   const handleSend = useCallback(async () => {
     const trimmed = text.trim();
     if (!trimmed || sending) return;
-    setText(""); // triggers useEffect → collapses textarea
+    setText("");
     textareaRef.current?.focus();
     await sendMessage(trimmed);
   }, [text, sending, sendMessage]);
@@ -445,9 +473,27 @@ export function PostChat({
     if (e.target.value) sendTyping();
   };
 
-  const firstName = partnerName?.split(" ")[0] ?? "partener";
+  // ── Lingering typing indicator ────────────────────────────────────────────
+
+  useEffect(() => {
+    if (isPartnerTyping) {
+      setLingeringTyping(true);
+      lingeringTypingRef.current = true;
+      if (lingerTimerRef.current) clearTimeout(lingerTimerRef.current);
+    } else {
+      lingerTimerRef.current = setTimeout(() => {
+        setLingeringTyping(false);
+        lingeringTypingRef.current = false;
+      }, 140);
+    }
+    return () => {
+      if (lingerTimerRef.current) clearTimeout(lingerTimerRef.current);
+    };
+  }, [isPartnerTyping]);
 
   if (!mounted) return null;
+
+  const firstName = partnerName?.split(" ")[0] ?? "partener";
 
   // ── Panel variants ────────────────────────────────────────────────────────
 
@@ -513,56 +559,59 @@ export function PostChat({
               "lg:absolute lg:inset-0 lg:rounded-none lg:h-auto lg:w-auto lg:z-10",
             ].join(" ")}
           >
-            {/* Drag handle */}
-            <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-9 h-1 rounded-full bg-slate-200 lg:hidden z-10 pointer-events-none" />
-
             {/* ── Header ── */}
-            <div className="shrink-0 flex items-center gap-3 px-4 pt-6 pb-3 lg:pt-3 border-b border-slate-100 bg-white">
-              <div className="relative shrink-0">
-                <Avatar name={partnerName} image={partnerImage} size={36} />
-                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-lime-400 border-2 border-white" />
-              </div>
+            <div className="shrink-0">
+              {/* <div className="flex justify-center pt-2.5 pb-0 lg:hidden">
+                <div className="w-9 h-1 rounded-full bg-slate-200" />
+              </div> */}
 
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-slate-900 leading-tight truncate">
-                  {partnerName ?? "Partener"}
-                </p>
-                <div className="h-[18px] relative overflow-hidden">
-                  <AnimatePresence mode="wait">
-                    {isPartnerTyping ? (
-                      <motion.p
-                        key="typing"
-                        initial={{ y: 10, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: -10, opacity: 0 }}
-                        transition={{ duration: 0.13 }}
-                        className="absolute text-[11px] text-lime-600 font-semibold"
-                      >
-                        scrie...
-                      </motion.p>
-                    ) : (
-                      <motion.p
-                        key="role"
-                        initial={{ y: 10, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: -10, opacity: 0 }}
-                        transition={{ duration: 0.13 }}
-                        className="absolute text-[11px] text-slate-400"
-                      >
-                        {partnerRole}
-                      </motion.p>
-                    )}
-                  </AnimatePresence>
+              <div className="flex items-center gap-3 p-5 border-b border-slate-100 bg-white">
+                <div className="relative shrink-0">
+                  <Avatar name={partnerName} image={partnerImage} size={36} />
+                  {/*<span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-lime-400 border-2 border-white" /> */}
                 </div>
-              </div>
 
-              <button
-                onClick={onClose}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors cursor-pointer shrink-0"
-                aria-label="Închide"
-              >
-                <X className="w-4 h-4 text-slate-600" />
-              </button>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-slate-900 leading-tight truncate">
+                    {partnerName ?? "Partener"}
+                  </p>
+                  <div className="h-[18px] relative overflow-hidden">
+                    <AnimatePresence mode="wait">
+                      {isPartnerTyping ? (
+                        <motion.p
+                          key="typing"
+                          initial={{ y: 10, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          exit={{ y: -10, opacity: 0 }}
+                          transition={{ duration: 0.13 }}
+                          className="absolute text-[11px] text-lime-600 font-semibold"
+                        >
+                          scrie...
+                        </motion.p>
+                      ) : (
+                        <motion.p
+                          key="role"
+                          initial={{ y: 10, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          exit={{ y: -10, opacity: 0 }}
+                          transition={{ duration: 0.13 }}
+                          className="absolute text-[11px] text-slate-400"
+                        >
+                          {partnerRole}
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+
+                <button
+                  onClick={onClose}
+                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                  aria-label="Închide"
+                >
+                  <X className="w-4 h-4 text-slate-600" />
+                </button>
+              </div>
             </div>
 
             {/* ── Messages ── */}
@@ -573,9 +622,7 @@ export function PostChat({
                 className="h-full overflow-y-auto overscroll-y-contain px-4 py-4"
                 data-lenis-prevent
                 style={{
-                  // Hide until initial scroll is done — prevents flash of wrong position
                   visibility: contentVisible ? "visible" : "hidden",
-                  // Hide scrollbar
                   scrollbarWidth: "none",
                   msOverflowStyle: "none",
                 }}
@@ -594,25 +641,19 @@ export function PostChat({
                     transition={{ delay: 0.1 }}
                     className="flex flex-col items-center justify-center h-full gap-4 text-center px-6"
                   >
-                    <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center">
-                      <MessageCircle className="w-6 h-6 text-slate-300" />
-                    </div>
+                    <MessageCircleMore className="w-10 h-10 text-slate-300" />
+
                     <div>
-                      <p className="text-sm font-semibold text-slate-600 mb-1">
-                        Niciun mesaj
-                      </p>
                       <p className="text-xs text-slate-400 leading-relaxed max-w-[200px]">
-                        Coordonează cu{" "}
+                        Conversează cu{" "}
                         <span className="font-medium text-slate-600">
                           {firstName}
                         </span>{" "}
-                        direct aici.
+                        direct pe Recash.
                       </p>
                     </div>
                   </motion.div>
                 ) : (
-                  // Plain div — NO layout animation on the container.
-                  // Individual new messages get their own entrance animation.
                   <div className="flex flex-col gap-1.5">
                     {grouped.map(({ msg, isFirst, isLast }) => (
                       <MessageBubble
@@ -623,13 +664,13 @@ export function PostChat({
                         isLastInGroup={isLast}
                         partnerImage={partnerImage}
                         partnerName={partnerName}
-                        // Animate only messages that haven't been seen yet
-                        doAnimate={!seenIdsRef.current.has(msg.id)}
+                        doAnimate={!seenIds.has(msg.id)}
+                        isPending={pendingAnimIds.has(msg.id)}
                       />
                     ))}
 
                     <AnimatePresence>
-                      {isPartnerTyping && (
+                      {lingeringTyping && (
                         <TypingBubble
                           key="typing-indicator"
                           partnerImage={partnerImage}
@@ -638,7 +679,7 @@ export function PostChat({
                       )}
                     </AnimatePresence>
 
-                    {/* Spacer */}
+                    {/* Bottom spacer so last message isn't flush against input */}
                     <div className="h-1 shrink-0" aria-hidden />
                   </div>
                 )}
@@ -673,22 +714,20 @@ export function PostChat({
 
             {/* ── Input bar ── */}
             <div className="shrink-0 border-t border-slate-100 px-3 py-3 bg-white">
-              <div className="flex items-end gap-2">
-                {/* Textarea — no scrollbar, auto-height, collapses on send */}
+              <div className="flex items-center gap-2">
                 <div className="flex-1 relative">
                   <textarea
                     ref={textareaRef}
                     value={text}
                     onChange={handleTextChange}
                     onKeyDown={handleKeyDown}
-                    placeholder="Mesaj…"
+                    placeholder="Trimite un mesaj…"
                     rows={1}
-                    className="w-full resize-none px-3.5 py-[11px] rounded-2xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100/60 outline-none text-sm text-slate-900 placeholder:text-slate-400 transition-[border-color,box-shadow] bg-slate-50 leading-[1.45] overflow-hidden"
+                    className="w-full resize-none px-3.5 py-[10px] rounded-2xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100/60 outline-none text-slate-900 placeholder:text-slate-400 transition-[border-color,box-shadow] bg-slate-50 leading-[1.45] overflow-hidden"
                     style={{
                       height: MIN_H,
                       minHeight: MIN_H,
                       maxHeight: MAX_H,
-                      // Hide scrollbar in all browsers
                       scrollbarWidth: "none",
                       msOverflowStyle: "none",
                     }}
@@ -706,7 +745,6 @@ export function PostChat({
                   )}
                 </div>
 
-                {/* Send button — fixed 44×44 so it's always flush with single-line textarea */}
                 <motion.button
                   whileTap={{ scale: 0.84 }}
                   animate={{
@@ -715,7 +753,7 @@ export function PostChat({
                   transition={{ duration: 0.15 }}
                   onClick={() => void handleSend()}
                   disabled={!text.trim() || sending}
-                  className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer disabled:cursor-not-allowed"
+                  className="w-11 h-11 mb-1.5 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer disabled:cursor-not-allowed"
                   aria-label="Trimite"
                 >
                   <AnimatePresence mode="wait">
@@ -727,7 +765,7 @@ export function PostChat({
                         exit={{ scale: 0, rotate: 90 }}
                         transition={{ duration: 0.12 }}
                       >
-                        <Loader2 className="w-[17px] h-[17px] text-lime-400 animate-spin" />
+                        <Loader2 className="w-[18px] h-[18px] text-lime-400 animate-spin" />
                       </motion.span>
                     ) : (
                       <motion.span
@@ -738,10 +776,9 @@ export function PostChat({
                         transition={{ duration: 0.12 }}
                       >
                         <Send
-                          className={`w-[17px] h-[17px] ${
+                          className={`w-[18px] h-[18px] ${
                             text.trim() ? "text-lime-400" : "text-slate-400"
                           }`}
-                          style={{ transform: "translateX(1px)" }}
                         />
                       </motion.span>
                     )}
@@ -775,6 +812,7 @@ export function ChatTriggerButton({
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
   if (!mounted) return null;
@@ -799,10 +837,9 @@ export function ChatTriggerButton({
             whileHover={{ scale: 1.04, y: -1 }}
             whileTap={{ scale: 0.92 }}
             onClick={onClick}
-            className="relative flex items-center gap-3 bg-[#123424] text-white rounded-full shadow-xl shadow-black/25 cursor-pointer"
+            className="relative flex items-center gap-3 bg-[#123424] text-white rounded-2xl cursor-pointer"
             style={{ padding: "8px 18px 8px 8px" }}
           >
-            {/* Avatar + chat icon badge */}
             <div className="relative shrink-0">
               <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-lime-400/50 bg-[#1a4d36] flex items-center justify-center">
                 {partnerImage ? (
@@ -819,15 +856,13 @@ export function ChatTriggerButton({
                   </span>
                 )}
               </div>
-              {/* Small chat badge pinned to avatar */}
               <div className="absolute -bottom-0.5 -right-0.5 w-[18px] h-[18px] rounded-full bg-lime-400 border-2 border-[#123424] flex items-center justify-center">
                 <MessageCircle className="w-2.5 h-2.5 text-[#123424]" />
               </div>
             </div>
 
-            {/* Label */}
-            <div className="flex flex-col items-start leading-none gap-[3px]">
-              <span className="text-[9px] text-white/50 font-semibold tracking-widest uppercase">
+            <div className="flex flex-col items-start leading-none gap-[2px]">
+              <span className="text-[10px] text-white/70 font-semibold">
                 Chat
               </span>
               <span className="text-sm font-bold whitespace-nowrap">
@@ -835,7 +870,6 @@ export function ChatTriggerButton({
               </span>
             </div>
 
-            {/* Unread badge — positioned outside button so it's never clipped */}
             <AnimatePresence>
               {unread > 0 && (
                 <motion.span
@@ -843,27 +877,13 @@ export function ChatTriggerButton({
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0, opacity: 0 }}
                   transition={{ type: "spring", stiffness: 500, damping: 22 }}
-                  className="absolute -top-2 -right-1.5 min-w-[22px] h-[22px] px-1.5 flex items-center justify-center rounded-full bg-red-500 text-white text-[11px] font-black leading-none shadow-md"
+                  className="absolute -top-1 -right-1 min-w-[22px] h-[22px] px-1.5 flex items-center justify-center rounded-full bg-red-500 text-white text-[11px] font-black leading-none shadow-md"
                   style={{ border: "2.5px solid white" }}
                 >
                   {unread > 9 ? "9+" : unread}
                 </motion.span>
               )}
             </AnimatePresence>
-
-            {/* Pulse ring */}
-            {unread > 0 && (
-              <motion.span
-                className="absolute inset-0 rounded-full pointer-events-none"
-                style={{ border: "2px solid rgba(239,68,68,0.45)" }}
-                animate={{ scale: [1, 1.09, 1], opacity: [0.7, 0, 0.7] }}
-                transition={{
-                  duration: 1.8,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-              />
-            )}
           </motion.button>
         </motion.div>
       )}
