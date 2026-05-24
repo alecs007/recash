@@ -857,16 +857,16 @@ export function ChatTriggerButton({
                 )}
               </div>
               <div className="absolute -bottom-0.5 -right-0.5 w-[18px] h-[18px] rounded-full bg-lime-400 border-2 border-[#123424] flex items-center justify-center">
-                <MessageCircle className="w-2.5 h-2.5 text-[#123424]" />
+                <MessageCircle className="w-2 h-2 text-[#123424]" />
               </div>
             </div>
 
             <div className="flex flex-col items-start leading-none gap-[2px]">
               <span className="text-[10px] text-white/70 font-semibold">
-                Chat
+                Ia legătura cu
               </span>
               <span className="text-sm font-bold whitespace-nowrap">
-                {partnerName?.split(" ")[0] ?? "Partener"}
+                {partnerName ?? "Partener"}
               </span>
             </div>
 
