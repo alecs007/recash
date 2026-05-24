@@ -152,6 +152,11 @@ function StepIndicator({ current }: { current: number }) {
           <Fragment key={idx}>
             <div className="flex flex-col items-center shrink-0 w-16">
               <motion.div
+                initial={{
+                  backgroundColor: "#ffffff",
+                  borderColor: "#e2e8f0",
+                  scale: 1,
+                }}
                 animate={{
                   scale: active ? 1.12 : 1,
                   backgroundColor: done
@@ -581,7 +586,7 @@ function StepLocation({
   return (
     <div className="space-y-4">
       <div>
-        <FieldLabel>Care este locația ta?</FieldLabel>
+        <FieldLabel>De unde vor fi preluate?</FieldLabel>
         <div className="relative">
           <div className="flex gap-2">
             <div className="flex-1 relative">
@@ -1122,7 +1127,7 @@ export default function PostCreationClient({
       <div className="max-w-lg mx-auto px-4 py-8 min-h-[100dvh]">
         <StepIndicator current={step} />
 
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm shadow-slate-100/50 overflow-hidden mb-6">
           <AnimatePresence mode="wait" custom={direction} initial={false}>
             <motion.div
               key={step}
