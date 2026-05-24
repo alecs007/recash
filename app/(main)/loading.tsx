@@ -24,14 +24,22 @@ export default function Loading() {
       pointerEvents: "none",
     });
 
-    const img = document.createElement("img");
-    img.src = "/images/loading-gif.gif";
-    img.width = 170;
-    img.height = 170;
-    img.draggable = false;
-    img.alt = "";
+    const video = document.createElement("video");
+    video.src = "/videos/loading.mp4";
+    video.width = 160;
+    video.height = 160;
 
-    overlay.appendChild(img);
+    video.autoplay = true;
+    video.loop = true;
+    video.muted = true;
+    video.playsInline = true;
+
+    video.playbackRate = 1.4;
+
+    video.style.pointerEvents = "none";
+    video.setAttribute("aria-hidden", "true");
+
+    overlay.appendChild(video);
     document.body.appendChild(overlay);
 
     requestAnimationFrame(() => {
@@ -40,7 +48,11 @@ export default function Loading() {
 
     function exit() {
       overlay.style.opacity = "0";
-      setTimeout(() => overlay.parentNode?.removeChild(overlay), FADE_MS);
+      setTimeout(() => {
+        if (overlay.parentNode) {
+          overlay.parentNode.removeChild(overlay);
+        }
+      }, FADE_MS);
     }
 
     let minPassed = false;
