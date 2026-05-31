@@ -798,7 +798,7 @@ function StepDetails({
 
           <div className="flex justify-between items-center mt-2">
             <div className="flex flex-col">
-              <span className="text-[10px] tracking-wider text-slate-400 font-semibold">
+              <span className="text-[10px] tracking-wide text-slate-400 font-semibold">
                 Partea ta
               </span>
               <span className="text-lg font-black text-lime-600">
@@ -814,7 +814,7 @@ function StepDetails({
               </span>
             </div>
             <div className="flex flex-col items-end">
-              <span className="text-[10px] tracking-wider text-slate-400 font-semibold">
+              <span className="text-[10px] tracking-wide text-slate-400 font-semibold">
                 Partea colectorului
               </span>
               <span className="text-lg font-black text-[#123424]">

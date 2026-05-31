@@ -201,7 +201,6 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
                       </div>
                       <div className="text-xs text-slate-500">
                         {t.bottleCount} sticle | {t.actualValue.toFixed(2)} RON
-                        total
                       </div>
 
                       <div className="flex flex-col items-end gap-1 mt-1.5">

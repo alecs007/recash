@@ -37,7 +37,7 @@ export function ProfilePage({ summary }: { summary: ProfileSummary }) {
       <div className="relative bg-slate-900 sm:rounded-b-[1rem] sm:mx-6 mb-4 sm:mb-6 px-6 sm:px-10 pb-6 sm:pb-8 pt-12 sm:pt-16 overflow-hidden shadow">
         <div className="absolute inset-0 z-0">
           <Image
-            src="/images/profile-background.jpg"
+            src="/images/profile-background.avif"
             alt="Profile Background"
             fill
             priority
@@ -58,9 +58,9 @@ export function ProfilePage({ summary }: { summary: ProfileSummary }) {
                   <div className="absolute inset-0 rounded-full bg-slate-200" />
                   <Image
                     src={user.image}
-                    alt="Profile"
+                    alt="Profile Picture"
                     fill
-                    sizes={"(min-width: 640px) 7rem, 4.5rem"}
+                    sizes={"(min-width: 640px) 12rem, 7rem"}
                     priority
                     className="rounded-2xl sm:rounded-3xl object-cover border-2 sm:border-3 border-lime-400 shadow-lg"
                   />

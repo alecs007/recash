@@ -153,8 +153,8 @@ function ReviewCard({
                 <Image
                   src={reviewer.image}
                   alt={reviewer.name ?? ""}
-                  width={40}
-                  height={40}
+                  width={120}
+                  height={120}
                   className="object-cover"
                 />
               ) : (
@@ -209,7 +209,9 @@ function ReviewCard({
                   ))}
                 </div>
                 <span className="text-[10px] text-slate-400 bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded-full">
-                  {review.role === "poster" ? "Autor anunț" : "Colector"}
+                  {review.role === "poster"
+                    ? "Autorul anunțului"
+                    : "Colectorul sticlelor"}
                 </span>
               </div>
             </div>

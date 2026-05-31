@@ -1,4 +1,5 @@
 import { MapPin } from "lucide-react";
+import { FaWineBottle } from "react-icons/fa";
 import Image from "next/image";
 import Link from "next/link";
 import { Post } from "@/types";
@@ -39,10 +40,10 @@ export function PostCard({ post }: { post: Post }) {
           )}
         </div>
         <div className="text-right shrink-0">
-          <div className="text-lg font-black text-slate-900">
+          <div className="text-lg font-black text-slate-900 flex items-center justify-end gap-1">
             {post.bottleCount}
+            <FaWineBottle className="w-4 h-4 text-[#7EC3E5]" />
           </div>
-          <div className="text-xs text-slate-400">sticle</div>
           {post.transaction ? (
             <div className="text-sm font-bold text-lime-600 mt-1">
               +{post.transaction.posterEarning.toFixed(2)} RON
