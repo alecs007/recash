@@ -924,7 +924,10 @@ function DetailPanel({
           {post.status === "CLAIMED" && isAuthor && post.collector && (
             <div className="mb-7 space-y-4">
               <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
-                <div className="w-11 h-11 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
+                <Link
+                  href={`/user/${post.collector.id}`}
+                  className="w-11 h-11 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 hover:ring-2 hover:ring-lime-400 hover:ring-offset-1 transition-all"
+                >
                   {post.collector.image ? (
                     <Image
                       src={post.collector.image}
@@ -939,12 +942,15 @@ function DetailPanel({
                       {post.collector.name?.[0] ?? "?"}
                     </span>
                   )}
-                </div>
+                </Link>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-bold text-slate-900 truncate">
+                    <Link
+                      href={`/user/${post.collector.id}`}
+                      className="text-sm font-bold text-slate-900 truncate hover:text-lime-700 transition-colors"
+                    >
                       {post.collector.name ?? "Colector"}
-                    </p>
+                    </Link>
                     <div className="flex items-center gap-1 mt-0.5">
                       <Star className="w-3 h-3 text-[#FFDF00] fill-[#FFDF00]" />
                       <span className="text-xs text-slate-500">

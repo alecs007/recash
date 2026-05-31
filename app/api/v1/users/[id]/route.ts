@@ -64,8 +64,6 @@ export async function GET(
 
     const rawTransactions = await prisma.transaction.findMany({
       where: {
-        OR: [{ posterId: id }, { collectorId: id }],
-        // Only show transactions where a rating was given
         OR: [
           { posterId: id, collectorRating: { not: null } },
           { collectorId: id, posterRating: { not: null } },
@@ -92,8 +90,6 @@ export async function GET(
       },
     });
 
-    // Filter to only include transactions where this user received a rating
-    // and optionally left a review
     const postIds = [...new Set(rawTransactions.map((t) => t.postId))];
     const existingPosts = await prisma.post.findMany({
       where: { id: { in: postIds } },
@@ -105,15 +101,12 @@ export async function GET(
       .filter((t) => postMap.has(t.postId))
       .map((t) => {
         const isThisUserPoster = t.posterId === id;
-        // The rating this user received
         const ratingReceived = isThisUserPoster
           ? t.collectorRating
           : t.posterRating;
-        // The review this user received
         const reviewReceived = isThisUserPoster
           ? t.collectorReview
           : t.posterReview;
-        // Who gave the rating
         const reviewer = isThisUserPoster ? t.collector : t.poster;
 
         if (ratingReceived === null) return null;
@@ -155,7 +148,6 @@ export async function GET(
       reviews,
     };
 
-    // Cache for 60s
     try {
       await redis.set(
         cacheKey,

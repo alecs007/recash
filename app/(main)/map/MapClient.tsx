@@ -297,7 +297,11 @@ function PostCard({
       }`}
     >
       <div className="flex items-center gap-2.5 mb-2.5">
-        <div className="w-9 h-9 rounded-full bg-lime-50 border border-lime-200 flex items-center justify-center overflow-hidden shrink-0">
+        <Link
+          href={`/user/${post.author.id}`}
+          onClick={(e) => e.stopPropagation()}
+          className="w-9 h-9 rounded-full bg-lime-50 border border-lime-200 flex items-center justify-center overflow-hidden shrink-0 transition-all"
+        >
           {post.author.image ? (
             <Image
               src={post.author.image}
@@ -311,11 +315,16 @@ function PostCard({
               {post.author.name?.[0] ?? "?"}
             </span>
           )}
-        </div>
+        </Link>
+
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-slate-900 truncate leading-tight">
+          <Link
+            href={`/user/${post.author.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="text-sm font-bold text-slate-900 truncate leading-tight hover:text-lime-700 transition-colors block"
+          >
             {post.author.name ?? "Utilizator"}
-          </p>
+          </Link>
           <div className="flex items-center gap-1">
             <Star className="w-2.5 h-2.5 text-[#FFDF00] fill-[#FFDF00]" />
             <span className="text-[10px] font-semibold text-slate-400">
@@ -443,7 +452,10 @@ function SelectedPostOverlay({
         </button>
 
         <div className="flex items-center gap-2.5 mb-2.5 pr-6">
-          <div className="w-9 h-9 rounded-full bg-lime-50 border border-lime-200 flex items-center justify-center overflow-hidden shrink-0">
+          <Link
+            href={`/user/${post.author.id}`}
+            className="w-9 h-9 rounded-full bg-lime-50 border border-lime-200 flex items-center justify-center overflow-hidden shrink-0 transition-all"
+          >
             {post.author.image ? (
               <Image
                 src={post.author.image}
@@ -457,11 +469,14 @@ function SelectedPostOverlay({
                 {post.author.name?.[0] ?? "?"}
               </span>
             )}
-          </div>
+          </Link>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-slate-900 truncate leading-tight">
+            <Link
+              href={`/user/${post.author.id}`}
+              className="text-sm font-bold text-slate-900 truncate leading-tight hover:text-lime-700 transition-colors block"
+            >
               {post.author.name ?? "Utilizator"}
-            </p>
+            </Link>
             <div className="flex items-center gap-1">
               <Star className="w-2.5 h-2.5 text-[#FFDF00] fill-[#FFDF00]" />
               <span className="text-[10px] font-semibold text-slate-400">
