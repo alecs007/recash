@@ -14,7 +14,8 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { FaWineBottle, FaBan } from "react-icons/fa";
-import { BADGE_CONFIG, BADGE_COLORS } from "@/lib/constants/badges";
+import { BadgeCard } from "@/app/components/UI/BadgeCard";
+import { BADGE_CONFIG } from "@/lib/constants/badges";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -227,62 +228,6 @@ function ReviewCard({
             </p>
           )}
         </div>
-      </div>
-    </div>
-  );
-}
-
-function BadgeHex({ badge }: { badge: PublicBadge }) {
-  const cfg = BADGE_CONFIG[badge.type];
-  if (!cfg) return null;
-  const color = BADGE_COLORS[badge.type] ?? "#64748B";
-
-  return (
-    <div className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 transition-all select-none">
-      <div className="relative w-[52px] h-[59px] flex-shrink-0">
-        <div
-          className="absolute inset-0"
-          style={{
-            clipPath:
-              "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-            backgroundColor: `color-mix(in srgb, ${color} 60%, black)`,
-          }}
-        />
-        <div
-          className="absolute"
-          style={{
-            inset: "2.5px",
-            clipPath:
-              "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-            backgroundColor: color,
-          }}
-        />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Image
-            width={112}
-            height={112}
-            priority
-            draggable={false}
-            src={cfg.image}
-            alt={cfg.label}
-            className="w-10 h-10 object-contain"
-          />
-        </div>
-      </div>
-      <div className="flex flex-col items-center gap-0.5 text-center w-full">
-        <p className="text-[10px] font-bold text-slate-800 leading-tight">
-          {cfg.label}
-        </p>
-        <p className="text-[8px] text-slate-400 leading-snug">{cfg.desc}</p>
-      </div>
-      <div className="w-full pt-1.5 border-t border-slate-100 text-center">
-        <span className="text-[8px] font-semibold text-slate-400">
-          {new Date(badge.earnedAt).toLocaleDateString("ro-RO", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-          })}
-        </span>
       </div>
     </div>
   );
@@ -761,7 +706,14 @@ export default function UserPublicPage({ userId }: { userId: string }) {
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
             {earnedBadges.map((badge) => (
-              <BadgeHex key={badge.id} badge={badge} />
+              <BadgeCard
+                key={badge.id}
+                badge={{
+                  ...badge,
+                  seen: true,
+                }}
+                earned={true}
+              />
             ))}
           </div>
         </div>

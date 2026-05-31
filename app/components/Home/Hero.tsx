@@ -12,16 +12,14 @@ export const Hero = () => {
 
         <div className="relative flex flex-col lg:flex-row items-center justify-between">
           <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-2 bg-lime-400/15 text-lime-400 px-3 py-1.5 rounded-full text-xs font-bold tracking-wider mb-6 backdrop-blur border border-lime-400/20">
-              <span className="flex items-center gap-1">
-                <span className="flex -space-x-px h-3">
-                  <div className="w-[7px] h-3 bg-[#002B7F] rounded-l-xs" />
-                  <div className="w-[7px] h-3 bg-[#FCD116]" />
-                  <div className="w-[6px] h-3 bg-[#CE1126] rounded-r-xs" />
-                </span>
-              </span>
-              Redăm pulsul României
-            </span>
+            <Image
+              src="/images/recycling-progress.avif"
+              alt="Recycling Progress"
+              width={200}
+              height={200}
+              className="w-37 sm:w-40 h-auto mb-4"
+              priority
+            />
             <h1 className="font-sans font-extrabold text-white text-5xl sm:text-6xl lg:text-7xl leading-[1.05] tracking-tight sm:text-nowrap">
               Reciclează.
               <br />
@@ -53,7 +51,7 @@ export const Hero = () => {
 
             <div className="mt-10 flex items-center gap-4 text-white/70 text-sm">
               <div className="flex -space-x-2">
-                <span className="grid place-items-center w-9 h-9 relative rounded-full bg-lime-400 border-2 border-[#123524] text-base overflow-hidden">
+                <span className="grid place-items-center w-9 h-9 relative rounded-full bg-lime-400 border-1 border-lime-400 text-base overflow-hidden">
                   <Image
                     src="/images/persons/person-2.svg"
                     alt="Recycler 1"
@@ -63,7 +61,7 @@ export const Hero = () => {
                     draggable={false}
                   />
                 </span>
-                <span className="grid place-items-center w-9 h-9 relative rounded-full bg-emerald-500 border-2 border-[#123524] text-base overflow-hidden">
+                <span className="grid place-items-center w-9 h-9 relative rounded-full bg-emerald-500 border-1 border-lime-400 text-base overflow-hidden">
                   <Image
                     src="/images/persons/person-1.svg"
                     alt="Recycler 2"
@@ -73,7 +71,7 @@ export const Hero = () => {
                     draggable={false}
                   />
                 </span>
-                <span className="grid place-items-center w-9 h-9 relative rounded-full bg-lime-300 border-2 border-[#123524] text-base overflow-hidden">
+                <span className="grid place-items-center w-9 h-9 relative rounded-full bg-lime-300 border-1 border-lime-400 text-base overflow-hidden">
                   <Image
                     src="/images/persons/person-3.svg"
                     alt="Recycler 3"

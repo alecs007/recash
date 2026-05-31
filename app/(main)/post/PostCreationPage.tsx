@@ -362,8 +362,8 @@ function StepBottles({
               whileTap={{ scale: 0.95 }}
               onClick={() => onChange({ bottleCount: preset.value })}
               initial={{
-                borderColor: "#f1f5f9", 
-                backgroundColor: "#ffffff", 
+                borderColor: "#f1f5f9",
+                backgroundColor: "#ffffff",
               }}
               animate={{
                 borderColor: isActive ? "#a3e635" : "#f1f5f9",
@@ -1001,14 +1001,13 @@ function ActivePostGuard({ children }: { children: React.ReactNode }) {
     return (
       <div className="max-w-lg mx-auto px-4 py-12">
         <div className="bg-amber-50 rounded-3xl p-8 text-center">
-          <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
-            <AlertTriangle className="w-7 h-7 text-amber-600" />
-          </div>
+          <AlertTriangle className="w-12 h-12 text-amber-600 mb-4 mx-auto" />
+
           <h2 className="text-lg font-extrabold text-slate-900 mb-2">
             Ai deja un anunț activ
           </h2>
           <p className="text-sm text-slate-600 mb-5">
-            Poți avea un singur anunț activ simultan. Finalizează sau anulează
+            Nu poți avea mai mult de un anunț activ. Finalizează sau anulează
             anunțul curent înainte de a crea unul nou.
           </p>
           <div className="flex flex-col gap-2">
