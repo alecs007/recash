@@ -34,7 +34,7 @@ export function ProfilePage({ summary }: { summary: ProfileSummary }) {
 
   return (
     <div className="w-full min-h-[100dvh] pb-12">
-      <div className="relative bg-slate-900 sm:rounded-b-[1rem] sm:mx-6 mb-6 px-6 sm:px-10 pb-6 sm:pb-8 pt-12 sm:pt-16 overflow-hidden shadow">
+      <div className="relative bg-slate-900 sm:rounded-b-[1rem] sm:mx-6 mb-4 sm:mb-6 px-6 sm:px-10 pb-6 sm:pb-8 pt-12 sm:pt-16 overflow-hidden shadow">
         <div className="absolute inset-0 z-0">
           <Image
             src="/images/profile-background.jpg"
@@ -44,7 +44,7 @@ export function ProfilePage({ summary }: { summary: ProfileSummary }) {
             className="object-cover object-center"
           />
 
-          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/70 to-black/50" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/65 to-black/35" />
 
           <div className="absolute -top-10 -right-10 w-56 h-56 rounded-full bg-lime-400/10 blur-3xl pointer-events-none" />
           <div className="absolute -bottom-10 -left-10 w-48 h-48 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
