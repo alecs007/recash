@@ -52,8 +52,9 @@ export function BadgeCard({ badge, onSeen, earned = true }: Props) {
   return (
     <>
       <div
+        onClick={handleOpenModal}
         className={[
-          "relative flex flex-col items-center gap-3 p-4 rounded-2xl border bg-white transition-all select-none",
+          "relative flex flex-col items-center gap-3 p-4 rounded-2xl border bg-white transition-all select-none cursor-pointer",
           earned
             ? isNew
               ? "border-lime-300 shadow-[0_0_0_2px_rgba(163,230,53,0.35)]"
@@ -122,13 +123,12 @@ export function BadgeCard({ badge, onSeen, earned = true }: Props) {
           </span>
         </div>
 
-        <button
-          onClick={handleOpenModal}
-          className="w-full py-1.5 rounded-xl text-[10px] font-bold text-white transition-all cursor-pointer hover:opacity-90 active:scale-[0.97]"
+        <div
+          className="w-full py-1.5 rounded-xl text-[10px] font-bold text-white transition-all cursor-pointer hover:opacity-90 active:scale-[0.97] flex items-center justify-center"
           style={{ backgroundColor: earned ? color : "#94a3b8" }}
         >
-          Check it out!
-        </button>
+          {earned ? "Check it out!" : "Neobținut"}
+        </div>
       </div>
 
       <BadgeModal
