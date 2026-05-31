@@ -36,7 +36,7 @@ export function BadgeCard({ badge, onSeen, earned = true }: Props) {
   const color = earned ? (BADGE_COLORS[badge.type] ?? "#64748B") : "#CBD5E1";
   const isNew = earned && !seen;
 
-  const handleClick = async () => {
+  const handleOpenModal = async () => {
     setModalOpen(true);
     if (isNew) {
       setSeen(true);
@@ -49,28 +49,16 @@ export function BadgeCard({ badge, onSeen, earned = true }: Props) {
     }
   };
 
-  const cardBg = earned
-    ? `linear-gradient(135deg, color-mix(in srgb, ${color} 12%, white), color-mix(in srgb, ${color} 5%, white))`
-    : "linear-gradient(135deg, #f8fafc, #f1f5f9)";
-
-  const borderColor = isNew
-    ? undefined
-    : earned
-      ? `color-mix(in srgb, ${color} 30%, #e2e8f0)`
-      : undefined;
-
   return (
     <>
       <div
-        onClick={handleClick}
-        style={{ background: cardBg, borderColor }}
         className={[
-          "relative flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all select-none cursor-pointer",
+          "relative flex flex-col items-center gap-3 p-4 rounded-2xl border bg-white transition-all select-none",
           earned
             ? isNew
-              ? "border-lime-300 shadow-[0_0_0_2px_rgba(163,230,53,0.35)] hover:shadow-[0_0_0_3px_rgba(163,230,53,0.25)] hover:scale-[1.03]"
-              : "hover:scale-[1.03]"
-            : "border-slate-100 opacity-40 grayscale hover:scale-[1.03]",
+              ? "border-lime-300 shadow-[0_0_0_2px_rgba(163,230,53,0.35)]"
+              : "border-slate-200"
+            : "border-slate-100 opacity-40 grayscale",
         ].join(" ")}
       >
         {isNew && (
@@ -85,7 +73,9 @@ export function BadgeCard({ badge, onSeen, earned = true }: Props) {
             style={{
               clipPath:
                 "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-              backgroundColor: `color-mix(in srgb, ${color} 60%, black)`,
+              backgroundColor: earned
+                ? `color-mix(in srgb, ${color} 60%, black)`
+                : "#94a3b8",
             }}
           />
           <div
@@ -94,10 +84,9 @@ export function BadgeCard({ badge, onSeen, earned = true }: Props) {
               inset: "2.5px",
               clipPath:
                 "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-              backgroundColor: color,
+              backgroundColor: earned ? color : "#cbd5e1",
             }}
           />
-
           <div className="absolute inset-0 flex items-center justify-center">
             <Image
               width={128}
@@ -112,21 +101,17 @@ export function BadgeCard({ badge, onSeen, earned = true }: Props) {
         </div>
 
         <div className="flex flex-col items-center gap-1 text-center w-full">
-          <p className="text-[11px] font-bold text-slate-800 leading-tight">
+          <p
+            className="text-[11px] font-black leading-tight"
+            style={{ color: earned ? color : "#64748b" }}
+          >
             {cfg.label}
           </p>
-          <p className="text-[9px] text-slate-400 leading-snug">{cfg.desc}</p>
+          <p className="text-[9px] text-slate-600 leading-snug">{cfg.desc}</p>
         </div>
 
-        <div
-          className="w-full pt-2 border-t text-center"
-          style={{
-            borderColor: earned
-              ? `color-mix(in srgb, ${color} 20%, #e2e8f0)`
-              : "#f1f5f9",
-          }}
-        >
-          <span className="text-[9px] font-semibold text-slate-400">
+        <div className="w-full pt-2 border-t border-slate-100 text-center">
+          <span className="text-[9px] font-semibold text-slate-600">
             {earned
               ? new Date(badge.earnedAt).toLocaleDateString("ro-RO", {
                   day: "numeric",
@@ -136,6 +121,14 @@ export function BadgeCard({ badge, onSeen, earned = true }: Props) {
               : "Neobținut"}
           </span>
         </div>
+
+        <button
+          onClick={handleOpenModal}
+          className="w-full py-1.5 rounded-xl text-[10px] font-bold text-white transition-all cursor-pointer hover:opacity-90 active:scale-[0.97]"
+          style={{ backgroundColor: earned ? color : "#94a3b8" }}
+        >
+          Check it out!
+        </button>
       </div>
 
       <BadgeModal
@@ -164,6 +157,7 @@ export function BadgeCardSkeleton() {
       <div className="w-full pt-2 border-t border-slate-100">
         <div className="h-2 w-10 bg-slate-100 rounded mx-auto" />
       </div>
+      <div className="w-full h-6 bg-slate-100 rounded-xl" />
     </div>
   );
 }

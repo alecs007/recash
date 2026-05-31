@@ -217,7 +217,7 @@ export function BadgeModal({ badge, earned = true, onClose }: BadgeModalProps) {
                   onClick={onClose}
                   className="w-full py-3 rounded-2xl bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-colors cursor-pointer"
                 >
-                  Închide
+                  Okay!
                 </button>
               </motion.div>
             </div>
