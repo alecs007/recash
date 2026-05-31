@@ -1,4 +1,6 @@
 import { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import UserPublicPage from "./UserPublicPage";
 
@@ -39,5 +41,11 @@ export default async function UserPublicRoute({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+
+  const session = await auth();
+  if (session?.user?.id === id) {
+    redirect("/profil");
+  }
+
   return <UserPublicPage userId={id} />;
 }

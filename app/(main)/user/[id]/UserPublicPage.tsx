@@ -9,7 +9,6 @@ import {
   ArrowLeft,
   Calendar,
   Trophy,
-  MapPin,
   Star,
   ShieldCheck,
   ChevronDown,
@@ -148,7 +147,7 @@ function ReviewCard({
       <div className="flex items-start gap-3">
         {canLink ? (
           <Link href={`/user/${reviewer.id}`} className="shrink-0">
-            <div className="w-10 h-10 rounded-full bg-lime-50 border border-lime-200 flex items-center justify-center overflow-hidden hover:ring-2 hover:ring-lime-400 hover:ring-offset-1 transition-all">
+            <div className="w-10 h-10 rounded-full bg-lime-50 border border-lime-200 flex items-center justify-center overflow-hidden transition-all">
               {reviewer.image ? (
                 <Image
                   src={reviewer.image}
@@ -200,7 +199,7 @@ function ReviewCard({
               <div className="flex items-center gap-1.5 mt-0.5">
                 <div className="flex gap-0.5">
                   {[1, 2, 3, 4, 5].map((i) => (
-                    <svg key={i} className="w-2.5 h-2.5" viewBox="0 0 20 20">
+                    <svg key={i} className="w-4 h-4" viewBox="0 0 20 20">
                       <path
                         fill={i <= review.rating ? "#FFDF00" : "#e2e8f0"}
                         d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
@@ -223,23 +222,10 @@ function ReviewCard({
           </div>
 
           {review.review && (
-            <p className="text-xs text-slate-600 italic leading-relaxed mt-2">
+            <p className="text-sm text-slate-600 italic leading-relaxed mt-2">
               &quot;{review.review}&quot;
             </p>
           )}
-
-          <div className="flex items-center gap-3 mt-2 text-xs text-slate-400">
-            <span className="flex items-center gap-1">
-              <FaWineBottle className="w-3 h-3" />
-              {review.bottleCount} sticle
-            </span>
-            {review.locationName && (
-              <span className="flex items-center gap-1 truncate">
-                <MapPin className="w-3 h-3 shrink-0" />
-                {review.locationName}
-              </span>
-            )}
-          </div>
         </div>
       </div>
     </div>
@@ -307,41 +293,32 @@ function Skeleton() {
     <div className="w-full min-h-[100dvh] pb-12 animate-pulse">
       {/* Back button */}
       <div className="px-4 sm:px-6 lg:px-8 pt-4 mb-3">
-        <div className="h-4 w-16 bg-slate-200 rounded-full" />
+        <div className="h-4 w-16 bg-slate-100 rounded-full" />
       </div>
 
       {/* Hero card */}
-      <div className="bg-gradient-to-br from-slate-200 to-slate-300 rounded-[2rem] mx-4 sm:mx-6 lg:mx-8 mb-6 px-6 sm:px-10 py-6 sm:py-8">
+      <div className="bg-slate-100 rounded-[2rem] mx-4 sm:mx-6 lg:mx-8 mb-6 px-6 sm:px-10 py-6 sm:py-8">
         <div className="flex flex-row items-center gap-4 sm:gap-6">
-          {/* Avatar */}
-          <div className="w-[4.5rem] h-[4.5rem] sm:w-28 sm:h-28 rounded-full bg-slate-300 shrink-0" />
-
+          <div className="w-[4.5rem] h-[4.5rem] sm:w-28 sm:h-28 rounded-full bg-slate-200 shrink-0" />
           <div className="flex-1 min-w-0 space-y-3">
-            {/* Name */}
-            <div className="h-7 sm:h-9 w-48 bg-slate-300 rounded-xl" />
-            {/* Stars row */}
+            <div className="h-7 sm:h-9 w-48 bg-slate-200 rounded-xl" />
             <div className="flex items-center gap-2">
-              <div className="flex gap-0.5">
-                {[0, 1, 2, 3, 4].map((i) => (
-                  <div key={i} className="w-4 h-4 rounded-sm bg-slate-300" />
-                ))}
-              </div>
-              <div className="h-3.5 w-8 bg-slate-300 rounded" />
-              <div className="h-3.5 w-20 bg-slate-300 rounded" />
+              {[0, 1, 2, 3, 4].map((i) => (
+                <div key={i} className="w-4 h-4 rounded-sm bg-slate-200" />
+              ))}
+              <div className="h-3.5 w-8 bg-slate-200 rounded" />
+              <div className="h-3.5 w-20 bg-slate-200 rounded" />
             </div>
-            {/* Meta row — desktop */}
             <div className="hidden sm:flex gap-4">
-              <div className="h-3.5 w-20 bg-slate-300 rounded" />
-              <div className="h-3.5 w-28 bg-slate-300 rounded" />
-              <div className="h-3.5 w-24 bg-slate-300 rounded" />
+              <div className="h-3.5 w-20 bg-slate-200 rounded" />
+              <div className="h-3.5 w-28 bg-slate-200 rounded" />
+              <div className="h-3.5 w-24 bg-slate-200 rounded" />
             </div>
           </div>
         </div>
-
-        {/* Meta row — mobile */}
-        <div className="flex sm:hidden gap-3 mt-4 pt-4 border-t border-white/10">
-          <div className="h-3 w-16 bg-slate-300 rounded" />
-          <div className="h-3 w-24 bg-slate-300 rounded" />
+        <div className="flex sm:hidden gap-3 mt-4 pt-4 border-t border-slate-200">
+          <div className="h-3 w-16 bg-slate-200 rounded" />
+          <div className="h-3 w-24 bg-slate-200 rounded" />
         </div>
       </div>
 
@@ -368,50 +345,16 @@ function Skeleton() {
         </div>
       </div>
 
-      {/* Badges section */}
-      <div className="mx-4 sm:mx-6 lg:mx-8 mb-8 p-4 sm:p-6 bg-slate-50 border border-slate-100 rounded-2xl">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="h-5 w-36 bg-slate-200 rounded-lg" />
-          <div className="h-4 w-8 bg-slate-200 rounded" />
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-          {[0, 1, 2, 3, 4, 5].map((i) => (
-            <div
-              key={i}
-              className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-white border border-slate-100"
-            >
-              {/* Hex shape */}
-              <div
-                className="w-[52px] h-[59px] bg-slate-100"
-                style={{
-                  clipPath:
-                    "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-                }}
-              />
-              <div className="space-y-1 w-full flex flex-col items-center">
-                <div className="h-2.5 w-14 bg-slate-100 rounded" />
-                <div className="h-2 w-10 bg-slate-100 rounded" />
-              </div>
-              <div className="w-full pt-1.5 border-t border-slate-100 flex justify-center">
-                <div className="h-2 w-12 bg-slate-100 rounded" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Reviews section */}
       <div className="mx-4 sm:mx-6 lg:mx-8">
-        {/* Heading */}
         <div className="flex items-center gap-2 mb-4">
-          <div className="h-5 w-36 bg-slate-200 rounded-lg" />
-          <div className="h-4 w-8 bg-slate-200 rounded" />
+          <div className="h-5 w-36 bg-slate-100 rounded-lg" />
+          <div className="h-4 w-8 bg-slate-100 rounded" />
         </div>
 
         {/* Rating breakdown */}
         <div className="bg-white rounded-2xl border border-slate-100 p-5 mb-5">
           <div className="flex items-center gap-6">
-            {/* Big number */}
             <div className="flex flex-col items-center gap-2 shrink-0">
               <div className="h-12 w-14 bg-slate-100 rounded-xl" />
               <div className="flex gap-0.5">
@@ -421,18 +364,12 @@ function Skeleton() {
               </div>
               <div className="h-3 w-16 bg-slate-100 rounded" />
             </div>
-            {/* Bars */}
             <div className="flex-1 space-y-2">
               {[0, 1, 2, 3, 4].map((i) => (
                 <div key={i} className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-slate-100 rounded" />
                   <div className="w-3 h-3 bg-slate-100 rounded-sm" />
-                  <div className="flex-1 h-1.5 bg-slate-100 rounded-full">
-                    <div
-                      className="h-full bg-slate-200 rounded-full"
-                      style={{ width: `${[75, 55, 30, 15, 8][i]}%` }}
-                    />
-                  </div>
+                  <div className="flex-1 h-1.5 bg-slate-100 rounded-full" />
                   <div className="w-4 h-3 bg-slate-100 rounded" />
                 </div>
               ))}
@@ -448,7 +385,6 @@ function Skeleton() {
               className="bg-white rounded-2xl border border-slate-100 p-4"
             >
               <div className="flex items-start gap-3">
-                {/* Avatar */}
                 <div className="w-10 h-10 rounded-full bg-slate-100 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2 mb-2">
@@ -468,19 +404,48 @@ function Skeleton() {
                     </div>
                     <div className="h-3 w-16 bg-slate-100 rounded shrink-0" />
                   </div>
-                  {/* Review text — only some cards */}
                   {i % 2 === 0 && (
                     <div className="space-y-1.5 mb-2">
                       <div className="h-3 w-full bg-slate-100 rounded" />
                       <div className="h-3 w-4/5 bg-slate-100 rounded" />
                     </div>
                   )}
-                  {/* Meta chips */}
                   <div className="flex items-center gap-3 mt-2">
                     <div className="h-3 w-14 bg-slate-100 rounded" />
                     <div className="h-3 w-20 bg-slate-100 rounded" />
                   </div>
                 </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Badges section */}
+      <div className="mx-4 sm:mx-6 lg:mx-8 mt-8 p-4 sm:p-6 bg-slate-50 border border-slate-100 rounded-2xl">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="h-5 w-36 bg-slate-100 rounded-lg" />
+          <div className="h-4 w-8 bg-slate-100 rounded" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <div
+              key={i}
+              className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-white border border-slate-100"
+            >
+              <div
+                className="w-[52px] h-[59px] bg-slate-100"
+                style={{
+                  clipPath:
+                    "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+                }}
+              />
+              <div className="space-y-1 w-full flex flex-col items-center">
+                <div className="h-2.5 w-14 bg-slate-100 rounded" />
+                <div className="h-2 w-10 bg-slate-100 rounded" />
+              </div>
+              <div className="w-full pt-1.5 border-t border-slate-100 flex justify-center">
+                <div className="h-2 w-12 bg-slate-100 rounded" />
               </div>
             </div>
           ))}
@@ -507,7 +472,9 @@ export default function UserPublicPage({ userId }: { userId: string }) {
         <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
           <ShieldCheck className="w-8 h-8 text-slate-300" />
         </div>
-        <p className="font-bold text-slate-700 text-lg">Utilizator negăsit</p>
+        <p className="font-bold text-slate-700 text-lg">
+          Utilizator inexistent
+        </p>
         <p className="text-sm text-slate-400 text-center">
           Profilul nu există sau a fost eliminat.
         </p>
@@ -580,7 +547,6 @@ export default function UserPublicPage({ userId }: { userId: string }) {
           Înapoi
         </button>
       </div>
-
       <div className="bg-gradient-to-br from-[#123424] to-[#1a4d36] rounded-[2rem] mx-4 sm:mx-6 lg:mx-8 mb-6 px-6 sm:px-10 py-6 sm:py-8 relative overflow-hidden shadow">
         <div className="absolute -top-10 -right-10 w-56 h-56 rounded-full bg-lime-400/20 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-10 -left-10 w-48 h-48 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
@@ -704,7 +670,6 @@ export default function UserPublicPage({ userId }: { userId: string }) {
           </div>
         </div>
       </div>
-
       <div className="mx-4 sm:mx-6 lg:mx-8 mb-8">
         <div className="bg-white rounded-2xl overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-4">
@@ -740,23 +705,6 @@ export default function UserPublicPage({ userId }: { userId: string }) {
           </div>
         </div>
       </div>
-
-      {earnedBadges.length > 0 && (
-        <div className="mx-4 sm:mx-6 lg:mx-8 mb-8 p-4 sm:p-6 bg-slate-50 border border-slate-100 rounded-2xl">
-          <h2 className="text-lg font-extrabold text-slate-900 tracking-tight mb-4">
-            Badge-uri obținute
-            <span className="ml-2 text-sm font-semibold text-slate-400">
-              ({earnedBadges.length})
-            </span>
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-            {earnedBadges.map((badge) => (
-              <BadgeHex key={badge.id} badge={badge} />
-            ))}
-          </div>
-        </div>
-      )}
-
       <div className="mx-4 sm:mx-6 lg:mx-8 mb-8">
         <h2 className="text-lg font-extrabold text-slate-900 tracking-tight mb-4">
           Recenzii primite
@@ -797,12 +745,27 @@ export default function UserPublicPage({ userId }: { userId: string }) {
                 className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-500 hover:border-lime-300 hover:text-lime-700 hover:bg-lime-50 transition-all cursor-pointer"
               >
                 <ChevronDown className="w-4 h-4" />
-                Mai multe recenzii ({reviews.length - visibleCount} rămase)
+                Vezi mai multe ({reviews.length - visibleCount} rămase)
               </button>
             )}
           </>
         )}
-      </div>
+      </div>{" "}
+      {earnedBadges.length > 0 && (
+        <div className="mx-4 sm:mx-6 lg:mx-8 mb-8 p-4 sm:p-6 bg-slate-50 border border-slate-100 rounded-2xl">
+          <h2 className="text-lg font-extrabold text-slate-900 tracking-tight mb-4">
+            Badge-uri obținute
+            <span className="ml-2 text-sm font-semibold text-slate-400">
+              ({earnedBadges.length})
+            </span>
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+            {earnedBadges.map((badge) => (
+              <BadgeHex key={badge.id} badge={badge} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

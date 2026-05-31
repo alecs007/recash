@@ -7,10 +7,18 @@ import { StatsGrid } from "@/app/components/Profile/StatsGrid";
 import { PostsSection } from "@/app/components/Profile/PostsSection";
 import { TransactionsSection } from "@/app/components/Profile/TransactionsSection";
 import { BadgesSection } from "@/app/components/Profile/BadgesSection";
+import { ReviewsSection } from "@/app/components/Profile/ReviewsSection";
 
 export function ProfilePage({ summary }: { summary: ProfileSummary }) {
-  const { user, posts, totalPosts, transactions, totalTransactions, badges } =
-    summary;
+  const {
+    user,
+    posts,
+    totalPosts,
+    transactions,
+    totalTransactions,
+    badges,
+    reviews,
+  } = summary;
 
   const initials = user.name
     ?.split(" ")
@@ -104,6 +112,7 @@ export function ProfilePage({ summary }: { summary: ProfileSummary }) {
       </div>
 
       <StatsGrid user={user} />
+      <ReviewsSection reviews={reviews} userId={user.id} />
       <PostsSection posts={posts} totalPosts={totalPosts} />
       <BadgesSection badges={badges} />
       <TransactionsSection

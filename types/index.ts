@@ -16,6 +16,21 @@ export type UserProfile = {
   _count: { posts: number; claimedPosts: number; badges: number };
 };
 
+export type ProfileReview = {
+  id: string;
+  rating: number;
+  review: string | null;
+  reviewer: {
+    id: string | undefined;
+    name: string | null | undefined;
+    image: string | null | undefined;
+  };
+  role: "poster" | "collector";
+  bottleCount: number;
+  locationName: string | null;
+  completedAt: string;
+};
+
 export type ProfileSummary = {
   user: UserProfile;
   posts: Post[];
@@ -24,6 +39,7 @@ export type ProfileSummary = {
   totalTransactions: number;
   badges: Badge[];
   hasUnseenBadges: boolean;
+  reviews: ProfileReview[];
 };
 
 export type PostStatus =

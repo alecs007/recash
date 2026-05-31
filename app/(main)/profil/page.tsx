@@ -44,6 +44,73 @@ async function getSafeTransactions(userId: string, take: number) {
     .slice(0, take);
 }
 
+async function getSafeReviews(
+  userId: string,
+): Promise<import("@/types").ProfileReview[]> {
+  const rawTransactions = await prisma.transaction.findMany({
+    where: {
+      OR: [
+        { posterId: userId, collectorRating: { not: null } },
+        { collectorId: userId, posterRating: { not: null } },
+      ],
+    },
+    orderBy: { completedAt: "desc" },
+    take: 50,
+    select: {
+      id: true,
+      bottleCount: true,
+      collectorRating: true,
+      posterRating: true,
+      collectorReview: true,
+      posterReview: true,
+      completedAt: true,
+      posterId: true,
+      collectorId: true,
+      postId: true,
+      poster: { select: { id: true, name: true, image: true } },
+      collector: { select: { id: true, name: true, image: true } },
+    },
+  });
+
+  if (rawTransactions.length === 0) return [];
+
+  const postIds = [...new Set(rawTransactions.map((t) => t.postId))];
+  const existingPosts = await prisma.post.findMany({
+    where: { id: { in: postIds } },
+    select: { id: true, locationName: true },
+  });
+  const postMap = new Map(existingPosts.map((p) => [p.id, p]));
+
+  const mapped: import("@/types").ProfileReview[] = [];
+  for (const t of rawTransactions) {
+    if (!postMap.has(t.postId)) continue;
+    const isThisUserPoster = t.posterId === userId;
+    const ratingReceived = isThisUserPoster
+      ? t.collectorRating
+      : t.posterRating;
+    if (ratingReceived === null) continue;
+    const reviewReceived = isThisUserPoster
+      ? t.collectorReview
+      : t.posterReview;
+    const reviewer = isThisUserPoster ? t.collector : t.poster;
+    mapped.push({
+      id: t.id,
+      rating: ratingReceived,
+      review: reviewReceived ?? null,
+      reviewer: {
+        id: reviewer?.id,
+        name: reviewer?.name,
+        image: reviewer?.image,
+      },
+      role: isThisUserPoster ? "poster" : "collector",
+      bottleCount: t.bottleCount,
+      locationName: postMap.get(t.postId)?.locationName ?? null,
+      completedAt: t.completedAt.toISOString(),
+    });
+  }
+  return mapped;
+}
+
 async function getProfileSummary(userId: string) {
   const cacheKey = `profile:${userId}:summary`;
 
@@ -113,7 +180,10 @@ async function getProfileSummary(userId: string) {
 
   if (!user) return null;
 
-  const transactionsResult = await getSafeTransactions(userId, 3);
+  const [transactionsResult, reviewsResult] = await Promise.all([
+    getSafeTransactions(userId, 3),
+    getSafeReviews(userId),
+  ]);
 
   const [totalPosts, totalTransactions] = await Promise.all([
     prisma.post.count({ where: { authorId: userId } }),
@@ -130,6 +200,7 @@ async function getProfileSummary(userId: string) {
     totalTransactions,
     badges,
     hasUnseenBadges: badges.some((b) => !b.seen),
+    reviews: reviewsResult,
   };
 
   try {
