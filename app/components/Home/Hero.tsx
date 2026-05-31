@@ -14,12 +14,12 @@ export const Hero = () => {
           <div className="max-w-2xl">
             <div className="flex items-center gap-2.5 text-white/90 text-[0.9em] font-semibold tracking-wide mb-4">
               <Image
-                src="/images/returo-logo.svg"
+                src="/images/returo-logo2.svg"
                 alt="RetuRO Logo"
                 width={100}
                 height={100}
                 priority
-                className="w-13 h-auto"
+                className="w-14 h-auto"
               />
               <span>Bani curați, prin RetuRO</span>
             </div>
