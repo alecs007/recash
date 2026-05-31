@@ -354,7 +354,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                 >
                   <FaRecycle className="w-4 h-4 text-lime-400 translate-y-px transition-transform duration-700 ease-in-out" />
                   <span className="tracking-tight">
-                    Conectează-te
+                    Start now
                     <span className="text-lime-400 ml-0.75 inline-block rotate-3 text-[16px] translate-y-[1px]">
                       !
                     </span>

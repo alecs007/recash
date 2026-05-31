@@ -461,7 +461,10 @@ function PersonRow({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
+      <Link
+        href={`/user/${user.id}`}
+        className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 hover:ring-2 hover:ring-lime-400 hover:ring-offset-1 transition-all"
+      >
         {user.image ? (
           <Image
             src={user.image}
@@ -477,12 +480,15 @@ function PersonRow({
             {user.name?.[0] ?? "?"}
           </span>
         )}
-      </div>
+      </Link>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-slate-900 truncate">
+          <Link
+            href={`/user/${user.id}`}
+            className="text-sm font-semibold text-slate-900 hover:text-lime-700 transition-colors truncate"
+          >
             {user.name ?? "Utilizator"}
-          </span>
+          </Link>
           <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full shrink-0">
             {role}
           </span>
