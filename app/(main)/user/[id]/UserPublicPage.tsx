@@ -14,6 +14,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { FaWineBottle, FaBan } from "react-icons/fa";
+import { ProfileRankBadge } from "@/app/components/Profile/RankBadge";
 import { BadgeCard } from "@/app/components/UI/BadgeCard";
 import { BADGE_CONFIG } from "@/lib/constants/badges";
 
@@ -411,6 +412,11 @@ export default function UserPublicPage({ userId }: { userId: string }) {
     fetcher,
   );
 
+  const { data: rankData } = useSWR<{ rank: number; totalBottles: number }>(
+    `/api/v1/leaderboard?userId=${userId}`,
+    fetcher,
+  );
+
   if (isLoading) return <Skeleton />;
 
   if (error || !data?.user) {
@@ -578,6 +584,12 @@ export default function UserPublicPage({ userId }: { userId: string }) {
 
             {/* Desktop meta row */}
             <div className="hidden sm:flex flex-wrap gap-4">
+              {rankData?.rank && (rankData.totalBottles ?? 0) > 0 && (
+                <ProfileRankBadge
+                  rank={rankData.rank}
+                  totalBottles={rankData.totalBottles}
+                />
+              )}
               <div className="flex items-center text-white/70 text-sm">
                 <Trophy className="w-4 h-4 text-lime-400 mr-1.5" />
                 <span className="font-bold text-white mr-1">
@@ -603,13 +615,20 @@ export default function UserPublicPage({ userId }: { userId: string }) {
 
         {/* Mobile meta row */}
         <div className="relative flex sm:hidden flex-wrap gap-3 mt-4 pt-4 border-t border-white/10">
-          <div className="flex items-center text-white/70 text-xs">
-            <Trophy className="w-3.5 h-3.5 text-lime-400 mr-1.5" />
-            <span className="font-bold text-white mr-1">
-              {user._count.badges}
-            </span>
-            {user._count.badges === 1 ? "badge" : "badge-uri"}
-          </div>
+          {rankData?.rank && (rankData.totalBottles ?? 0) > 0 ? (
+            <ProfileRankBadge
+              rank={rankData.rank}
+              totalBottles={rankData.totalBottles}
+            />
+          ) : (
+            <div className="flex items-center text-white/70 text-xs">
+              <Trophy className="w-3.5 h-3.5 text-lime-400 mr-1.5" />
+              <span className="font-bold text-white mr-1">
+                {user._count.badges}
+              </span>
+              {user._count.badges === 1 ? "badge" : "badge-uri"}
+            </div>
+          )}
           <div className="flex items-center text-white/70 text-xs">
             <Calendar className="w-3.5 h-3.5 text-lime-400 mr-1.5" />
             <span className="mr-1">Membru din</span>

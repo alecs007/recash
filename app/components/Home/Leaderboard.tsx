@@ -117,7 +117,9 @@ export async function LeaderboardSection() {
         <div className="lg:w-[420px] shrink-0 text-center lg:text-left flex flex-col items-center gap-8">
           <h2 className="font-sans font-extrabold text-slate-900 text-[2.9rem] lg:text-6xl mb-4 gap-0 leading-[1.05] tracking-tight">
             Cei mai activi{" "}
-            <span className="text-lime-500 italic">reciclatori</span>
+            <span className="text-lime-500 italic tracking-[1.07]">
+              utilizatori
+            </span>
           </h2>
 
           {/* Image fills the remaining left-side space on desktop */}
