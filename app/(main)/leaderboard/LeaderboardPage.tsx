@@ -122,7 +122,7 @@ function EntryRow({ entry }: { entry: LeaderboardEntry }) {
         <span className="text-sm font-black tabular-nums text-slate-800">
           {entry.totalBottles.toLocaleString("ro-RO")}
         </span>
-        <FaWineBottle className="w-3 h-3 text-lime-500" />
+        <FaWineBottle className="w-3 h-3 text-[#7EC3E5]" />
       </div>
     </Link>
   );
@@ -184,7 +184,9 @@ export default function LeaderboardPage() {
         ) : entries.length === 0 ? (
           <div className="text-center py-20">
             <FaWineBottle className="w-10 h-10 text-slate-200 mx-auto mb-4" />
-            <p className="font-bold text-slate-700">Niciun participant încă</p>
+            <p className="font-bold text-slate-700">
+              Niciun participant găsit.
+            </p>
           </div>
         ) : (
           <>

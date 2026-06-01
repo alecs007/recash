@@ -117,9 +117,7 @@ export async function LeaderboardSection() {
         <div className="lg:w-[420px] shrink-0 text-center lg:text-left flex flex-col items-center gap-8">
           <h2 className="font-sans font-extrabold text-slate-900 text-[2.5rem] lg:text-[3.3rem] mb-4 gap-0 leading-[1.15] tracking-tight">
             Topul celor mai activi{" "}
-            <span className="text-lime-500 italic tracking-[1.05]">
-              utilizatori
-            </span>
+            <span className="text-lime-500 italic">utilizatori</span>
           </h2>
 
           {/* Image fills the remaining left-side space on desktop */}
@@ -205,7 +203,7 @@ export async function LeaderboardSection() {
                       <span className="text-sm font-black tabular-nums text-slate-800">
                         {entry.totalBottles.toLocaleString("ro-RO")}
                       </span>
-                      <FaWineBottle className="w-3 h-3 text-lime-500" />
+                      <FaWineBottle className="w-3 h-3 text-[#7EC3E5]" />
                     </div>
                   </Link>
                 );
