@@ -117,7 +117,7 @@ export async function LeaderboardSection() {
         <div className="lg:w-[420px] shrink-0 text-center lg:text-left flex flex-col items-center gap-8">
           <h2 className="font-sans font-extrabold text-slate-900 text-[2.5rem] lg:text-[3.3rem] mb-4 gap-0 leading-[1.15] tracking-tight">
             Topul celor mai activi{" "}
-            <span className="text-lime-500 italic tracking-[1.07]">
+            <span className="text-lime-500 italic tracking-[1.05]">
               utilizatori
             </span>
           </h2>
