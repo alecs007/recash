@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Star } from "lucide-react";
 import { FaWineBottle, FaMedal, FaArrowRight } from "react-icons/fa";
 import { GrTrophy } from "react-icons/gr";
+import { prisma } from "@/lib/prisma";
 
 interface LeaderboardEntry {
   rank: number;
@@ -16,17 +17,35 @@ interface LeaderboardEntry {
 
 async function getLeaderboard(): Promise<LeaderboardEntry[]> {
   try {
-    const baseUrl =
-      process.env.NEXT_PUBLIC_APP_URL ??
-      (process.env.NEXT_PUBLIC_APP_URL
-        ? `${process.env.NEXT_PUBLIC_APP_URL}`
-        : "http://localhost:3000");
-    const res = await fetch(`${baseUrl}/api/v1/leaderboard?limit=10`, {
-      next: { revalidate: 300 },
+    const allUsers = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        image: true,
+        totalBottlesGiven: true,
+        totalBottlesCollected: true,
+        reputationScore: true,
+        ratingCount: true,
+        createdAt: true,
+      },
     });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.entries ?? [];
+
+    allUsers.sort((a, b) => {
+      const aTotal = a.totalBottlesGiven + a.totalBottlesCollected;
+      const bTotal = b.totalBottlesGiven + b.totalBottlesCollected;
+      if (bTotal !== aTotal) return bTotal - aTotal;
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    });
+
+    return allUsers.slice(0, 10).map((u, i) => ({
+      rank: i + 1,
+      id: u.id,
+      name: u.name,
+      image: u.image,
+      totalBottles: u.totalBottlesGiven + u.totalBottlesCollected,
+      reputationScore: u.reputationScore,
+      ratingCount: u.ratingCount,
+    }));
   } catch {
     return [];
   }

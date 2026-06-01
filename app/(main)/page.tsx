@@ -4,6 +4,7 @@ import { CTA } from "../components/Home/CTA";
 import { LeaderboardSection } from "../components/Home/Leaderboard";
 import { Footer } from "../components/Layout/Footer";
 
+export const revalidate = 3600;
 export default function Homepage() {
   return (
     <div className="w-full pt-4 md:pt-8">
