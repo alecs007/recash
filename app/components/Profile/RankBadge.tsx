@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { Trophy } from "lucide-react";
 
-interface RankData {
+interface Props {
   rank: number;
   totalBottles: number;
 }
@@ -16,22 +15,11 @@ function ordinalSuffix(n: number): string {
   return `locul ${n}`;
 }
 
-export function ProfileRankBadge({ userId }: { userId: string }) {
-  const [data, setData] = useState<RankData | null>(null);
+export function ProfileRankBadge({ rank, totalBottles }: Props) {
+  if (!rank || totalBottles === 0) return null;
 
-  useEffect(() => {
-    fetch(`/api/v1/leaderboard?userId=${userId}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.rank) setData({ rank: d.rank, totalBottles: d.totalBottles });
-      })
-      .catch(() => {});
-  }, [userId]);
-
-  if (!data) return null;
-
-  const isTop3 = data.rank <= 3;
-  const isTop10 = data.rank <= 10;
+  const isTop3 = rank <= 3;
+  const isTop10 = rank <= 10;
 
   return (
     <Link
@@ -46,7 +34,7 @@ export function ProfileRankBadge({ userId }: { userId: string }) {
         }`}
     >
       <Trophy className="w-3 h-3" />
-      {ordinalSuffix(data.rank)} în clasament
+      {ordinalSuffix(rank)} în clasament
     </Link>
   );
 }

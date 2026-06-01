@@ -10,7 +10,12 @@ import { BadgesSection } from "@/app/components/Profile/BadgesSection";
 import { ReviewsSection } from "@/app/components/Profile/ReviewsSection";
 import { ProfileRankBadge } from "@/app/components/Profile/RankBadge";
 
-export function ProfilePage({ summary }: { summary: ProfileSummary }) {
+interface ExtendedSummary extends ProfileSummary {
+  rank?: number;
+  totalBottles?: number;
+}
+
+export function ProfilePage({ summary }: { summary: ExtendedSummary }) {
   const {
     user,
     posts,
@@ -19,6 +24,8 @@ export function ProfilePage({ summary }: { summary: ProfileSummary }) {
     totalTransactions,
     badges,
     reviews,
+    rank,
+    totalBottles: summaryTotalBottles,
   } = summary;
 
   const initials = user.name
@@ -31,7 +38,8 @@ export function ProfilePage({ summary }: { summary: ProfileSummary }) {
     month: "long",
     year: "numeric",
   });
-  const totalBottles = user.totalBottlesGiven + user.totalBottlesCollected;
+  const totalBottles =
+    summaryTotalBottles ?? user.totalBottlesGiven + user.totalBottlesCollected;
 
   return (
     <div className="w-full min-h-[100dvh] pb-12">
@@ -84,7 +92,9 @@ export function ProfilePage({ summary }: { summary: ProfileSummary }) {
                 cancelledCount={user.cancelledCount}
               />
               <div className="hidden sm:flex flex-wrap items-center gap-3 mt-3">
-                <ProfileRankBadge userId={user.id} />
+                {rank && (
+                  <ProfileRankBadge rank={rank} totalBottles={totalBottles} />
+                )}
                 <div className="flex items-center text-white/80 text-sm">
                   <Trophy className="w-4 h-4 text-lime-400 mr-1.5" />
                   <span className="font-bold text-white mr-1">
@@ -109,7 +119,9 @@ export function ProfilePage({ summary }: { summary: ProfileSummary }) {
           </div>
 
           <div className="flex sm:hidden flex-wrap items-center gap-2 mt-4 pt-4 border-t border-white/10">
-            <ProfileRankBadge userId={user.id} />
+            {rank && (
+              <ProfileRankBadge rank={rank} totalBottles={totalBottles} />
+            )}
             <div className="flex items-center text-white/80 text-xs">
               <Trophy className="w-3.5 h-3.5 text-lime-400 mr-1.5" />
               <span className="font-bold text-white mr-1">

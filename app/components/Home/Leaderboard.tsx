@@ -1,10 +1,7 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { FaWineBottle } from "react-icons/fa";
-import { Trophy, ChevronRight, Medal } from "lucide-react";
+import { ChevronRight, Medal } from "lucide-react";
 
 interface LeaderboardEntry {
   rank: number;
@@ -14,27 +11,58 @@ interface LeaderboardEntry {
   totalBottles: number;
 }
 
+async function getLeaderboard(): Promise<LeaderboardEntry[]> {
+  try {
+    const baseUrl =
+      process.env.NEXT_PUBLIC_APP_URL ??
+      (process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : "http://localhost:3000");
+    const res = await fetch(`${baseUrl}/api/v1/leaderboard?limit=10`, {
+      next: { revalidate: 300 },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.entries ?? [];
+  } catch {
+    return [];
+  }
+}
+
 const MEDAL_COLORS: Record<
   number,
-  { bg: string; text: string; border: string; icon: string }
+  {
+    bg: string;
+    text: string;
+    border: string;
+    icon: string;
+    rowBg: string;
+    rowBorder: string;
+  }
 > = {
   1: {
     bg: "bg-amber-50",
     text: "text-amber-700",
     border: "border-amber-200",
     icon: "text-amber-500",
+    rowBg: "bg-amber-50",
+    rowBorder: "border-amber-200",
   },
   2: {
     bg: "bg-slate-100",
     text: "text-slate-600",
     border: "border-slate-200",
     icon: "text-slate-400",
+    rowBg: "bg-slate-50",
+    rowBorder: "border-slate-200",
   },
   3: {
     bg: "bg-orange-50",
     text: "text-orange-700",
     border: "border-orange-200",
     icon: "text-orange-400",
+    rowBg: "bg-orange-50",
+    rowBorder: "border-orange-200",
   },
 };
 
@@ -56,79 +84,62 @@ function RankBadge({ rank }: { rank: number }) {
   );
 }
 
-function Skeleton() {
-  return (
-    <div className="space-y-2 animate-pulse">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div
-          key={i}
-          className="flex items-center gap-3 bg-slate-100 rounded-2xl px-4 py-3"
-        >
-          <div className="w-8 h-8 rounded-full bg-slate-200 shrink-0" />
-          <div className="w-9 h-9 rounded-full bg-slate-200 shrink-0" />
-          <div className="flex-1 space-y-1.5">
-            <div className="h-3 w-28 bg-slate-200 rounded-lg" />
-            <div className="h-2.5 w-16 bg-slate-200 rounded-lg" />
-          </div>
-          <div className="h-4 w-12 bg-slate-200 rounded-lg" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export function LeaderboardSection() {
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/v1/leaderboard?limit=10")
-      .then((r) => r.json())
-      .then((d) => setEntries(d.entries ?? []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+export async function LeaderboardSection() {
+  const entries = await getLeaderboard();
 
   return (
-    <section className="px-0 py-12 lg:py-20">
-      <div className="flex flex-col lg:flex-row gap-10 lg:gap-16">
-        <div className="lg:w-96 shrink-0">
-          <h2 className="text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight mb-4">
-            Cei mai activi
-            <br />
+    <section className="pb-12 lg:pb-16">
+      <div className="flex flex-col lg:flex-row gap-12 lg:gap-16 items-start">
+        {/* ── Left: heading + CTA + image ── */}
+        <div className="lg:w-[420px] shrink-0 text-center lg:text-left">
+          <h2 className="font-sans font-extrabold text-slate-900 text-[2.7rem] lg:text-6xl mb-4 gap-0 leading-tight tracking-tight">
+            Cei mai activi{" "}
             <span className="text-lime-500 italic">reciclatori</span>
           </h2>
-          <p className="text-slate-500 text-sm leading-relaxed mb-6">
+          <p className="text-slate-700 text-lg lg:text-xl mb-6 max-w-4xl mx-auto leading-relaxed">
             Clasamentul se actualizează în timp real pe baza numărului total de
             sticle reciclate.
           </p>
           <Link
             href="/leaderboard"
-            className="inline-flex items-center gap-2 bg-[#123424] text-white font-bold py-3 px-6 rounded-full text-sm hover:bg-[#1a4d36] transition-colors"
+            className="inline-flex items-center gap-2 bg-[#123424] text-white font-bold py-3 px-6 rounded-full text-sm sm:text-base hover:bg-[#1a4d36] transition-colors group"
           >
-            Vezi tot clasamentul
-            <ChevronRight className="w-4 h-4" />
+            Vezi tot clasamentul Recash
+            <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           </Link>
+
+          {/* Image fills the remaining left-side space on desktop */}
+          <div className="hidden lg:block mt-12 relative w-full aspect-square max-w-[340px]">
+            <Image
+              src="/images/champion.jpg"
+              alt="Leaderboard"
+              fill
+              sizes="340px"
+              className="object-contain object-bottom"
+              draggable={false}
+            />
+          </div>
         </div>
 
-        <div className="flex-1 min-w-0">
-          {loading ? (
-            <Skeleton />
+        {/* ── Right: leaderboard list ── */}
+        <div className="flex-1 w-full min-w-0">
+          {entries.length === 0 ? (
+            <div className="text-slate-400 text-sm py-8 text-center">
+              Niciun participant încă.
+            </div>
           ) : (
             <div className="space-y-2">
               {entries.map((entry) => {
                 const m = MEDAL_COLORS[entry.rank];
-                const isTop3 = entry.rank <= 3;
                 return (
                   <Link
                     key={entry.id}
                     href={`/user/${entry.id}`}
-                    className={`flex items-center gap-3 rounded-2xl px-4 py-3 border transition-all group
-                      ${
-                        isTop3
-                          ? `${m!.bg} ${m!.border} hover:shadow-sm`
-                          : "bg-white border-slate-100 hover:border-slate-200"
-                      }`}
+                    className={`flex items-center gap-3 rounded-2xl border px-4 py-3 transition-all hover:shadow-sm group ${
+                      m
+                        ? `${m.rowBg} ${m.rowBorder}`
+                        : "bg-white border-slate-100 hover:border-slate-200"
+                    }`}
                   >
                     <RankBadge rank={entry.rank} />
 

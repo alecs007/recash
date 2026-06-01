@@ -111,6 +111,38 @@ async function getSafeReviews(
   return mapped;
 }
 
+async function computeUserRank(
+  userId: string,
+  totalBottles: number,
+  userCreatedAt: Date,
+): Promise<number> {
+  const cacheKey = `leaderboard:rank:${userId}`;
+  try {
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (parsed.rank) return parsed.rank;
+    }
+  } catch {}
+
+  const allUsers = await prisma.user.findMany({
+    select: {
+      totalBottlesGiven: true,
+      totalBottlesCollected: true,
+      createdAt: true,
+    },
+  });
+
+  const aboveCount = allUsers.filter((u) => {
+    const uTotal = u.totalBottlesGiven + u.totalBottlesCollected;
+    if (uTotal > totalBottles) return true;
+    if (uTotal === totalBottles && u.createdAt < userCreatedAt) return true;
+    return false;
+  }).length;
+
+  return aboveCount + 1;
+}
+
 async function getProfileSummary(userId: string) {
   const cacheKey = `profile:${userId}:summary`;
 
@@ -180,9 +212,12 @@ async function getProfileSummary(userId: string) {
 
   if (!user) return null;
 
-  const [transactionsResult, reviewsResult] = await Promise.all([
+  const totalBottles = user.totalBottlesGiven + user.totalBottlesCollected;
+
+  const [transactionsResult, reviewsResult, rank] = await Promise.all([
     getSafeTransactions(userId, 3),
     getSafeReviews(userId),
+    computeUserRank(userId, totalBottles, user.createdAt),
   ]);
 
   const [totalPosts, totalTransactions] = await Promise.all([
@@ -201,6 +236,8 @@ async function getProfileSummary(userId: string) {
     badges,
     hasUnseenBadges: badges.some((b) => !b.seen),
     reviews: reviewsResult,
+    rank,
+    totalBottles,
   };
 
   try {
