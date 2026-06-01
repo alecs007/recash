@@ -26,7 +26,7 @@ export const Steps = () => {
   ];
 
   return (
-    <section>
+    <section className="pt-8">
       <div className="grid lg:grid-cols-3 gap-20 md:gap-12 px-3 md:px-0">
         {steps.map((step) => (
           <div key={step.number} className="group">

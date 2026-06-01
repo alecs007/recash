@@ -111,8 +111,7 @@ export async function LeaderboardSection() {
 
   return (
     <section>
-      {" "}
-      <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent mb-12 lg:mb-16" />
+      <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent mb-12 lg:mb-24" />
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 items-start">
         {/* ── Left: heading + CTA + image ── */}
         <div className="lg:w-[420px] shrink-0 text-center lg:text-left flex flex-col items-center gap-8">
@@ -136,7 +135,7 @@ export async function LeaderboardSection() {
           {/* Desktop CTA */}
           <Link
             href="/leaderboard"
-            className="hidden lg:flex items-center justify-center gap-3 text-[#14532d] font-extrabold py-4 px-12 rounded-full text-lg hover:bg-lime-50 hover:-translate-y-0.5 transition-all border-2 border-lime-600/30 group"
+            className="hidden lg:flex items-center justify-center gap-3 text-[#14532d] font-extrabold py-4 px-10 rounded-full text-lg hover:bg-lime-50 hover:-translate-y-0.5 transition-all border-2 border-lime-600/30 group"
             style={{
               background: "#fafaf5",
             }}
@@ -226,7 +225,7 @@ export async function LeaderboardSection() {
           )}
         </div>
       </div>{" "}
-      <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent mt-12 lg:mt-16" />
+      <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent mt-12 lg:mt-24" />
     </section>
   );
 }
