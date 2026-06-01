@@ -509,7 +509,7 @@ export default function UserPublicPage({ userId }: { userId: string }) {
                   fill
                   sizes="(min-width: 640px) 7rem, 4.5rem"
                   priority
-                  className="rounded-full object-cover border-3 border-lime-400/70 shadow-lg z-10"
+                  className="rounded-2xl sm:rounded-3xl object-cover border-2 sm:border-3 border-lime-400 shadow-lg z-10"
                 />
               </div>
             ) : (

@@ -50,7 +50,7 @@ export function PostCard({ post }: { post: Post }) {
             </div>
           ) : (
             <div className="text-sm text-slate-400 mt-1">
-              +{post.estimatedValue.toFixed(2)} RON
+              {post.estimatedValue.toFixed(2)} RON
             </div>
           )}
         </div>

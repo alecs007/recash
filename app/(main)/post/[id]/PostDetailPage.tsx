@@ -1319,46 +1319,63 @@ function DetailPanel({
 
           {/* ── EARNINGS SPLIT ── */}
           <div className="mb-7">
-            {post.status === "COMPLETED" && myActualEarning !== null ? (
-              <>
-                <div className="flex items-baseline gap-2 mb-1">
-                  <span className="text-sm text-slate-500">{myLabel}</span>
-                  <span className="text-4xl font-black text-lime-600 leading-none">
-                    +{myActualEarning.toFixed(2)}
-                  </span>
-                  <span className="text-lg text-slate-400 font-light">RON</span>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="flex items-baseline gap-2 mb-1">
-                  <span className="text-sm text-slate-500">{myLabel}</span>
-                  <span className="text-4xl font-black text-lime-600 leading-none">
-                    +{myEarning.toFixed(2)}
-                  </span>
-                  <span className="text-lg text-slate-400 font-light">RON</span>
-                </div>
-              </>
-            )}
-            <div className="mt-3 h-2.5 bg-slate-100 rounded-full overflow-hidden flex">
-              <div
-                className="h-full bg-[#123424] rounded-l-full"
-                style={{ width: `${posterPct}%` }}
-              />
-              <div
-                className="h-full bg-lime-400 rounded-r-full"
-                style={{ width: `${post.collectorSharePercent}%` }}
-              />
-            </div>
-            <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-              <span>
-                Autorul {posterPct}% ({posterEarning.toFixed(2)} RON)
-              </span>
-              <span>
-                Colectorul {post.collectorSharePercent}% (
-                {collectorEarning.toFixed(2)} RON)
-              </span>
-            </div>
+            {(() => {
+              const getPercentColor = (pct: number) =>
+                pct >= 67
+                  ? { bar: "bg-lime-400", text: "text-lime-600" }
+                  : pct >= 34
+                    ? { bar: "bg-lime-700", text: "text-lime-700" }
+                    : { bar: "bg-[#123424]", text: "text-[#123424]" };
+
+              const myPct = isAuthor ? posterPct : post.collectorSharePercent;
+              const { bar: myBarColor, text: earningColor } =
+                getPercentColor(myPct);
+
+              const posterBarColor = isAuthor ? myBarColor : "bg-slate-200";
+              const collectorBarColor = isCollector
+                ? myBarColor
+                : "bg-slate-200";
+              const displayEarning =
+                post.status === "COMPLETED" && myActualEarning !== null
+                  ? myActualEarning
+                  : myEarning;
+
+              return (
+                <>
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <span className="text-sm text-slate-500">{myLabel}</span>
+                    <span
+                      className={`text-4xl font-black leading-none ${earningColor}`}
+                    >
+                      {displayEarning.toFixed(2) != "0.00" ? "+" : ""}
+                      {displayEarning.toFixed(2)}
+                    </span>
+                    <span className="text-lg text-slate-400 font-light">
+                      RON
+                    </span>
+                  </div>
+                  <div className="mt-3 h-2.5 bg-slate-100 rounded-full overflow-hidden flex">
+                    <div
+                      className={`h-full rounded-l-full ${posterBarColor}`}
+                      style={{ width: `${posterPct}%` }}
+                    />
+                    <div
+                      className={`h-full rounded-r-full ${collectorBarColor}`}
+                      style={{ width: `${post.collectorSharePercent}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                    <span>
+                      Autorul {posterPct}% ({posterEarning.toFixed(2)} RON)
+                    </span>
+                    <span>
+                      Colectorul {post.collectorSharePercent}% (
+                      {collectorEarning.toFixed(2)} RON)
+                    </span>
+                  </div>
+                </>
+              );
+            })()}
           </div>
 
           <div className="h-px bg-slate-100 mb-7" />

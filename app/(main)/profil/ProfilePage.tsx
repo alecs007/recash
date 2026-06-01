@@ -8,6 +8,7 @@ import { PostsSection } from "@/app/components/Profile/PostsSection";
 import { TransactionsSection } from "@/app/components/Profile/TransactionsSection";
 import { BadgesSection } from "@/app/components/Profile/BadgesSection";
 import { ReviewsSection } from "@/app/components/Profile/ReviewsSection";
+import { ProfileRankBadge } from "@/app/components/Profile/RankBadge";
 
 export function ProfilePage({ summary }: { summary: ProfileSummary }) {
   const {
@@ -37,15 +38,13 @@ export function ProfilePage({ summary }: { summary: ProfileSummary }) {
       <div className="relative bg-slate-900 sm:rounded-b-[1rem] sm:mx-6 mb-4 sm:mb-6 px-6 sm:px-10 pb-6 sm:pb-8 pt-12 sm:pt-16 overflow-hidden shadow">
         <div className="absolute inset-0 z-0">
           <Image
-            src="/images/profile-background.avif"
+            src="/images/profile-background.jpg"
             alt="Profile Background"
             fill
             priority
             className="object-cover object-center"
           />
-
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/65 to-black/35" />
-
           <div className="absolute -top-10 -right-10 w-56 h-56 rounded-full bg-lime-400/10 blur-3xl pointer-events-none" />
           <div className="absolute -bottom-10 -left-10 w-48 h-48 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
         </div>
@@ -58,9 +57,9 @@ export function ProfilePage({ summary }: { summary: ProfileSummary }) {
                   <div className="absolute inset-0 rounded-full bg-slate-200" />
                   <Image
                     src={user.image}
-                    alt="Profile Picture"
+                    alt="Profile"
                     fill
-                    sizes={"(min-width: 640px) 12rem, 7rem"}
+                    sizes={"(min-width: 640px) 7rem, 4.5rem"}
                     priority
                     className="rounded-2xl sm:rounded-3xl object-cover border-2 sm:border-3 border-lime-400 shadow-lg"
                   />
@@ -76,7 +75,7 @@ export function ProfilePage({ summary }: { summary: ProfileSummary }) {
               <h1 className="text-lg sm:text-3xl font-extrabold text-white tracking-tight truncate mb-0.5">
                 {user.name ?? "Utilizator"}
               </h1>
-              <p className="text-white/70 text-xs sm:text-sm mb-2 sm:mb-3 truncate">
+              <p className="text-white/70 text-xs sm:text-sm mb-2 truncate">
                 {user.email}
               </p>
               <StarRating
@@ -84,7 +83,8 @@ export function ProfilePage({ summary }: { summary: ProfileSummary }) {
                 count={user.ratingCount}
                 cancelledCount={user.cancelledCount}
               />
-              <div className="hidden sm:flex flex-wrap gap-4 mt-4">
+              <div className="hidden sm:flex flex-wrap items-center gap-3 mt-3">
+                <ProfileRankBadge userId={user.id} />
                 <div className="flex items-center text-white/80 text-sm">
                   <Trophy className="w-4 h-4 text-lime-400 mr-1.5" />
                   <span className="font-bold text-white mr-1">
@@ -108,7 +108,8 @@ export function ProfilePage({ summary }: { summary: ProfileSummary }) {
             </div>
           </div>
 
-          <div className="flex sm:hidden flex-wrap gap-3 mt-4 pt-4 border-t border-white/10">
+          <div className="flex sm:hidden flex-wrap items-center gap-2 mt-4 pt-4 border-t border-white/10">
+            <ProfileRankBadge userId={user.id} />
             <div className="flex items-center text-white/80 text-xs">
               <Trophy className="w-3.5 h-3.5 text-lime-400 mr-1.5" />
               <span className="font-bold text-white mr-1">

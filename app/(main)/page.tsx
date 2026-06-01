@@ -1,6 +1,7 @@
 import { Hero } from "../components/Home/Hero";
 import { Steps } from "../components/Home/Steps";
 import { CTA } from "../components/Home/CTA";
+import { LeaderboardSection } from "../components/Home/Leaderboard";
 import { Footer } from "../components/Layout/Footer";
 
 export default function Homepage() {
@@ -9,6 +10,7 @@ export default function Homepage() {
       <div className="px-4 sm:px-6 lg:px-8 space-y-12 lg:space-y-20">
         <Hero />
         <Steps />
+        <LeaderboardSection />
         <CTA />
       </div>
       <Footer />
