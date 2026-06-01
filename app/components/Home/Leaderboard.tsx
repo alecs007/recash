@@ -15,8 +15,8 @@ async function getLeaderboard(): Promise<LeaderboardEntry[]> {
   try {
     const baseUrl =
       process.env.NEXT_PUBLIC_APP_URL ??
-      (process.env.NEXTAUTHa_URL
-        ? `https://${process.env.NEXTAUTHa_URL}`
+      (process.env.NEXTAUTH_URL
+        ? `https://${process.env.NEXTAUTH_URL}`
         : "http://localhost:3000");
     const res = await fetch(`${baseUrl}/api/v1/leaderboard?limit=10`, {
       next: { revalidate: 300 },

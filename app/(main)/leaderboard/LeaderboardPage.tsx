@@ -153,7 +153,6 @@ export default function LeaderboardPage() {
 
   const entries: LeaderboardEntry[] = data?.entries ?? [];
   const totalPages: number = data?.totalPages ?? 1;
-  const total: number = data?.total ?? 0;
 
   const handlePageChange = useCallback((p: number) => setPage(p), []);
 
