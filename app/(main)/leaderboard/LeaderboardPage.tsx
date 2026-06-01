@@ -4,8 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useCallback } from "react";
 import useSWR from "swr";
-import { FaWineBottle } from "react-icons/fa";
-import { ArrowLeft, Medal } from "lucide-react";
+import { FaWineBottle, FaMedal } from "react-icons/fa";
+import { ArrowLeft } from "lucide-react";
 import { Pagination } from "@/app/components/UI/Pagination";
 import { PageTransition } from "@/app/components/UI/PageTransition";
 
@@ -63,7 +63,7 @@ function RankBadge({ rank }: { rank: number }) {
       <div
         className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center border ${m.bg} ${m.border}`}
       >
-        <Medal className={`w-4 h-4 ${m.icon}`} />
+        <FaMedal className={`w-4 h-4 ${m.icon}`} />
       </div>
     );
   }

@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { FaWineBottle } from "react-icons/fa";
-import { ChevronRight, Medal } from "lucide-react";
+import { FaWineBottle, FaMedal } from "react-icons/fa";
+import { GoTrophy } from "react-icons/go";
 
 interface LeaderboardEntry {
   rank: number;
@@ -15,8 +15,8 @@ async function getLeaderboard(): Promise<LeaderboardEntry[]> {
   try {
     const baseUrl =
       process.env.NEXT_PUBLIC_APP_URL ??
-      (process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
+      (process.env.NEXTAUTHs_URL
+        ? `https://${process.env.NEXTAUTHs_URL}`
         : "http://localhost:3000");
     const res = await fetch(`${baseUrl}/api/v1/leaderboard?limit=10`, {
       next: { revalidate: 300 },
@@ -73,7 +73,7 @@ function RankBadge({ rank }: { rank: number }) {
       <div
         className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center border ${m.bg} ${m.border}`}
       >
-        <Medal className={`w-4 h-4 ${m.icon}`} />
+        <FaMedal className={`w-4 h-4 ${m.icon}`} />
       </div>
     );
   }
@@ -88,28 +88,17 @@ export async function LeaderboardSection() {
   const entries = await getLeaderboard();
 
   return (
-    <section className="pb-12 lg:pb-16">
-      <div className="flex flex-col lg:flex-row gap-12 lg:gap-16 items-start">
+    <section className="pb-8 lg:pb-16">
+      <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 items-start">
         {/* ── Left: heading + CTA + image ── */}
-        <div className="lg:w-[420px] shrink-0 text-center lg:text-left">
-          <h2 className="font-sans font-extrabold text-slate-900 text-[2.7rem] lg:text-6xl mb-4 gap-0 leading-tight tracking-tight">
+        <div className="lg:w-[420px] shrink-0 text-center lg:text-left flex flex-col items-center gap-8">
+          <h2 className="font-sans font-extrabold text-slate-900 text-[2.9rem] lg:text-6xl mb-4 gap-0 leading-[1.05] tracking-tight">
             Cei mai activi{" "}
             <span className="text-lime-500 italic">reciclatori</span>
           </h2>
-          <p className="text-slate-700 text-lg lg:text-xl mb-6 max-w-4xl mx-auto leading-relaxed">
-            Clasamentul se actualizează în timp real pe baza numărului total de
-            sticle reciclate.
-          </p>
-          <Link
-            href="/leaderboard"
-            className="inline-flex items-center gap-2 bg-[#123424] text-white font-bold py-3 px-6 rounded-full text-sm sm:text-base hover:bg-[#1a4d36] transition-colors group"
-          >
-            Vezi tot clasamentul Recash
-            <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-          </Link>
 
           {/* Image fills the remaining left-side space on desktop */}
-          <div className="hidden lg:block mt-12 relative w-full aspect-square max-w-[340px]">
+          <div className="hidden lg:block relative w-full aspect-square max-w-[400px]">
             <Image
               src="/images/champion.jpg"
               alt="Leaderboard"
@@ -119,13 +108,21 @@ export async function LeaderboardSection() {
               draggable={false}
             />
           </div>
+
+          <Link
+            href="/leaderboard"
+            className="hidden lg:inline-flex items-center justify-center gap-2 bg-[#123524] text-white font-bold m py-4 px-10 rounded-full text-lg shadow-lg hover:bg-[#1a4d36] hover:scale-105 transition-all w-full sm:w-auto"
+          >
+            <GoTrophy className="w-5 h-5 text-lime-400" /> Vezi clasamentul
+            Recash
+          </Link>
         </div>
 
         {/* ── Right: leaderboard list ── */}
         <div className="flex-1 w-full min-w-0">
           {entries.length === 0 ? (
             <div className="text-slate-400 text-sm py-8 text-center">
-              Niciun participant încă.
+              Niciun participant găsit.
             </div>
           ) : (
             <div className="space-y-2">
