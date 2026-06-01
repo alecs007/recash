@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { FaWineBottle, FaMedal } from "react-icons/fa";
-import { GoTrophy } from "react-icons/go";
+import { FaWineBottle, FaMedal, FaArrowRight } from "react-icons/fa";
+import { GrTrophy } from "react-icons/gr";
 
 interface LeaderboardEntry {
   rank: number;
@@ -15,8 +15,8 @@ async function getLeaderboard(): Promise<LeaderboardEntry[]> {
   try {
     const baseUrl =
       process.env.NEXT_PUBLIC_APP_URL ??
-      (process.env.NEXTAUTHs_URL
-        ? `https://${process.env.NEXTAUTHs_URL}`
+      (process.env.NEXTAUTHa_URL
+        ? `https://${process.env.NEXTAUTHa_URL}`
         : "http://localhost:3000");
     const res = await fetch(`${baseUrl}/api/v1/leaderboard?limit=10`, {
       next: { revalidate: 300 },
@@ -88,7 +88,9 @@ export async function LeaderboardSection() {
   const entries = await getLeaderboard();
 
   return (
-    <section className="pb-8 lg:pb-16">
+    <section>
+      {" "}
+      <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent mb-12 lg:mb-16" />
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 items-start">
         {/* ── Left: heading + CTA + image ── */}
         <div className="lg:w-[420px] shrink-0 text-center lg:text-left flex flex-col items-center gap-8">
@@ -109,12 +111,17 @@ export async function LeaderboardSection() {
             />
           </div>
 
+          {/* Desktop CTA */}
           <Link
             href="/leaderboard"
-            className="hidden lg:inline-flex items-center justify-center gap-2 bg-[#123524] text-white font-bold m py-4 px-10 rounded-full text-lg shadow-lg hover:bg-[#1a4d36] hover:scale-105 transition-all w-full sm:w-auto"
+            className="hidden lg:flex items-center justify-center gap-3 text-[#14532d] font-extrabold py-4 px-12 rounded-full text-lg hover:bg-lime-50 hover:-translate-y-0.5 transition-all border-2 border-lime-600/30 group"
+            style={{
+              background: "#fafaf5",
+            }}
           >
-            <GoTrophy className="w-5 h-5 text-lime-400" /> Vezi clasamentul
-            Recash
+            <GrTrophy className="w-5 h-5 text-lime-500 shrink-0" />
+            Vezi clasamentul complet
+            <FaArrowRight className="w-4 h-4 shrink-0 text-lime-500" />
           </Link>
         </div>
 
@@ -174,10 +181,24 @@ export async function LeaderboardSection() {
                   </Link>
                 );
               })}
+
+              {/* Mobile CTA — appears below the list, full width */}
+              <Link
+                href="/leaderboard"
+                className="lg:hidden flex items-center justify-center gap-3 w-full text-[#14532d] font-extrabold py-4 px-6 rounded-2xl text-base hover:bg-lime-50 active:scale-[0.98] transition-all border border-lime-600/20 group"
+                style={{
+                  background: "#fafaf5",
+                }}
+              >
+                <GrTrophy className="w-5 h-5 text-lime-500 shrink-0" />
+                Vezi clasamentul complet
+                <FaArrowRight className="w-4 h-4 text-lime-500 shrink-0" />
+              </Link>
             </div>
           )}
         </div>
-      </div>
+      </div>{" "}
+      <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent mt-12 lg:mt-16" />
     </section>
   );
 }
