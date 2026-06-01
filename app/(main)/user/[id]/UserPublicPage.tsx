@@ -688,7 +688,7 @@ export default function UserPublicPage({ userId }: { userId: string }) {
               Nicio recenzie primită
             </p>
             <p className="text-xs text-slate-400 mt-1">
-              Recenziile apar după finalizarea unei tranzacti
+              Recenziile apar după finalizarea unei tranzacții
               colector-utilizator.
             </p>
           </div>
