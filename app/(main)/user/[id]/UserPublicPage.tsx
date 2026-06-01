@@ -666,10 +666,11 @@ export default function UserPublicPage({ userId }: { userId: string }) {
           <div className="bg-white rounded-2xl border border-dashed border-slate-200 p-10 text-center">
             <Star className="w-8 h-8 text-slate-200 mx-auto mb-3" />
             <p className="text-sm font-semibold text-slate-500">
-              Nicio recenzie încă
+              Nicio recenzie primită
             </p>
             <p className="text-xs text-slate-400 mt-1">
-              Recenziile apar după finalizarea schimburilor.
+              Recenziile apar după finalizarea unei tranzacti
+              colector-utilizator.
             </p>
           </div>
         ) : (

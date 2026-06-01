@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState, useCallback } from "react";
 import useSWR from "swr";
 import { FaWineBottle, FaMedal } from "react-icons/fa";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Star } from "lucide-react";
 import { Pagination } from "@/app/components/UI/Pagination";
 import { PageTransition } from "@/app/components/UI/PageTransition";
 
@@ -17,6 +17,8 @@ interface LeaderboardEntry {
   name: string | null;
   image: string | null;
   totalBottles: number;
+  reputationScore: number;
+  ratingCount: number;
 }
 
 const MEDAL_COLORS: Record<
@@ -107,16 +109,20 @@ function EntryRow({ entry }: { entry: LeaderboardEntry }) {
         <p className="text-sm font-bold text-slate-900 truncate group-hover:text-slate-700">
           {entry.name ?? "Utilizator"}
         </p>
-        <p className="text-xs text-slate-400">
-          {entry.totalBottles.toLocaleString("ro-RO")} sticle reciclate
+        <p className="text-xs text-slate-400 flex items-center gap-1">
+          <Star className="w-2.5 h-2.5 text-[#FFDF00] fill-[#FFDF00]" />
+          {entry.reputationScore.toFixed(1)}
+          {entry.ratingCount > 0 && (
+            <span className="text-slate-300">({entry.ratingCount})</span>
+          )}
         </p>
       </div>
 
       <div className="flex items-center gap-1.5 shrink-0">
-        <FaWineBottle className="w-3 h-3 text-lime-500" />
         <span className="text-sm font-black tabular-nums text-slate-800">
           {entry.totalBottles.toLocaleString("ro-RO")}
         </span>
+        <FaWineBottle className="w-3 h-3 text-lime-500" />
       </div>
     </Link>
   );

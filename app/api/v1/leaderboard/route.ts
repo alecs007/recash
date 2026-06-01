@@ -98,6 +98,8 @@ export async function GET(req: Request) {
           totalBottlesGiven: true,
           totalBottlesCollected: true,
           createdAt: true,
+          reputationScore: true,
+          ratingCount: true,
         },
       }),
       prisma.user.count(),
@@ -116,6 +118,8 @@ export async function GET(req: Request) {
       name: u.name,
       image: u.image,
       totalBottles: u.totalBottlesGiven + u.totalBottlesCollected,
+      reputationScore: u.reputationScore,
+      ratingCount: u.ratingCount,
     }));
 
     const payload = {

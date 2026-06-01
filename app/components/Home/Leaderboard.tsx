@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Star } from "lucide-react";
 import { FaWineBottle, FaMedal, FaArrowRight } from "react-icons/fa";
 import { GrTrophy } from "react-icons/gr";
 
@@ -9,14 +10,16 @@ interface LeaderboardEntry {
   name: string | null;
   image: string | null;
   totalBottles: number;
+  reputationScore: number;
+  ratingCount: number;
 }
 
 async function getLeaderboard(): Promise<LeaderboardEntry[]> {
   try {
     const baseUrl =
       process.env.NEXT_PUBLIC_APP_URL ??
-      (process.env.NEXTAUTH_URL
-        ? `https://${process.env.NEXTAUTH_URL}`
+      (process.env.NEXT_PUBLIC_APP_URL
+        ? `${process.env.NEXT_PUBLIC_APP_URL}`
         : "http://localhost:3000");
     const res = await fetch(`${baseUrl}/api/v1/leaderboard?limit=10`, {
       next: { revalidate: 300 },
@@ -167,16 +170,22 @@ export async function LeaderboardSection() {
                       <p className="text-sm font-bold text-slate-900 truncate group-hover:text-slate-700">
                         {entry.name ?? "Utilizator"}
                       </p>
-                      <p className="text-xs text-slate-400">
-                        {entry.totalBottles.toLocaleString("ro-RO")} sticle
+                      <p className="text-xs text-slate-400 flex items-center gap-1">
+                        <Star className="w-2.5 h-2.5 text-[#FFDF00] fill-[#FFDF00]" />
+                        {entry.reputationScore.toFixed(1)}
+                        {entry.ratingCount > 0 && (
+                          <span className="text-slate-300">
+                            ({entry.ratingCount})
+                          </span>
+                        )}
                       </p>
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <FaWineBottle className="w-3 h-3 text-lime-500" />
                       <span className="text-sm font-black tabular-nums text-slate-800">
                         {entry.totalBottles.toLocaleString("ro-RO")}
                       </span>
+                      <FaWineBottle className="w-3 h-3 text-lime-500" />
                     </div>
                   </Link>
                 );
