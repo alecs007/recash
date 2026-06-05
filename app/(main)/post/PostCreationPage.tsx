@@ -1228,7 +1228,7 @@ export default function PostCreationClient({
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="flex items-center gap-2 font-bold tracking-wide"
+                      className="flex items-center gap-2 font-[800] tracking-wide"
                     >
                       <FaWineBottle className="w-4 h-4" />
                       Recash It!

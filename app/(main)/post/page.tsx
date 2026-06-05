@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import PostCreationClient from "./PostCreationPage";
 
 export const metadata: Metadata = {
-  title: "Postează sticle | Recash",
+  title: "Creează un anunț | Recash",
   description: "Postează sticlele tale pentru a câștiga bani prin reciclare.",
 };
 
