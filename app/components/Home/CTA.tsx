@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { FaRecycle } from "react-icons/fa";
-import { LuBike } from "react-icons/lu";
+import { LuBike, LuMousePointerClick } from "react-icons/lu";
 
 export const CTA = () => {
   return (
@@ -25,7 +24,7 @@ export const CTA = () => {
             href="/post"
             className="inline-flex items-center justify-center gap-2 bg-[#123524] text-white font-bold py-4 px-10 rounded-full text-lg shadow-lg hover:bg-[#1a4d36] hover:scale-105 transition-all w-full sm:w-auto"
           >
-            <FaRecycle className="w-5 h-5 text-lime-400" />
+            <LuMousePointerClick className="w-6 h-6 text-lime-400" />
             Creează un anunț
           </Link>
 

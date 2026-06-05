@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { FaRecycle } from "react-icons/fa";
-import { LuBike } from "react-icons/lu";
+import { LuBike, LuMousePointerClick } from "react-icons/lu";
 
 export const Hero = () => {
   return (
@@ -43,7 +42,7 @@ export const Hero = () => {
                 href="/post"
                 className="inline-flex items-center justify-center gap-2 bg-lime-400 text-black font-bold py-4 px-8 w-full sm:w-auto rounded-full text-lg shadow-lg hover:scale-105 transition-transform"
               >
-                <FaRecycle className="w-5 h-5" /> Creează un anunț
+                <LuMousePointerClick className="w-6 h-6" /> Creează un anunț
               </Link>
               <Link
                 href="/map"
