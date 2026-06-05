@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { FaWineBottle, FaRecycle } from "react-icons/fa";
+import { FaRecycle } from "react-icons/fa";
 import { LuBike } from "react-icons/lu";
 
 export const Hero = () => {
