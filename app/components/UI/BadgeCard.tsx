@@ -127,7 +127,7 @@ export function BadgeCard({ badge, onSeen, earned = true }: Props) {
           className="w-full py-1.5 rounded-xl text-[10px] font-bold text-white transition-all cursor-pointer hover:opacity-90 active:scale-[0.97] flex items-center justify-center"
           style={{ backgroundColor: earned ? color : "#94a3b8" }}
         >
-          {earned ? "Check it out!" : "Neobținut"}
+          {earned ? "Check it out!" : "Locked"}
         </div>
       </div>
 

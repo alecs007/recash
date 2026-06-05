@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { FaWineBottle } from "react-icons/fa";
+import { FaWineBottle, FaRecycle } from "react-icons/fa";
 import { LuBike } from "react-icons/lu";
 
 export const Hero = () => {
@@ -43,7 +43,7 @@ export const Hero = () => {
                 href="/post"
                 className="inline-flex items-center justify-center gap-2 bg-lime-400 text-black font-bold py-4 px-8 w-full sm:w-auto rounded-full text-lg shadow-lg hover:scale-105 transition-transform"
               >
-                <FaWineBottle className="w-5 h-5" /> Postează sticle
+                <FaRecycle className="w-5 h-5" /> Creează un anunț
               </Link>
               <Link
                 href="/map"

@@ -15,7 +15,7 @@ export function ProfileRankBadge({ rank, totalBottles }: Props) {
     if (rank === 1)
       return {
         Icon: FaMedal,
-        label: "Locul 1 pe Recash",
+        label: "#1 în clasament",
         bg: "bg-amber-400/20",
         text: "text-amber-300",
         border: "border-amber-400/40",
@@ -24,7 +24,7 @@ export function ProfileRankBadge({ rank, totalBottles }: Props) {
     if (rank === 2)
       return {
         Icon: FaMedal,
-        label: "Locul 2 pe Recash",
+        label: "#2 în clasament",
         bg: "bg-slate-400/20",
         text: "text-slate-300",
         border: "border-slate-400/40",
@@ -33,7 +33,7 @@ export function ProfileRankBadge({ rank, totalBottles }: Props) {
     if (rank === 3)
       return {
         Icon: FaMedal,
-        label: "Locul 3 pe Recash",
+        label: "#3 în clasament",
         bg: "bg-orange-400/20",
         text: "text-orange-300",
         border: "border-orange-400/40",

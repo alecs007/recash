@@ -308,7 +308,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                               className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                             >
                               <FaWineBottle className="w-4 h-4 text-slate-600" />
-                              Postează sticle
+                              Creează un anunț
                             </Link>
                           )}
                           {activeCollections === 0 && (
