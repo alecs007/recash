@@ -348,17 +348,30 @@ export default function Header({ children }: { children: React.ReactNode }) {
                 >
                   Intră în cont
                 </button>
+
                 <button
                   onClick={openAuthModal}
-                  className="flex items-center justify-center gap-1 text-white bg-[#1a4d36] font-bold py-2.25 px-4 rounded-full text-sm hover:scale-105 transition-all duration-200 cursor-pointer group"
+                  className="relative p-[2px] overflow-hidden rounded-full flex items-center justify-center hover:scale-105 transition-transform duration-200 cursor-pointer group"
                 >
-                  <FaRecycle className="w-4 h-4 text-lime-400 translate-y-px transition-transform duration-700 ease-in-out" />
-                  <span className="tracking-tight">
-                    Start now
-                    <span className="text-lime-400 ml-0.75 inline-block rotate-3 text-[16px] translate-y-[1px]">
-                      !
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{
+                      repeat: Infinity,
+                      duration: 4,
+                      ease: "linear",
+                    }}
+                    className="absolute inset-[-100%] bg-[conic-gradient(from_0deg,#1a4d36_0deg_45deg,transparent_45deg_180deg,#1a4d36_180deg_225deg,transparent_225deg_360deg)]"
+                  />
+
+                  <div className="relative flex items-center justify-center gap-1 text-[#1a4d36] bg-slate-50 font-bold py-2.25 px-4 rounded-full text-sm">
+                    <FaRecycle className="w-4 h-4 text-lime-600 translate-y-px" />
+                    <span className="tracking-tight">
+                      Start now
+                      <span className="text-lime-600 ml-0.75 inline-block rotate-3 text-[16px] translate-y-[1px]">
+                        !
+                      </span>
                     </span>
-                  </span>
+                  </div>
                 </button>
               </div>
             )}
