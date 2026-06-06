@@ -29,6 +29,7 @@ import { useSetActiveCounts } from "@/hooks/useActiveCounts";
 import { useRecashSocket } from "@/hooks/useRecashSocket";
 import { PostChat, ChatTriggerButton } from "./PostChat";
 import { usePostChat } from "@/hooks/usePostChat";
+import { EmailOptinPopup } from "@/app/components/UI/EmailOptinPopup";
 import { showToast } from "@/lib/toast";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, Variants } from "framer-motion";
@@ -209,7 +210,7 @@ function CodeDisplay({ postId }: { postId: string }) {
         {[0, 1, 2, 3].map((i) => (
           <div
             key={i}
-            className="w-12 h-14 bg-slate-100 rounded-lg animate-pulse"
+            className="w-15 h-15 bg-slate-100 rounded-lg animate-pulse"
           />
         ))}
       </div>
@@ -1826,6 +1827,14 @@ function DetailPanel({
             }
           />
         </>
+      )}
+
+      {isAuthor && (post.status === "OPEN" || post.status === "CLAIMED") && (
+        <EmailOptinPopup context="author" postId={post.id} />
+      )}
+
+      {isCollector && post.status === "CLAIMED" && (
+        <EmailOptinPopup context="collector" postId={post.id} />
       )}
     </div>
   );

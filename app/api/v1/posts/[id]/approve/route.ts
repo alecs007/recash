@@ -6,6 +6,10 @@ import { approveClaimSchema } from "@/lib/validations/post";
 import { notifyClaimApproved, notifyClaimDenied } from "@/lib/notifications";
 import { redis } from "@/lib/redis";
 import { publishPostStatus, publishToUser } from "@/lib/pubsub";
+import {
+  maybeEmailClaimApproved,
+  maybeEmailClaimDenied,
+} from "@/lib/email-optin";
 
 const COLLECTION_WINDOW_MINUTES = 60;
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -73,6 +77,9 @@ export async function POST(
       );
     }
 
+    const posterName = post.author.name ?? "Autorul";
+    const collectorId = post.collectorId;
+
     if (action === "approve") {
       if (post.expiresAt && post.expiresAt < new Date()) {
         await prisma.post.update({
@@ -97,22 +104,25 @@ export async function POST(
         data: { status: "IN_PROGRESS", expiresAt: collectionDeadline },
       });
 
-      await notifyClaimApproved(
-        post.collectorId,
-        id,
-        post.author.name ?? "Autorul",
-      );
+      await notifyClaimApproved(collectorId, id, posterName);
 
-      // Notify both post room and both users channels
       publishPostStatus(
         {
           postId: id,
           status: "IN_PROGRESS",
-          collectorId: post.collectorId,
+          collectorId,
           expiresAt: collectionDeadline.toISOString(),
         },
-        [session.user.id, post.collectorId],
+        [session.user.id, collectorId],
       );
+
+      // Send email to collector if they opted in (fire-and-forget)
+      maybeEmailClaimApproved({
+        collectorId,
+        posterName,
+        bottleCount: post.bottleCount,
+        postId: id,
+      }).catch(console.error);
 
       return NextResponse.json({
         success: true,
@@ -125,17 +135,13 @@ export async function POST(
         data: { status: "OPEN", collectorId: null, claimedAt: null },
       });
 
-      await notifyClaimDenied(
-        post.collectorId,
-        id,
-        post.author.name ?? "Autorul",
-      );
+      await notifyClaimDenied(collectorId, id, posterName);
 
       publishPostStatus({ postId: id, status: "OPEN", collectorId: null }, [
         session.user.id,
       ]);
 
-      publishToUser(post.collectorId, {
+      publishToUser(collectorId, {
         type: "post:cancelled",
         payload: {
           postId: id,
@@ -144,6 +150,13 @@ export async function POST(
           reason: "claim_denied",
         },
       });
+
+      // Send email to collector if they opted in (fire-and-forget)
+      maybeEmailClaimDenied({
+        collectorId,
+        posterName,
+        postId: id,
+      }).catch(console.error);
 
       return NextResponse.json({ success: true, status: "OPEN" });
     }

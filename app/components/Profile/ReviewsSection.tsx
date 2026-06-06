@@ -212,7 +212,7 @@ export function ReviewsSection({
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-extrabold text-slate-900 tracking-tight">
           Recenzii primite
-          <span className="ml-2 text-sm font-semibold text-slate-400">
+          <span className="ml-2 text-base font-semibold text-slate-400">
             ({reviews.length})
           </span>
         </h2>

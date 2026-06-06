@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { rateLimit, RL } from "@/lib/rate-limit";
 import { notifyPostClaimed, createNotification } from "@/lib/notifications";
 import { publishPostStatus } from "@/lib/pubsub";
+import { maybeEmailCollectorRequest } from "@/lib/email-optin";
 
 export async function POST(
   _req: Request,
@@ -77,13 +78,10 @@ export async function POST(
       select: { name: true },
     });
 
+    const collectorName = collector?.name ?? "Un colector";
+
     // Notify poster via DB + WS push
-    await notifyPostClaimed(
-      post.authorId,
-      id,
-      collector?.name ?? "Un colector",
-      post.bottleCount,
-    );
+    await notifyPostClaimed(post.authorId, id, collectorName, post.bottleCount);
 
     await createNotification({
       userId: session.user.id,
@@ -100,10 +98,18 @@ export async function POST(
         postId: id,
         status: "CLAIMED",
         collectorId: session.user.id,
-        collectorName: collector?.name ?? null,
+        collectorName: collectorName,
       },
       [post.authorId],
     );
+
+    // Send email to author if they opted in (fire-and-forget)
+    maybeEmailCollectorRequest({
+      authorId: post.authorId,
+      collectorName,
+      bottleCount: post.bottleCount,
+      postId: id,
+    }).catch(console.error);
 
     return NextResponse.json({ success: true, status: updated.status });
   } catch (err: unknown) {

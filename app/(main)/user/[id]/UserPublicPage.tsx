@@ -678,7 +678,7 @@ export default function UserPublicPage({ userId }: { userId: string }) {
         <h2 className="text-lg font-extrabold text-slate-900 tracking-tight mb-4">
           Recenzii primite
           {reviews.length > 0 && (
-            <span className="ml-2 text-sm font-semibold text-slate-400">
+            <span className="ml-2 text-base font-semibold text-slate-400">
               ({reviews.length})
             </span>
           )}
