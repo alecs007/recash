@@ -8,6 +8,7 @@ import { PostsSection } from "@/app/components/Profile/PostsSection";
 import { TransactionsSection } from "@/app/components/Profile/TransactionsSection";
 import { BadgesSection } from "@/app/components/Profile/BadgesSection";
 import { ReviewsSection } from "@/app/components/Profile/ReviewsSection";
+import { RadarSection } from "@/app/components/Profile/RadarSection";
 import { ProfileRankBadge } from "@/app/components/Profile/RankBadge";
 
 interface ExtendedSummary extends ProfileSummary {
@@ -143,6 +144,7 @@ export function ProfilePage({ summary }: { summary: ExtendedSummary }) {
       </div>
 
       <StatsGrid user={user} />
+      <RadarSection />
       <ReviewsSection reviews={reviews} userId={user.id} />
       <PostsSection posts={posts} totalPosts={totalPosts} />
       <BadgesSection badges={badges} />

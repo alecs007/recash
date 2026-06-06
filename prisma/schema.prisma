@@ -134,6 +134,7 @@ model User {
   posterTransactions    Transaction[]  @relation("PosterTransactions")
   collectorTransactions Transaction[]  @relation("CollectorTransactions")
   notifications         Notification[]
+  radar  Radar?
 
   // reputationScore is queried for leaderboards / public profiles
   @@index([reputationScore(sort: Desc)])
@@ -282,4 +283,21 @@ model ChatMessage {
   sender User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@index([postId, createdAt(sort: Asc)])
+}
+
+model Radar {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @unique @db.ObjectId   
+  latitude      Float
+  longitude     Float
+  locationName  String?
+  radiusKm      Int      
+  emailEnabled  Boolean  @default(false)
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([active])
 }

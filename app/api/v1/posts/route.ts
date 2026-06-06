@@ -5,6 +5,7 @@ import { rateLimit, RL } from "@/lib/rate-limit";
 import { invalidate, CacheKey } from "@/lib/cache";
 import { checkPostBadges } from "@/lib/badges";
 import { startExpiryLoop } from "@/lib/expiry";
+import { dispatchRadarNotifications } from "@/lib/radar";
 
 startExpiryLoop();
 
@@ -236,6 +237,18 @@ export async function POST(req: Request) {
     checkPostBadges(session.user.id).catch((err) =>
       console.error("[posts] badge check error:", err),
     );
+
+    dispatchRadarNotifications({
+      postId: post.id,
+      postAuthorId: session.user.id,
+      postLatitude: latitude as number,
+      postLongitude: longitude as number,
+      postLocationName:
+        typeof locationName === "string" ? locationName.trim() || null : null,
+      bottleCount: bottleCount as number,
+      estimatedValue: estimatedValue as number,
+      collectorSharePercent: collectorSharePercent as number,
+    }).catch(console.error);
 
     return NextResponse.json(post, { status: 201 });
   } catch (err) {

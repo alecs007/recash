@@ -13,13 +13,13 @@ interface EmailOptinPopupProps {
 const COPY = {
   author: {
     heading: "Notificare pe email?",
-    body: "Vrei să fii anunțat pe email când un colector face o cerere pentru acest anunț?",
+    body: "Vrei să fii anunțat pe email atunci când un colector face o cerere pentru acest anunț?",
     yes: "Da, anunță-mă",
     no: "Nu, mulțumesc",
   },
   collector: {
     heading: "Notificare de confirmare?",
-    body: "Vrei să fii anunțat pe email când autorul aprobă sau refuză cererea ta pentru acest anunț?",
+    body: "Vrei să fii anunțat pe email atunci când autorul aprobă sau refuză cererea ta pentru acest anunț?",
     yes: "Da, anunță-mă",
     no: "Nu, mulțumesc",
   },
@@ -97,6 +97,7 @@ export function EmailOptinPopup({ context, postId }: EmailOptinPopupProps) {
                   width={120}
                   height={120}
                   draggable={false}
+                  priority
                 />
               </div>
 

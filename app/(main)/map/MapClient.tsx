@@ -7,6 +7,11 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { CollectConfirmModal } from "@/app/components/UI/CollectConfirmModal";
+import { RadarTeaser } from "@/app/components/UI/RadarTeaser";
+import {
+  RadarConfigModal,
+  type RadarConfig,
+} from "@/app/components/UI/RadarConfigModal";
 import { MapPin, Search, Loader2, X, Star, ChevronRight } from "lucide-react";
 import { LuFilter } from "react-icons/lu";
 import { FiMap } from "react-icons/fi";
@@ -873,6 +878,15 @@ export default function MapPage() {
   const isLoggedIn = !!session?.user?.id;
   const currentUserId = session?.user?.id ?? null;
 
+  const [radarModalOpen, setRadarModalOpen] = useState(false);
+
+  const { data: radarData, mutate: mutateRadar } = useSWR<{
+    radar: RadarConfig | null;
+  }>(isLoggedIn ? "/api/v1/radar" : null, fetcher, {
+    revalidateOnFocus: false,
+  });
+  const hasRadar = !!radarData?.radar;
+
   const { data, isLoading, mutate } = useSWR<{ posts: Post[] }>(
     "/api/v1/posts?limit=200",
     fetcher,
@@ -1354,6 +1368,9 @@ export default function MapPage() {
               isOwnPost={selectedPost.author.id === currentUserId}
             />
           )}
+          {isLoggedIn && !hasRadar && (
+            <RadarTeaser onConfigure={() => setRadarModalOpen(true)} />
+          )}
 
           {!isLoading && filtered.length === 0 && !selectedPost && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -1386,6 +1403,19 @@ export default function MapPage() {
           />
         );
       })()}
+      <RadarConfigModal
+        isOpen={radarModalOpen}
+        existing={radarData?.radar ?? null}
+        onClose={() => setRadarModalOpen(false)}
+        onSaved={(radar) => {
+          mutateRadar({ radar }, { revalidate: false });
+          setRadarModalOpen(false);
+        }}
+        onDeleted={() => {
+          mutateRadar({ radar: null }, { revalidate: false });
+          setRadarModalOpen(false);
+        }}
+      />
     </div>
   );
 }
