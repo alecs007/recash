@@ -1233,7 +1233,9 @@ export default function MapPage() {
                   <span className="font-bold text-slate-800">
                     {filtered.length}
                   </span>{" "}
-                  anunțuri disponibile
+                  {filtered.length === 1
+                    ? "anunț disponibil"
+                    : "anunțuri disponibile"}
                 </>
               )}
             </span>

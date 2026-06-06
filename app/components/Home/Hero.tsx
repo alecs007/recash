@@ -19,8 +19,9 @@ export const Hero = () => {
                 height={100}
                 priority
                 className="w-14 h-auto"
+                draggable={false}
               />
-              <span>Bani curați, prin RetuRO</span>
+              <span>Be smart & earn with RetuRO</span>
             </div>
 
             <h1 className="font-sans font-extrabold text-white text-5xl sm:text-6xl lg:text-7xl leading-[1.05] tracking-tight sm:text-nowrap">
