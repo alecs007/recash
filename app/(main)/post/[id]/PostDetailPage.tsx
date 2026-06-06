@@ -31,6 +31,7 @@ import { PostChat, ChatTriggerButton } from "./PostChat";
 import { usePostChat } from "@/hooks/usePostChat";
 import { showToast } from "@/lib/toast";
 import { createPortal } from "react-dom";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -50,6 +51,34 @@ const STATUS_CONFIG: Record<PostStatus, { label: string; className: string }> =
     EXPIRED: { label: "Expirat", className: "bg-slate-100 text-slate-500" },
   };
 
+const EASE = [0.22, 1, 0.36, 1] as const;
+
+const sectionVariants: Variants = {
+  hidden: { opacity: 0, y: 14, scale: 0.98 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.38, ease: EASE },
+  },
+  exit: {
+    opacity: 0,
+    y: -10,
+    scale: 0.98,
+    transition: { duration: 0.22, ease: [0.4, 0, 1, 1] },
+  },
+};
+
+const slideUpVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.32, ease: EASE, delay: i * 0.05 },
+  }),
+  exit: { opacity: 0, y: -8, transition: { duration: 0.18 } },
+};
+
 function PostMap({
   lat,
   lng,
@@ -60,25 +89,21 @@ function PostMap({
   locationName: string | null;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-
   const mapRef = useRef<LeafletMap | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-
     if (window.L) {
       const frame = requestAnimationFrame(() => setReady(true));
       return () => cancelAnimationFrame(frame);
     }
-
     if (!document.querySelector('link[href*="leaflet.css"]')) {
       const css = document.createElement("link");
       css.rel = "stylesheet";
       css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
       document.head.appendChild(css);
     }
-
     const s = document.createElement("script");
     s.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
     s.async = true;
@@ -88,7 +113,6 @@ function PostMap({
 
   useEffect(() => {
     if (!ready || !ref.current || mapRef.current) return;
-
     const L = window.L;
     const map = L.map(ref.current, {
       center: [lat, lng],
@@ -102,37 +126,13 @@ function PostMap({
     L.control.zoom({ position: "bottomright" }).addTo(map);
     const icon = L.divIcon({
       className: "custom-map-pin",
-      html: `
-    <div style="
-      position: relative;
-      width: 32px;
-      height: 32px;
-      background-color: #f73138;
-      border-radius: 50% 50% 50% 0;
-      transform: rotate(-45deg);
-      box-shadow: 0 3px 5px rgba(0,0,0,0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    ">
-      <div style="
-        width: 14px;
-        height: 14px;
-        background-color: #ffffff;
-        border-radius: 50%;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) rotate(45deg);
-      "></div>
-    </div>`,
+      html: `<div style="position:relative;width:32px;height:32px;background-color:#f73138;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 3px 5px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;"><div style="width:14px;height:14px;background-color:#ffffff;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(45deg);"></div></div>`,
       iconSize: [32, 44],
       iconAnchor: [16, 44],
     });
     L.marker([lat, lng], { icon })
       .addTo(map)
       .bindPopup(`<strong>${locationName ?? "Locația sticlelor"}</strong>`);
-
     mapRef.current = map;
     return () => {
       map.remove();
@@ -175,16 +175,22 @@ function Countdown({ deadline }: { deadline: string }) {
         >
           {expired ? "Timp expirat" : urgent ? "Grăbește-te!" : "Timp rămas"}
         </span>
-        <span
+        <motion.span
+          key={`${mins}:${secs}`}
+          initial={{ opacity: 0.6, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.15 }}
           className={`text-3xl font-black tabular-nums tracking-tight ${expired ? "text-red-500" : urgent ? "text-orange-500" : "text-lime-600"}`}
         >
           {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
-        </span>
+        </motion.span>
       </div>
       <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-        <div
-          className="h-full rounded-full transition-all duration-1000"
-          style={{ width: `${pct}%`, background: color }}
+        <motion.div
+          className="h-full rounded-full"
+          style={{ background: color }}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.9, ease: "linear" }}
         />
       </div>
     </div>
@@ -221,23 +227,31 @@ function CodeDisplay({ postId }: { postId: string }) {
       </div>
     );
   return (
-    <div className="space-y-3">
+    <motion.div
+      initial={{ opacity: 0, scale: 0.92 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.35, ease: EASE }}
+      className="space-y-3"
+    >
       <div className="flex gap-2 justify-center">
         {data.code.split("").map((ch: string, i: number) => (
-          <div
+          <motion.div
             key={i}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.06, duration: 0.3, ease: EASE }}
             className="w-14 h-14 flex items-center justify-center bg-slate-100 rounded-lg border border-slate-200"
           >
             <span className="text-3xl tabular-nums font-black text-[#123424]">
               {ch}
             </span>
-          </div>
+          </motion.div>
         ))}
       </div>
       <p className="text-xs text-slate-500 text-center">
         Arată acest cod colectorului când ajunge la tine
       </p>
-    </div>
+    </motion.div>
   );
 }
 
@@ -251,6 +265,8 @@ function CodeEntry({
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+
   const submit = async () => {
     const c = code.trim().toUpperCase();
     if (c.length !== 4) {
@@ -263,9 +279,7 @@ function CodeEntry({
       const res = await fetch(`/api/v1/posts/${postId}/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          code: c,
-        }),
+        body: JSON.stringify({ code: c }),
       });
       const j = await res.json();
       if (!res.ok) {
@@ -273,45 +287,113 @@ function CodeEntry({
         setLoading(false);
         return;
       }
-      onComplete();
+      setSuccess(true);
+      setTimeout(() => onComplete(), 600);
     } catch {
       setError("Eroare de rețea.");
       setLoading(false);
     }
   };
-  return (
-    <div className="space-y-4">
-      <input
-        type="text"
-        value={code}
-        onChange={(e) =>
-          setCode(
-            e.target.value
-              .toUpperCase()
-              .replace(/[^A-Z0-9]/g, "")
-              .slice(0, 4),
-          )
-        }
-        placeholder="A3BC"
-        maxLength={4}
-        autoCapitalize="characters"
-        className="w-full px-4 py-4 rounded-xl border-2 border-slate-200 focus:border-lime-400 outline-none text-3xl font-black text-center tracking-[0.5em] text-slate-900 bg-white uppercase transition-colors"
-      />
 
-      {error && <p className="text-sm text-red-500 font-medium">{error}</p>}
-      <button
-        onClick={submit}
-        disabled={loading || code.length !== 4}
-        className="w-full py-3.5 rounded-xl bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 cursor-pointer"
-      >
-        {loading ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: EASE }}
+      className="space-y-4"
+    >
+      <AnimatePresence mode="wait">
+        {success ? (
+          <motion.div
+            key="success"
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: "spring", stiffness: 400, damping: 22 }}
+            className="flex items-center justify-center gap-3 py-4"
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{
+                type: "spring",
+                stiffness: 500,
+                damping: 18,
+                delay: 0.1,
+              }}
+              className="w-10 h-10 rounded-full bg-lime-100 border border-lime-300 flex items-center justify-center"
+            >
+              <CheckCircle className="w-5 h-5 text-lime-600" />
+            </motion.div>
+            <span className="font-bold text-lime-700">Cod confirmat!</span>
+          </motion.div>
         ) : (
-          <CheckCircle className="w-4 h-4" />
+          <motion.div
+            key="form"
+            exit={{ opacity: 0, y: -4, transition: { duration: 0.15 } }}
+          >
+            <input
+              type="text"
+              value={code}
+              onChange={(e) =>
+                setCode(
+                  e.target.value
+                    .toUpperCase()
+                    .replace(/[^A-Z0-9]/g, "")
+                    .slice(0, 4),
+                )
+              }
+              placeholder="A3BC"
+              maxLength={4}
+              autoCapitalize="characters"
+              className="w-full px-4 py-4 rounded-xl border-2 border-slate-200 focus:border-lime-400 outline-none text-3xl font-black text-center tracking-[0.5em] text-slate-900 bg-white uppercase transition-colors"
+            />
+            <AnimatePresence>
+              {error && (
+                <motion.p
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="text-sm text-red-500 font-medium mt-2 overflow-hidden"
+                >
+                  {error}
+                </motion.p>
+              )}
+            </AnimatePresence>
+            <motion.button
+              onClick={submit}
+              disabled={loading || code.length !== 4}
+              whileTap={{ scale: 0.97 }}
+              className="mt-4 w-full py-3.5 rounded-xl bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <AnimatePresence mode="wait">
+                {loading ? (
+                  <motion.span
+                    key="loading"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="idle"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center gap-2"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    Confirmă colectarea
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
+          </motion.div>
         )}
-        Confirmă colectarea
-      </button>
-    </div>
+      </AnimatePresence>
+    </motion.div>
   );
 }
 
@@ -360,23 +442,29 @@ function ReviewForm({
     }
   };
   return (
-    <div className="space-y-3 pt-2">
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: EASE }}
+      className="space-y-3 pt-2"
+    >
       <p className="text-sm text-slate-600">
         Cum a decurs experiența cu <strong>{targetName}</strong>?
       </p>
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((s) => (
-          <button
+          <motion.button
             key={s}
             onClick={() => setRating(s)}
             onMouseEnter={() => setHover(s)}
             onMouseLeave={() => setHover(0)}
-            className="cursor-pointer transition-transform hover:scale-110"
+            whileTap={{ scale: 1.2 }}
+            className="cursor-pointer"
           >
             <Star
               className={`w-7 h-7 transition-colors ${s <= (hover || rating) ? "text-[#FFDF00] fill-[#FFDF00]" : "text-slate-200"}`}
             />
-          </button>
+          </motion.button>
         ))}
       </div>
       <textarea
@@ -387,15 +475,27 @@ function ReviewForm({
         maxLength={500}
         className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-lime-400 outline-none bg-white transition-colors"
       />
-      {error && <p className="text-sm text-red-500">{error}</p>}
-      <button
+      <AnimatePresence>
+        {error && (
+          <motion.p
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="text-sm text-red-500 overflow-hidden"
+          >
+            {error}
+          </motion.p>
+        )}
+      </AnimatePresence>
+      <motion.button
         onClick={submit}
         disabled={loading || !rating}
+        whileTap={{ scale: 0.97 }}
         className="w-full py-3 rounded-xl bg-lime-400 text-black font-bold text-sm hover:bg-lime-300 disabled:opacity-40 transition-all cursor-pointer"
       >
         {loading ? "Se trimite..." : "Trimite rating"}
-      </button>
-    </div>
+      </motion.button>
+    </motion.div>
   );
 }
 
@@ -409,11 +509,22 @@ function CancelModal({
   isInProgress: boolean;
 }) {
   return createPortal(
-    <div
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
       onClick={onClose}
     >
-      <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.92, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.92, y: 8 }}
+        transition={{ type: "spring", stiffness: 380, damping: 26 }}
+        className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-start justify-between mb-4">
           <h3 className="font-bold text-slate-900">
             Ești sigur că vrei să anulezi?
@@ -425,15 +536,23 @@ function CancelModal({
             <X className="w-3.5 h-3.5 text-slate-600" />
           </button>
         </div>
-
-        {isInProgress && (
-          <div className="mb-4 flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5 text-xs text-red-600 font-medium">
-            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-            Anularea în timp ce colectarea este activă îți va afecta scorul de
-            reputație.
-          </div>
-        )}
-
+        <AnimatePresence>
+          {isInProgress && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25 }}
+              className="overflow-hidden"
+            >
+              <div className="mb-4 flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5 text-xs text-red-600 font-medium">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                Anularea în timp ce colectarea este activă îți va afecta scorul
+                de reputație.
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <div className="flex gap-2">
           <button
             onClick={onClose}
@@ -441,15 +560,16 @@ function CancelModal({
           >
             Înapoi
           </button>
-          <button
+          <motion.button
             onClick={onConfirm}
+            whileTap={{ scale: 0.96 }}
             className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-bold text-sm cursor-pointer hover:bg-red-600 transition-all"
           >
             Anulează
-          </button>
+          </motion.button>
         </div>
-      </div>
-    </div>,
+      </motion.div>
+    </motion.div>,
     document.body,
   );
 }
@@ -464,7 +584,12 @@ function PersonRow({
   showPhone?: boolean;
 }) {
   return (
-    <div className="flex items-center gap-3">
+    <motion.div
+      initial={{ opacity: 0, x: -8 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.3, ease: EASE }}
+      className="flex items-center gap-3"
+    >
       <Link
         href={`/user/${user.id}`}
         className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 hover:ring-2 hover:ring-lime-400 hover:ring-offset-1 transition-all"
@@ -514,7 +639,7 @@ function PersonRow({
           </a>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -552,27 +677,29 @@ function NavButtons({ lat, lng }: { lat: number; lng: number }) {
         {
           label: "Google Maps",
           icon: "/images/icons/google-maps.svg",
-          color: "#4285F4",
           url: `https://www.google.com/maps?q=${lat},${lng}`,
         },
         {
           label: "Waze",
           icon: "/images/icons/waze-icon.svg",
-          color: "#FF0000",
           url: `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`,
         },
         {
           label: "Apple Maps",
           icon: "/images/icons/apple-maps-icon.svg",
-          color: "#000000",
           url: `https://maps.apple.com/?q=${lat},${lng}`,
         },
-      ].map((b) => (
-        <a
+      ].map((b, i) => (
+        <motion.a
           key={b.label}
           href={b.url}
           target="_blank"
           rel="noopener noreferrer"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.07, duration: 0.3, ease: EASE }}
+          whileHover={{ y: -2 }}
+          whileTap={{ scale: 0.96 }}
           className="flex flex-col items-center gap-1 p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all text-xs font-medium text-slate-600"
         >
           <Image
@@ -584,7 +711,7 @@ function NavButtons({ lat, lng }: { lat: number; lng: number }) {
             className="w-9 aspect-square object-contain"
           />
           {b.label}
-        </a>
+        </motion.a>
       ))}
     </div>
   );
@@ -594,13 +721,10 @@ function SkeletonPanel() {
   return (
     <div className="h-full overflow-y-auto animate-pulse">
       <div className="px-6 lg:px-10 py-6 lg:py-8 max-w-xl lg:max-w-none">
-        {/* Back link + status badge */}
         <div className="flex items-center justify-between mb-7">
           <div className="h-4 w-28 bg-slate-100 rounded-full" />
           <div className="h-6 w-20 bg-slate-100 rounded-full" />
         </div>
-
-        {/* Bottle count + separator + value */}
         <div className="mb-7">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-2">
             <div className="flex items-baseline gap-2">
@@ -613,73 +737,45 @@ function SkeletonPanel() {
               <div className="h-4 w-8 bg-slate-100 rounded-lg" />
             </div>
           </div>
-          {/* Location */}
           <div className="flex items-center gap-1.5 mb-1">
             <div className="h-3.5 w-3.5 bg-slate-100 rounded-full" />
             <div className="h-3.5 w-40 bg-slate-100 rounded-lg" />
           </div>
-          {/* Description */}
           <div className="mt-4 space-y-2">
             <div className="h-3.5 w-full bg-slate-100 rounded-lg" />
             <div className="h-3.5 w-4/5 bg-slate-100 rounded-lg" />
           </div>
-          {/* Date row */}
-          <div className="flex items-center gap-4 mt-4">
-            <div className="h-3 w-36 bg-slate-100 rounded-lg" />
-            <div className="h-3 w-24 bg-slate-100 rounded-lg" />
-          </div>
         </div>
-
         <div className="h-px bg-slate-100 mb-7" />
-
-        {/* Earnings section */}
         <div className="mb-7">
           <div className="flex items-baseline gap-2 mb-1">
             <div className="h-4 w-20 bg-slate-100 rounded-lg" />
             <div className="h-9 w-28 bg-slate-100 rounded-lg" />
             <div className="h-5 w-10 bg-slate-100 rounded-lg" />
           </div>
-          {/* Split bar */}
           <div className="mt-3 h-2.5 bg-slate-100 rounded-full" />
-          <div className="flex justify-between mt-1">
-            <div className="h-3 w-28 bg-slate-100 rounded-lg" />
-            <div className="h-3 w-28 bg-slate-100 rounded-lg" />
-          </div>
         </div>
-
         <div className="h-px bg-slate-100 mb-7" />
-
-        {/* Status action placeholder */}
         <div className="mb-7 space-y-3">
           <div className="h-4 w-3/4 bg-slate-100 rounded-lg" />
           <div className="h-3.5 w-1/2 bg-slate-100 rounded-lg" />
         </div>
-
         <div className="h-px bg-slate-100 mb-7" />
-
-        {/* Person rows */}
         <div className="space-y-4 mb-7">
-          {/* Author */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-slate-100 shrink-0" />
-            <div className="flex-1 space-y-1.5">
-              <div className="flex items-center gap-2">
-                <div className="h-3.5 w-28 bg-slate-100 rounded-lg" />
-                <div className="h-4 w-12 bg-slate-100 rounded-full" />
+          {[0, 1].map((i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-slate-100 shrink-0" />
+              <div className="flex-1 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="h-3.5 w-28 bg-slate-100 rounded-lg" />
+                  <div className="h-4 w-12 bg-slate-100 rounded-full" />
+                </div>
+                <div className="h-3 w-16 bg-slate-100 rounded-lg" />
               </div>
-              <div className="h-3 w-16 bg-slate-100 rounded-lg" />
             </div>
-          </div>
-          {/* Collector placeholder */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full border-2 border-dashed border-slate-200 shrink-0" />
-            <div className="h-3.5 w-36 bg-slate-100 rounded-lg" />
-          </div>
+          ))}
         </div>
-
         <div className="h-px bg-slate-100 mb-7" />
-
-        {/* Navigation buttons */}
         <div className="grid grid-cols-3 gap-2">
           {[0, 1, 2].map((i) => (
             <div
@@ -699,15 +795,12 @@ function SkeletonPanel() {
 function Skeleton() {
   return (
     <>
-      {/* Mobile: map strip on top, scrollable panel below */}
       <div className="lg:hidden flex flex-col min-h-[calc(100vh-64px)]">
         <div className="h-[260px] shrink-0 bg-slate-100 animate-pulse" />
         <div className="flex-1 bg-white">
           <SkeletonPanel />
         </div>
       </div>
-
-      {/* Desktop: side-by-side, full-height */}
       <div className="hidden lg:flex" style={{ height: "calc(100vh - 64px)" }}>
         <div className="w-[55%] shrink-0 bg-slate-100 animate-pulse" />
         <div className="flex-1 bg-white border-l border-slate-100 overflow-hidden">
@@ -727,7 +820,6 @@ function getCancelToastKey(status: PostStatus, isAuthor: boolean): string {
   if (status === "CLAIMED" && !isAuthor) {
     return "claim_cancelled";
   }
-
   return "post_cancelled";
 }
 
@@ -859,9 +951,7 @@ function DetailPanel({
     setShowCancel(false);
     setActionLoading(true);
     setActionError("");
-
     const toastKey = getCancelToastKey(post.status, isAuthor);
-
     try {
       const res = await fetch(`/api/v1/posts/${post.id}/cancel`, {
         method: "POST",
@@ -890,7 +980,7 @@ function DetailPanel({
     <div className="h-full relative">
       <div className="h-full overflow-y-auto" data-lenis-prevent>
         <div className="px-6 lg:px-10 py-6 lg:py-8 space-y-0 max-w-xl lg:max-w-none">
-          {/* ── BACK BUTTON + STATUS ── */}
+          {/* ── BACK + STATUS ── */}
           <div className="flex items-center justify-between mb-7">
             <Link
               href={`/${isAuthor ? "profil/postari" : "map"}`}
@@ -899,365 +989,579 @@ function DetailPanel({
               <ArrowLeft className="w-4 h-4" />
               {isAuthor ? "Postările mele" : "Harta de colectare"}
             </Link>
-            <span
-              className={`text-xs font-bold px-3 py-1.5 rounded-full ${statusCfg.className}`}
-            >
-              {statusCfg.label}
-            </span>
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={post.status}
+                initial={{ opacity: 0, scale: 0.85 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.85 }}
+                transition={{ duration: 0.25, ease: EASE }}
+                className={`text-xs font-bold px-3 py-1.5 rounded-full ${statusCfg.className}`}
+              >
+                {statusCfg.label}
+              </motion.span>
+            </AnimatePresence>
           </div>
 
-          {/* ── OPEN (autor): visible message + cancel ── */}
-          {post.status === "OPEN" && isAuthor && (
-            <div className="mb-7 space-y-3">
-              <p className="text-sm text-slate-600 leading-relaxed">
-                Anunțul tău este vizibil pe hartă. Vei fi notificat imediat ce
-                un colector face o cerere.
-              </p>
-              <button
-                onClick={() => setShowCancel(true)}
-                disabled={actionLoading}
-                className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
+          {/* ── STATUS-SPECIFIC ACTION SECTION ── */}
+          <AnimatePresence mode="wait">
+            {/* OPEN (author) */}
+            {post.status === "OPEN" && isAuthor && (
+              <motion.div
+                key="open-author"
+                variants={sectionVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="mb-7 space-y-3"
               >
-                Anulează anunțul
-              </button>
-              <div className="h-px bg-slate-100 mt-4" />
-            </div>
-          )}
-
-          {/* ── CLAIMED (autor): collector card + approve/deny + cancel ── */}
-          {post.status === "CLAIMED" && isAuthor && post.collector && (
-            <div className="mb-7 space-y-4">
-              <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
-                <Link
-                  href={`/user/${post.collector.id}`}
-                  className="w-11 h-11 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 hover:ring-2 hover:ring-lime-400 hover:ring-offset-1 transition-all"
-                >
-                  {post.collector.image ? (
-                    <Image
-                      src={post.collector.image}
-                      alt={post.collector.name ?? ""}
-                      width={44}
-                      height={44}
-                      priority
-                      className="object-cover w-full h-full"
-                    />
-                  ) : (
-                    <span className="text-sm font-bold text-slate-500">
-                      {post.collector.name?.[0] ?? "?"}
-                    </span>
-                  )}
-                </Link>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <Link
-                      href={`/user/${post.collector.id}`}
-                      className="text-sm font-bold text-slate-900 truncate hover:text-lime-700 transition-colors"
-                    >
-                      {post.collector.name ?? "Colector"}
-                    </Link>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <Star className="w-3 h-3 text-[#FFDF00] fill-[#FFDF00]" />
-                      <span className="text-xs text-slate-500">
-                        {post.collector.reputationScore.toFixed(1)}{" "}
-                        <span className="text-slate-400">
-                          ({post.collector.ratingCount})
-                        </span>
-                      </span>
-                    </div>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Vrea să colecteze sticlele tale. Odată aprobat, va avea 30
-                    min la dispoziție să ajungă.
-                  </p>
-                </div>
-              </div>
-              {actionError && (
-                <p className="text-sm text-red-500 font-medium">
-                  {actionError}
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  Anunțul tău este vizibil pe hartă. Vei fi notificat imediat ce
+                  un colector face o cerere.
                 </p>
-              )}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => handleApprove("deny")}
+                <motion.button
+                  onClick={() => setShowCancel(true)}
                   disabled={actionLoading}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-slate-200 text-slate-700 font-semibold text-sm hover:border-red-200 hover:text-red-600 hover:bg-red-50 transition-all disabled:opacity-40 cursor-pointer"
+                  whileTap={{ scale: 0.97 }}
+                  className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
                 >
-                  <XCircle className="w-4 h-4" /> Refuză
-                </button>
-                <button
-                  onClick={() => handleApprove("approve")}
-                  disabled={actionLoading}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all disabled:opacity-40 cursor-pointer shadow-sm"
+                  Anulează anunțul
+                </motion.button>
+                <div className="h-px bg-slate-100 mt-4" />
+              </motion.div>
+            )}
+
+            {/* CLAIMED (author) */}
+            {post.status === "CLAIMED" && isAuthor && post.collector && (
+              <motion.div
+                key="claimed-author"
+                variants={sectionVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="mb-7 space-y-4"
+              >
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1, duration: 0.35, ease: EASE }}
+                  className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3"
                 >
-                  {actionLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <CheckCircle className="w-4 h-4" />
-                  )}
-                  Aprobă
-                </button>
-              </div>
-              {actionError && (
-                <p className="text-sm text-red-500 font-medium">
-                  {actionError}
-                </p>
-              )}
-              <button
-                onClick={() => setShowCancel(true)}
-                disabled={actionLoading}
-                className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
-              >
-                Anulează anunțul
-              </button>
-              <div className="h-px bg-slate-100 mt-2" />
-            </div>
-          )}
-
-          {/* ── CLAIMED (colector): waiting + cancel ── */}
-          {post.status === "CLAIMED" && isCollector && (
-            <div className="mb-7 space-y-3">
-              <div className="flex items-center gap-3">
-                <Clock className="w-5 h-5 text-blue-400 animate-pulse shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-slate-800">
-                    Cererea ta a fost trimisă
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    Se așteaptă aprobarea autorului…
-                  </p>
-                </div>
-              </div>
-              {actionError && (
-                <p className="text-sm text-red-500 font-medium">
-                  {actionError}
-                </p>
-              )}
-              <button
-                onClick={() => setShowCancel(true)}
-                disabled={actionLoading}
-                className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
-              >
-                Anulează cererea
-              </button>
-              <div className="h-px bg-slate-100 mt-2" />
-            </div>
-          )}
-
-          {/* ── IN_PROGRESS: countdown + code + cancel ── */}
-          {post.status === "IN_PROGRESS" && (
-            <div className="mb-7 space-y-5">
-              <div className="bg-slate-50 border border-[#123424]/10 rounded-2xl p-5 space-y-5">
-                {post.expiresAt && <Countdown deadline={post.expiresAt} />}
-                <div className="border-t border-[#123424]/10 pt-4">
-                  <p className="text-sm font-medium text-[#123424] mb-3">
-                    {isAuthor
-                      ? "Codul tău de confirmare"
-                      : "Introdu codul de confirmare"}
-                  </p>
-                  {isAuthor ? (
-                    showCode ? (
-                      <CodeDisplay postId={post.id} />
+                  <Link
+                    href={`/user/${post.collector.id}`}
+                    className="w-11 h-11 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 hover:ring-2 hover:ring-lime-400 hover:ring-offset-1 transition-all"
+                  >
+                    {post.collector.image ? (
+                      <Image
+                        src={post.collector.image}
+                        alt={post.collector.name ?? ""}
+                        width={44}
+                        height={44}
+                        priority
+                        className="object-cover w-full h-full"
+                      />
                     ) : (
-                      <button
-                        onClick={() => setShowCode(true)}
-                        className="w-full flex items-center justify-center py-3.5 rounded-xl bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all cursor-pointer"
+                      <span className="text-sm font-bold text-slate-500">
+                        {post.collector.name?.[0] ?? "?"}
+                      </span>
+                    )}
+                  </Link>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/user/${post.collector.id}`}
+                        className="text-sm font-bold text-slate-900 truncate hover:text-lime-700 transition-colors"
                       >
-                        Afișează codul
-                        <LockKeyholeOpen className="w-4 h-4 ml-2" />
-                      </button>
-                    )
-                  ) : (
-                    <CodeEntry
-                      postId={post.id}
-                      onComplete={() => {
-                        setActiveCounts({
-                          activeCollections: 0,
-                          activeCollectionId: null,
-                        });
-                        mutate();
-                      }}
-                    />
-                  )}
-                </div>
-                {actionError && (
-                  <div className="border-t border-[#123424]/10 pt-4">
-                    <p className="text-sm text-red-500 font-medium">
-                      {actionError}
+                        {post.collector.name ?? "Colector"}
+                      </Link>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <Star className="w-3 h-3 text-[#FFDF00] fill-[#FFDF00]" />
+                        <span className="text-xs text-slate-500">
+                          {post.collector.reputationScore.toFixed(1)}{" "}
+                          <span className="text-slate-400">
+                            ({post.collector.ratingCount})
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Vrea să colecteze sticlele tale. Odată aprobat, va avea 30
+                      min la dispoziție să ajungă.
                     </p>
                   </div>
-                )}
-                <div className="border-t border-[#123424]/10 pt-4">
-                  <button
-                    onClick={() => setShowCancel(true)}
-                    disabled={actionLoading}
-                    className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
-                  >
-                    {isAuthor ? "Anulează colectarea" : "Renunță la colectare"}
-                  </button>
-                </div>
-              </div>{" "}
-              <div className="h-px bg-slate-100 mb-7 mt-7" />
-            </div>
-          )}
+                </motion.div>
 
-          {/* ── COMPLETED: summary + rating — before post info ── */}
-          {post.status === "COMPLETED" && post.transaction && (
-            <div className="mb-7 space-y-5">
-              <div className="bg-lime-50 border border-lime-200 rounded-2xl p-4 space-y-2.5">
-                <div className="flex items-center gap-2 mb-3">
-                  <CheckCircle className="w-4 h-4 text-lime-600" />
-                  <span className="text-sm font-bold text-lime-800">
-                    Tranzacție finalizată
-                  </span>
-                  <span className="text-xs text-lime-500 ml-auto">
-                    {new Date(post.transaction.completedAt).toLocaleDateString(
-                      "ro-RO",
-                      {
+                <AnimatePresence>
+                  {actionError && (
+                    <motion.p
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="text-sm text-red-500 font-medium overflow-hidden"
+                    >
+                      {actionError}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.18, duration: 0.3, ease: EASE }}
+                  className="flex gap-3"
+                >
+                  <motion.button
+                    onClick={() => handleApprove("deny")}
+                    disabled={actionLoading}
+                    whileTap={{ scale: 0.96 }}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-slate-200 text-slate-700 font-semibold text-sm hover:border-red-200 hover:text-red-600 hover:bg-red-50 transition-all disabled:opacity-40 cursor-pointer"
+                  >
+                    <XCircle className="w-4 h-4" /> Refuză
+                  </motion.button>
+                  <motion.button
+                    onClick={() => handleApprove("approve")}
+                    disabled={actionLoading}
+                    whileTap={{ scale: 0.96 }}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all disabled:opacity-40 cursor-pointer shadow-sm"
+                  >
+                    <AnimatePresence mode="wait">
+                      {actionLoading ? (
+                        <motion.span
+                          key="spin"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                        >
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        </motion.span>
+                      ) : (
+                        <motion.span
+                          key="check"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="flex items-center gap-2"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          Aprobă
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </motion.button>
+                </motion.div>
+
+                <motion.button
+                  onClick={() => setShowCancel(true)}
+                  disabled={actionLoading}
+                  whileTap={{ scale: 0.97 }}
+                  className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
+                >
+                  Anulează anunțul
+                </motion.button>
+                <div className="h-px bg-slate-100 mt-2" />
+              </motion.div>
+            )}
+
+            {/* CLAIMED (collector) */}
+            {post.status === "CLAIMED" && isCollector && (
+              <motion.div
+                key="claimed-collector"
+                variants={sectionVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="mb-7 space-y-3"
+              >
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1, duration: 0.3, ease: EASE }}
+                  className="flex items-center gap-3"
+                >
+                  <motion.div
+                    animate={{ scale: [1, 1.15, 1] }}
+                    transition={{
+                      repeat: Infinity,
+                      duration: 2,
+                      ease: "easeInOut",
+                    }}
+                  >
+                    <Clock className="w-5 h-5 text-blue-400 shrink-0" />
+                  </motion.div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">
+                      Cererea ta a fost trimisă
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      Se așteaptă aprobarea autorului…
+                    </p>
+                  </div>
+                </motion.div>
+                <AnimatePresence>
+                  {actionError && (
+                    <motion.p
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="text-sm text-red-500 font-medium overflow-hidden"
+                    >
+                      {actionError}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+                <button
+                  onClick={() => setShowCancel(true)}
+                  disabled={actionLoading}
+                  className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
+                >
+                  Anulează cererea
+                </button>
+                <div className="h-px bg-slate-100 mt-2" />
+              </motion.div>
+            )}
+
+            {/* IN_PROGRESS */}
+            {post.status === "IN_PROGRESS" && (
+              <motion.div
+                key="in-progress"
+                variants={sectionVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="mb-7 space-y-5"
+              >
+                <div className="bg-slate-50 border border-[#123424]/10 rounded-2xl p-5 space-y-5">
+                  {post.expiresAt && <Countdown deadline={post.expiresAt} />}
+
+                  <div className="border-t border-[#123424]/10 pt-4">
+                    <p className="text-sm font-medium text-[#123424] mb-3">
+                      {isAuthor
+                        ? "Codul tău de confirmare"
+                        : "Introdu codul de confirmare"}
+                    </p>
+
+                    <AnimatePresence mode="wait">
+                      {isAuthor ? (
+                        showCode ? (
+                          <motion.div
+                            key="code-visible"
+                            variants={sectionVariants}
+                            initial="hidden"
+                            animate="visible"
+                            exit="exit"
+                          >
+                            <CodeDisplay postId={post.id} />
+                          </motion.div>
+                        ) : (
+                          <motion.div
+                            key="code-hidden"
+                            variants={sectionVariants}
+                            initial="hidden"
+                            animate="visible"
+                            exit="exit"
+                          >
+                            <motion.button
+                              onClick={() => setShowCode(true)}
+                              whileTap={{ scale: 0.97 }}
+                              className="w-full flex items-center justify-center py-3.5 rounded-xl bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all cursor-pointer"
+                            >
+                              Afișează codul
+                              <LockKeyholeOpen className="w-4 h-4 ml-2" />
+                            </motion.button>
+                          </motion.div>
+                        )
+                      ) : (
+                        <motion.div
+                          key="code-entry"
+                          variants={sectionVariants}
+                          initial="hidden"
+                          animate="visible"
+                          exit="exit"
+                        >
+                          <CodeEntry
+                            postId={post.id}
+                            onComplete={() => {
+                              setActiveCounts({
+                                activeCollections: 0,
+                                activeCollectionId: null,
+                              });
+                              mutate();
+                            }}
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  <AnimatePresence>
+                    {actionError && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="border-t border-[#123424]/10 pt-4 overflow-hidden"
+                      >
+                        <p className="text-sm text-red-500 font-medium">
+                          {actionError}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <div className="border-t border-[#123424]/10 pt-4">
+                    <button
+                      onClick={() => setShowCancel(true)}
+                      disabled={actionLoading}
+                      className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
+                    >
+                      {isAuthor
+                        ? "Anulează colectarea"
+                        : "Renunță la colectare"}
+                    </button>
+                  </div>
+                </div>
+                <div className="h-px bg-slate-100 mb-7 mt-7" />
+              </motion.div>
+            )}
+
+            {/* COMPLETED */}
+            {post.status === "COMPLETED" && post.transaction && (
+              <motion.div
+                key="completed"
+                variants={sectionVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="mb-7 space-y-5"
+              >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.97 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.1, duration: 0.35, ease: EASE }}
+                  className="bg-lime-50 border border-lime-200 rounded-2xl p-4 space-y-2.5"
+                >
+                  <motion.div
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.15, duration: 0.3 }}
+                    className="flex items-center gap-2 mb-3"
+                  >
+                    <CheckCircle className="w-4 h-4 text-lime-600" />
+                    <span className="text-sm font-bold text-lime-800">
+                      Tranzacție finalizată
+                    </span>
+                    <span className="text-xs text-lime-500 ml-auto">
+                      {new Date(
+                        post.transaction.completedAt,
+                      ).toLocaleDateString("ro-RO", {
                         day: "numeric",
                         month: "short",
                         year: "numeric",
-                      },
-                    )}
-                  </span>
-                </div>
-                {[
-                  [
-                    "Sticle colectate",
-                    `${Math.round(post.transaction.actualValue / 0.5)} buc`,
-                  ],
-                  [
-                    "Valoare totală",
-                    `${post.transaction.actualValue.toFixed(2)} RON`,
-                  ],
-                  [
-                    isAuthor ? "Ai primit" : "Ai câștigat",
-                    `+${myActualEarning?.toFixed(2)} RON`,
-                  ],
-                ].map(([label, value], i) => (
-                  <div key={i} className="flex justify-between text-sm">
-                    <span className="text-slate-500">{label}</span>
-                    <span
-                      className={`font-bold ${i === 2 ? "text-lime-700" : "text-slate-800"}`}
-                    >
-                      {value}
+                      })}
                     </span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="space-y-4">
-                {ratingIReceived && (
-                  <div className="bg-white border border-slate-100 rounded-2xl p-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-600">
-                          Rating-ul primit de la{" "}
-                          <span className="font-semibold text-slate-800">
-                            {targetName}
-                          </span>
-                        </span>
-                        <div className="flex items-center gap-0.5">
-                          {[1, 2, 3, 4, 5].map((i) => (
-                            <svg
-                              key={i}
-                              className="w-4 h-4"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fill={
-                                  i <= ratingIReceived ? "#FFDF00" : "#e2e8f0"
-                                }
-                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-                              />
-                            </svg>
-                          ))}
-                        </div>
-                      </div>
-                      {reviewIReceived && (
-                        <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 italic text-slate-700 text-sm">
-                          &quot;{reviewIReceived}&quot;
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                <div className="relative">
-                  {!ratingIGave && !justReviewed ? (
-                    <div className="transition-all duration-500 ease-in-out opacity-100 translate-y-0">
-                      <ReviewForm
-                        postId={post.id}
-                        targetName={targetName}
-                        alreadyReviewed={false}
-                        onDone={handleReviewDone}
-                      />
-                    </div>
-                  ) : (
-                    <div
-                      className={`bg-white border border-slate-100 rounded-2xl p-4 transition-[opacity,transform] duration-700 ease-out ${
-                        ratingIGave || justReviewed
-                          ? "opacity-100 translate-y-0"
-                          : "opacity-0 translate-y-4 pointer-events-none"
-                      }`}
-                      style={{
-                        position:
-                          ratingIGave || justReviewed ? "relative" : "absolute",
-                        visibility:
-                          ratingIGave || justReviewed ? "visible" : "hidden",
-                      }}
+                  </motion.div>
+                  {[
+                    [
+                      "Sticle colectate",
+                      `${Math.round(post.transaction.actualValue / 0.5)} buc`,
+                    ],
+                    [
+                      "Valoare totală",
+                      `${post.transaction.actualValue.toFixed(2)} RON`,
+                    ],
+                    [
+                      isAuthor ? "Ai primit" : "Ai câștigat",
+                      `+${myActualEarning?.toFixed(2)} RON`,
+                    ],
+                  ].map(([label, value], i) => (
+                    <motion.div
+                      key={label}
+                      custom={i}
+                      variants={slideUpVariants}
+                      initial="hidden"
+                      animate="visible"
+                      className="flex justify-between text-sm"
                     >
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-slate-600">
-                            Rating-ul tău pentru{" "}
-                            <span className="font-semibold text-slate-800">
-                              {targetName}
+                      <span className="text-slate-500">{label}</span>
+                      <span
+                        className={`font-bold ${i === 2 ? "text-lime-700" : "text-slate-800"}`}
+                      >
+                        {value}
+                      </span>
+                    </motion.div>
+                  ))}
+                </motion.div>
+
+                <div className="space-y-4">
+                  <AnimatePresence>
+                    {ratingIReceived && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2, duration: 0.35, ease: EASE }}
+                        className="bg-white border border-slate-100 rounded-2xl p-4"
+                      >
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-slate-600">
+                              Rating-ul primit de la{" "}
+                              <span className="font-semibold text-slate-800">
+                                {targetName}
+                              </span>
                             </span>
-                          </span>
-                          <div className="flex items-center gap-0.5">
-                            {[1, 2, 3, 4, 5].map((i) => (
-                              <svg
-                                key={i}
-                                className="w-4 h-4"
-                                viewBox="0 0 20 20"
+                            <div className="flex items-center gap-0.5">
+                              {[1, 2, 3, 4, 5].map((i) => (
+                                <motion.svg
+                                  key={i}
+                                  initial={{ scale: 0, rotate: -20 }}
+                                  animate={{ scale: 1, rotate: 0 }}
+                                  transition={{
+                                    delay: 0.25 + i * 0.05,
+                                    type: "spring",
+                                    stiffness: 400,
+                                    damping: 20,
+                                  }}
+                                  className="w-4 h-4"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fill={
+                                      i <= ratingIReceived
+                                        ? "#FFDF00"
+                                        : "#e2e8f0"
+                                    }
+                                    d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+                                  />
+                                </motion.svg>
+                              ))}
+                            </div>
+                          </div>
+                          <AnimatePresence>
+                            {reviewIReceived && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.25 }}
+                                className="overflow-hidden"
                               >
-                                <path
-                                  fill={
-                                    i <= (ratingIGave || 0)
-                                      ? "#FFDF00"
-                                      : "#e2e8f0"
-                                  }
-                                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-                                />
-                              </svg>
-                            ))}
-                          </div>
+                                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 italic text-slate-700 text-sm">
+                                  &quot;{reviewIReceived}&quot;
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
-                        {reviewIGave && (
-                          <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 italic text-slate-700 text-sm">
-                            &quot;{reviewIGave}&quot;
+                  {/* Review form / sent state */}
+                  <div className="relative">
+                    <AnimatePresence mode="wait">
+                      {!ratingIGave && !justReviewed ? (
+                        <motion.div
+                          key="review-form"
+                          variants={sectionVariants}
+                          initial="hidden"
+                          animate="visible"
+                          exit="exit"
+                        >
+                          <ReviewForm
+                            postId={post.id}
+                            targetName={targetName}
+                            alreadyReviewed={false}
+                            onDone={handleReviewDone}
+                          />
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="review-sent"
+                          variants={sectionVariants}
+                          initial="hidden"
+                          animate="visible"
+                          exit="exit"
+                          className="bg-white border border-slate-100 rounded-2xl p-4"
+                        >
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-slate-600">
+                                Rating-ul tău pentru{" "}
+                                <span className="font-semibold text-slate-800">
+                                  {targetName}
+                                </span>
+                              </span>
+                              <div className="flex items-center gap-0.5">
+                                {[1, 2, 3, 4, 5].map((i) => (
+                                  <svg
+                                    key={i}
+                                    className="w-4 h-4"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path
+                                      fill={
+                                        i <= (ratingIGave || 0)
+                                          ? "#FFDF00"
+                                          : "#e2e8f0"
+                                      }
+                                      d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+                                    />
+                                  </svg>
+                                ))}
+                              </div>
+                            </div>
+                            <AnimatePresence>
+                              {reviewIGave && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: "auto" }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 italic text-slate-700 text-sm">
+                                    &quot;{reviewIGave}&quot;
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                            <AnimatePresence>
+                              {justReviewed && (
+                                <motion.div
+                                  initial={{ opacity: 0, scale: 0.9 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0 }}
+                                  transition={{
+                                    type: "spring",
+                                    stiffness: 400,
+                                    damping: 22,
+                                  }}
+                                  className="flex items-center gap-2 text-[11px] text-lime-600 font-medium bg-lime-50 w-fit px-2 py-1 rounded-lg"
+                                >
+                                  <CheckCircle className="w-3 h-3" />
+                                  Feedback trimis cu succes
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                           </div>
-                        )}
-
-                        {justReviewed && (
-                          <div className="flex items-center gap-2 text-[11px] text-lime-600 font-medium bg-lime-50 w-fit px-2 py-1 rounded-lg">
-                            <CheckCircle className="w-3 h-3" />
-                            Feedback trimis cu succes
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </div>
-              </div>
 
-              <div className="h-px bg-slate-100 mb-7 mt-7" />
-            </div>
-          )}
+                <div className="h-px bg-slate-100 mb-7 mt-7" />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* ── POST INFO ── */}
-          <div className="mb-7">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: EASE, delay: 0.08 }}
+            className="mb-7"
+          >
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-2">
               <div className="flex items-baseline gap-2">
                 <h1 className="text-4xl font-black text-[#123424] tracking-tight tabular-nums leading-none">
@@ -1265,10 +1569,8 @@ function DetailPanel({
                 </h1>
                 <span className="text-lg text-slate-400">sticle</span>
               </div>
-
               <div className="w-px h-8 bg-slate-200" />
-
-              <div className="flex items-baseline gap-1.5 ">
+              <div className="flex items-baseline gap-1.5">
                 <span className="text-3xl font-black text-lime-700 tabular-nums leading-none">
                   {(post.bottleCount * 0.5).toFixed(2)}
                 </span>
@@ -1314,12 +1616,17 @@ function DetailPanel({
                 </span>
               )}
             </div>
-          </div>
+          </motion.div>
 
           <div className="h-px bg-slate-100 mb-7" />
 
           {/* ── EARNINGS SPLIT ── */}
-          <div className="mb-7">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: EASE, delay: 0.12 }}
+            className="mb-7"
+          >
             {(() => {
               const getPercentColor = (pct: number) =>
                 pct >= 67
@@ -1364,28 +1671,39 @@ function DetailPanel({
                     <span className="text-xs sm:text-sm text-slate-500 mr-1 sm:mr-0">
                       {myLabel}
                     </span>
-                    <span
-                      className={`text-2xl font-black leading-none ${earningColor}`}
-                    >
-                      {isCollector &&
-                      post.status !== "COMPLETED" &&
-                      post.status !== "CANCELLED" &&
-                      post.status !== "EXPIRED"
-                        ? `${post.estimatedValue.toFixed(2)}`
-                        : `${displayEarning.toFixed(2) != "0.00" ? "+" : ""}${displayEarning.toFixed(2)}`}
-                    </span>
+                    <AnimatePresence mode="wait">
+                      <motion.span
+                        key={`${displayEarning}-${post.status}`}
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        transition={{ duration: 0.25 }}
+                        className={`text-2xl font-black leading-none ${earningColor}`}
+                      >
+                        {isCollector &&
+                        post.status !== "COMPLETED" &&
+                        post.status !== "CANCELLED" &&
+                        post.status !== "EXPIRED"
+                          ? `${post.estimatedValue.toFixed(2)}`
+                          : `${displayEarning.toFixed(2) !== "0.00" ? "+" : ""}${displayEarning.toFixed(2)}`}
+                      </motion.span>
+                    </AnimatePresence>
                     <span className="text-xs sm:text-sm text-slate-400 font-light">
                       RON
                     </span>
                   </div>
                   <div className="mt-3 h-2.5 bg-slate-100 rounded-full overflow-hidden flex">
-                    <div
+                    <motion.div
                       className={`h-full rounded-l-full ${posterBarColor}`}
-                      style={{ width: `${posterPct}%` }}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${posterPct}%` }}
+                      transition={{ duration: 0.6, ease: EASE, delay: 0.2 }}
                     />
-                    <div
+                    <motion.div
                       className={`h-full rounded-r-full ${collectorBarColor}`}
-                      style={{ width: `${post.collectorSharePercent}%` }}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${post.collectorSharePercent}%` }}
+                      transition={{ duration: 0.6, ease: EASE, delay: 0.2 }}
                     />
                   </div>
                   <div className="flex justify-between text-[10px] text-slate-400 mt-1">
@@ -1400,34 +1718,64 @@ function DetailPanel({
                 </>
               );
             })()}
-          </div>
+          </motion.div>
 
           <div className="h-px bg-slate-100 mb-7" />
 
           {/* ── PARTICIPANTS ── */}
-          <div className="space-y-4 mb-7">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: EASE, delay: 0.15 }}
+            className="space-y-4 mb-7"
+          >
             <PersonRow
               user={post.author}
               role="Autor"
               showPhone={isCollector && post.status === "IN_PROGRESS"}
             />
-            {showCollector && post.collector ? (
-              <PersonRow
-                user={post.collector}
-                role="Colector"
-                showPhone={isAuthor && post.status === "IN_PROGRESS"}
-              />
-            ) : post.status === "OPEN" ? (
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full border-2 border-dashed border-slate-200 flex items-center justify-center">
-                  <span className="text-slate-300 text-base">?</span>
-                </div>
-                <span className="text-sm text-slate-400">
-                  Se așteaptă un colector...
-                </span>
-              </div>
-            ) : null}
-          </div>
+            <AnimatePresence mode="wait">
+              {showCollector && post.collector ? (
+                <motion.div
+                  key="collector-row"
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 8 }}
+                  transition={{ duration: 0.3, ease: EASE }}
+                >
+                  <PersonRow
+                    user={post.collector}
+                    role="Colector"
+                    showPhone={isAuthor && post.status === "IN_PROGRESS"}
+                  />
+                </motion.div>
+              ) : post.status === "OPEN" ? (
+                <motion.div
+                  key="waiting-collector"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="flex items-center gap-3"
+                >
+                  <motion.div
+                    animate={{ opacity: [0.4, 1, 0.4] }}
+                    transition={{
+                      repeat: Infinity,
+                      duration: 2,
+                      ease: "easeInOut",
+                    }}
+                    className="w-10 h-10 rounded-full border-2 border-dashed border-slate-200 flex items-center justify-center"
+                  >
+                    <span className="text-slate-300 text-base">?</span>
+                  </motion.div>
+                  <span className="text-sm text-slate-400">
+                    Se așteaptă un colector...
+                  </span>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+          </motion.div>
 
           <div className="h-px bg-slate-100 mb-7" />
 
@@ -1437,14 +1785,17 @@ function DetailPanel({
           </div>
         </div>
 
-        {showCancel && (
-          <CancelModal
-            onConfirm={handleCancel}
-            onClose={() => setShowCancel(false)}
-            isInProgress={post.status === "IN_PROGRESS"}
-          />
-        )}
-      </div>{" "}
+        <AnimatePresence>
+          {showCancel && (
+            <CancelModal
+              onConfirm={handleCancel}
+              onClose={() => setShowCancel(false)}
+              isInProgress={post.status === "IN_PROGRESS"}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+
       {post.status === "IN_PROGRESS" && (isAuthor || isCollector) && (
         <>
           <ChatTriggerButton
@@ -1488,7 +1839,6 @@ export default function PostDetailClient({
   userId: string;
 }) {
   const router = useRouter();
-
   const { post, mutate, isLoading } = usePostLive(postId);
   const { on, off } = useRecashSocket();
 
@@ -1504,7 +1854,6 @@ export default function PostDetailClient({
         router.push("/map");
       }
     };
-
     on("post:cancelled", handleCancelled);
     return () => off("post:cancelled", handleCancelled);
   }, [on, off, postId, router]);
@@ -1513,7 +1862,7 @@ export default function PostDetailClient({
 
   if (!post) {
     return (
-      <div className="flex flex-col items-center ...">
+      <div className="flex flex-col items-center">
         <FaWineBottle className="w-10 h-10 text-slate-300" />
         <p className="text-slate-500 font-medium">Anunțul nu a fost găsit.</p>
         <Link href="/map">Hartă</Link>

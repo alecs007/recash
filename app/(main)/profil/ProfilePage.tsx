@@ -51,6 +51,7 @@ export function ProfilePage({ summary }: { summary: ExtendedSummary }) {
             fill
             priority
             className="object-cover object-center"
+            draggable={false}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/65 to-black/35" />
           <div className="absolute -top-10 -right-10 w-56 h-56 rounded-full bg-lime-400/10 blur-3xl pointer-events-none" />
@@ -70,6 +71,7 @@ export function ProfilePage({ summary }: { summary: ExtendedSummary }) {
                     sizes={"(min-width: 640px) 7rem, 4.5rem"}
                     priority
                     className="rounded-2xl sm:rounded-3xl object-cover border-2 sm:border-3 border-lime-400 shadow-lg"
+                    draggable={false}
                   />
                 </div>
               ) : (

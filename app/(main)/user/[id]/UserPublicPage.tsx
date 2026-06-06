@@ -157,6 +157,7 @@ function ReviewCard({
                   width={120}
                   height={120}
                   className="object-cover"
+                  draggable={false}
                 />
               ) : (
                 <span className="text-sm font-bold text-lime-700">
@@ -174,6 +175,7 @@ function ReviewCard({
                 width={40}
                 height={40}
                 className="object-cover"
+                draggable={false}
               />
             ) : (
               <span className="text-sm font-bold text-lime-700">
@@ -516,6 +518,7 @@ export default function UserPublicPage({ userId }: { userId: string }) {
                   sizes="(min-width: 640px) 7rem, 4.5rem"
                   priority
                   className="rounded-2xl sm:rounded-3xl object-cover border-2 sm:border-3 border-lime-400 shadow-lg z-10"
+                  draggable={false}
                 />
               </div>
             ) : (

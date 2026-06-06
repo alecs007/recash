@@ -7,7 +7,7 @@ import { notifyClaimApproved, notifyClaimDenied } from "@/lib/notifications";
 import { redis } from "@/lib/redis";
 import { publishPostStatus, publishToUser } from "@/lib/pubsub";
 
-const COLLECTION_WINDOW_MINUTES = 30;
+const COLLECTION_WINDOW_MINUTES = 60;
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 function generateCode(): string {

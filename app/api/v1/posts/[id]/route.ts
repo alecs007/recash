@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { maybeExpirePost } from "@/lib/expiry";
 
 export async function GET(
   _req: Request,
@@ -20,7 +21,6 @@ export async function GET(
             image: true,
             reputationScore: true,
             ratingCount: true,
-            // Only expose phone to the assigned collector or the author
             phone: true,
           },
         },
@@ -64,19 +64,32 @@ export async function GET(
       );
     }
 
+    if (post.status === "OPEN") {
+      const didExpire = await maybeExpirePost(
+        post.id,
+        post.status,
+        post.expiresAt,
+      );
+      if (didExpire) {
+        const updated = { ...post, status: "EXPIRED" as const };
+        return NextResponse.json({
+          ...updated,
+          author: { ...updated.author, phone: null },
+          collector: null,
+        });
+      }
+    }
+
     const userId = session?.user?.id;
     const isAuthor = userId === post.authorId;
     const isCollector = userId === post.collectorId;
     const isParticipant = isAuthor || isCollector;
 
-    // Sanitized sensitive fields for non-participants
+    // Sanitize sensitive fields for non-participants
     if (!isParticipant) {
       return NextResponse.json({
         ...post,
-        author: {
-          ...post.author,
-          phone: null, // hiding phone from strangers
-        },
+        author: { ...post.author, phone: null },
         collector: post.collector ? { ...post.collector, phone: null } : null,
       });
     }

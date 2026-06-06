@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { rateLimit, RL } from "@/lib/rate-limit";
 import { invalidate, CacheKey } from "@/lib/cache";
 import { checkPostBadges } from "@/lib/badges";
+import { startExpiryLoop } from "@/lib/expiry";
+
+startExpiryLoop();
 
 const ACTIVE_STATUSES = ["OPEN", "CLAIMED", "IN_PROGRESS"] as const;
 
