@@ -361,7 +361,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                       duration: 4,
                       ease: "linear",
                     }}
-                    className="absolute inset-[-100%] bg-[conic-gradient(from_0deg,#1a4d36_0deg_45deg,transparent_45deg_180deg,#1a4d36_180deg_225deg,transparent_225deg_360deg)]"
+                    className="absolute inset-[-100%] bg-[conic-gradient(from_0deg,#A3E635_0deg_45deg,transparent_45deg_180deg,#A3E635_180deg_225deg,transparent_225deg_360deg)]"
                   />
 
                   <div className="relative flex items-center justify-center gap-1 text-[#1a4d36] bg-slate-50 font-bold py-2.25 px-4 rounded-full text-sm">
