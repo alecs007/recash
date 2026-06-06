@@ -2,17 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  RadioTower,
-  MapPin,
-  Mail,
-  MailX,
-  Power,
-  PowerOff,
-  Pencil,
-  Plus,
-  Loader2,
-} from "lucide-react";
+import { RadioTower, MapPin, Mail, Loader2 } from "lucide-react";
 import useSWR from "swr";
 import {
   RadarConfigModal,
@@ -20,15 +10,6 @@ import {
 } from "@/app/components/UI/RadarConfigModal";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
-
-const RADIUS_COLORS: Record<number, string> = {
-  1: "text-lime-600 bg-lime-50 border-lime-200",
-  2: "text-lime-600 bg-lime-50 border-lime-200",
-  5: "text-blue-600 bg-blue-50 border-blue-200",
-  10: "text-blue-600 bg-blue-50 border-blue-200",
-  25: "text-violet-600 bg-violet-50 border-violet-200",
-  50: "text-orange-600 bg-orange-50 border-orange-200",
-};
 
 export function RadarSection() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -73,11 +54,11 @@ export function RadarSection() {
   if (isLoading) {
     return (
       <div className="mx-4 sm:mx-6 lg:mx-8 mb-8 p-4 sm:p-6 bg-slate-50 border border-slate-100 rounded-2xl animate-pulse">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-8 h-8 rounded-xl bg-slate-200" />
-          <div className="h-5 w-32 bg-slate-200 rounded-lg" />
+        <div className="flex items-center justify-between mb-4">
+          <div className="h-5 w-20 bg-slate-200 rounded-lg" />
+          <div className="h-7 w-24 bg-slate-200 rounded-xl" />
         </div>
-        <div className="h-20 bg-slate-200 rounded-xl" />
+        <div className="h-16 bg-slate-200 rounded-xl" />
       </div>
     );
   }
@@ -86,10 +67,7 @@ export function RadarSection() {
     <>
       <div className="mx-4 sm:mx-6 lg:mx-8 mb-8 p-4 sm:p-6 bg-slate-50 border border-slate-100 rounded-2xl">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#123424] flex items-center justify-center">
-              <RadioTower className="w-4 h-4 text-lime-400" />
-            </div>
+          <div className="flex items-center gap-2">
             <h2 className="text-lg font-extrabold text-slate-900 tracking-tight">
               Radar
             </h2>
@@ -100,35 +78,28 @@ export function RadarSection() {
                   initial={{ opacity: 0, scale: 0.85 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.85 }}
-                  className={`text-[10px] font-black px-2 py-0.5 rounded-full border uppercase tracking-wide ${
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                     radar.active
                       ? "bg-lime-100 text-lime-700 border-lime-200"
                       : "bg-slate-100 text-slate-500 border-slate-200"
                   }`}
                 >
-                  {radar.active ? "Activ" : "Oprit"}
+                  {radar.active ? "activ" : "oprit"}
                 </motion.span>
               </AnimatePresence>
             )}
           </div>
 
-          {radar ? (
-            <button
-              onClick={() => setModalOpen(true)}
-              className="flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-slate-900 bg-white border border-slate-200 hover:border-slate-300 px-3 py-1.5 rounded-xl transition-all cursor-pointer"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-              Editează
-            </button>
-          ) : (
-            <button
-              onClick={() => setModalOpen(true)}
-              className="flex items-center gap-1.5 text-sm font-bold text-white bg-[#123424] hover:bg-[#1a4d36] px-3 py-1.5 rounded-xl transition-all cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Configurează
-            </button>
-          )}
+          <button
+            onClick={() => setModalOpen(true)}
+            className={`text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
+              radar
+                ? "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                : "bg-[#123424] border-[#123424] text-white hover:bg-[#1a4d36]"
+            }`}
+          >
+            {radar ? "Editează" : "Configurează"}
+          </button>
         </div>
 
         <AnimatePresence mode="wait">
@@ -140,23 +111,13 @@ export function RadarSection() {
               exit={{ opacity: 0, y: -6 }}
               className="bg-white border border-dashed border-slate-200 rounded-2xl p-6 text-center"
             >
-              <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
-                <RadioTower className="w-6 h-6 text-slate-400" />
-              </div>
               <p className="text-sm font-semibold text-slate-700 mb-1">
                 Radarul nu e configurat
               </p>
-              <p className="text-xs text-slate-400 mb-4 leading-relaxed">
-                Setează o zonă și primești notificări imediat ce apar sticle
-                lângă tine.
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Setează o zonă și primești notificări când apar sticle lângă
+                tine.
               </p>
-              <button
-                onClick={() => setModalOpen(true)}
-                className="inline-flex items-center gap-2 bg-[#123424] text-white font-bold px-5 py-2.5 rounded-full text-sm hover:bg-[#1a4d36] transition-colors cursor-pointer"
-              >
-                <RadioTower className="w-4 h-4 text-lime-400" />
-                Activează Radarul
-              </button>
             </motion.div>
           ) : (
             <motion.div
@@ -167,7 +128,8 @@ export function RadarSection() {
               className="bg-white border border-slate-100 rounded-2xl overflow-hidden"
             >
               <div className="flex items-center gap-4 p-4">
-                <div className="relative shrink-0 w-14 h-14 flex items-center justify-center">
+                {/* Animated radar icon */}
+                <div className="relative shrink-0 w-12 h-12 flex items-center justify-center">
                   {radar.active && (
                     <>
                       <motion.div
@@ -192,64 +154,58 @@ export function RadarSection() {
                     </>
                   )}
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${radar.active ? "bg-lime-50 border-2 border-lime-300" : "bg-slate-100 border-2 border-slate-200"}`}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      radar.active
+                        ? "bg-lime-50 border-2 border-lime-300"
+                        : "bg-slate-100 border-2 border-slate-200"
+                    }`}
                   >
                     <RadioTower
-                      className={`w-5 h-5 ${radar.active ? "text-lime-600" : "text-slate-400"}`}
+                      className={`w-5 h-5 ${
+                        radar.active ? "text-lime-600" : "text-slate-400"
+                      }`}
                     />
                   </div>
                 </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span
-                      className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${RADIUS_COLORS[radar.radiusKm] ?? RADIUS_COLORS[5]}`}
-                    >
-                      {radar.radiusKm} km
+                {/* Info */}
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-bold text-slate-800">
+                      {radar.radiusKm} km rază
                     </span>
-                  </div>
-                  {radar.locationName && (
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                      <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                      <span className="truncate font-medium">
-                        {radar.locationName}
+                    {radar.emailEnabled && (
+                      <span className="flex items-center gap-1 text-xs text-lime-600">
+                        <Mail className="w-3 h-3" />
+                        email activat
                       </span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-400">
-                    {radar.emailEnabled ? (
-                      <>
-                        <Mail className="w-3 h-3 text-lime-500" />
-                        <span className="text-lime-600 font-semibold">
-                          Email activat
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <MailX className="w-3 h-3" />
-                        <span>Fără email</span>
-                      </>
                     )}
                   </div>
+                  {radar.locationName && (
+                    <div className="flex items-center gap-1 text-xs text-slate-400">
+                      <MapPin className="w-3 h-3 shrink-0" />
+                      <span className="truncate">{radar.locationName}</span>
+                    </div>
+                  )}
                 </div>
 
+                {/* Toggle */}
                 <button
                   onClick={toggleActive}
                   disabled={toggling}
-                  className={`shrink-0 flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl border transition-all cursor-pointer disabled:opacity-50 ${
+                  className={`shrink-0 flex items-center justify-center min-w-[72px] text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all cursor-pointer disabled:opacity-50 ${
                     radar.active
-                      ? "bg-white border-slate-200 text-slate-600 hover:border-red-200 hover:text-red-600 hover:bg-red-50"
-                      : "bg-white border-slate-200 text-slate-600 hover:border-lime-300 hover:text-lime-700 hover:bg-lime-50"
+                      ? "bg-white border-slate-200 text-slate-500 hover:border-red-200 hover:text-red-500 hover:bg-red-50"
+                      : "bg-white border-slate-200 text-slate-500 hover:border-lime-300 hover:text-lime-700 hover:bg-lime-50"
                   }`}
                 >
                   {toggling ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : radar.active ? (
-                    <PowerOff className="w-3.5 h-3.5" />
+                    "Oprește"
                   ) : (
-                    <Power className="w-3.5 h-3.5" />
+                    "Pornește"
                   )}
-                  {radar.active ? "Oprește" : "Pornește"}
                 </button>
               </div>
             </motion.div>

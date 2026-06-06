@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { RadioTower, X, ChevronRight } from "lucide-react";
+import { RadioTower, X } from "lucide-react";
 
 const DISMISSED_KEY = "radar-teaser-dismissed";
 
@@ -29,40 +29,35 @@ export function RadarTeaser({ onConfigure }: RadarTeaserProps) {
     <AnimatePresence>
       {visible && (
         <motion.div
-          initial={{ opacity: 0, y: 20, scale: 0.97 }}
+          initial={{ opacity: 0, y: 16, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 14, scale: 0.97 }}
+          exit={{ opacity: 0, y: 10, scale: 0.97 }}
           transition={{ type: "spring", stiffness: 340, damping: 28 }}
           className="absolute bottom-5 left-1/2 -translate-x-1/2 z-[800] w-[calc(100%-2rem)] max-w-sm pointer-events-auto"
         >
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/60 overflow-hidden">
-            <div className="h-1 w-full bg-gradient-to-r from-lime-400 to-lime-500" />
-
-            <div className="px-4 py-3.5 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#123424] flex items-center justify-center shrink-0">
-                <RadioTower className="w-5 h-5 text-lime-400" />
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-lg shadow-slate-200/60 overflow-hidden">
+            <div className="h-[3px] w-full bg-gradient-to-r from-lime-400 to-lime-500" />
+            <div className="flex items-center gap-3 px-4 py-3">
+              <div className="w-9 h-9 rounded-xl bg-[#123424] flex items-center justify-center shrink-0">
+                <RadioTower className="w-4 h-4 text-lime-400" />
               </div>
-
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-slate-900 leading-tight">
-                  Activează Radarul
+                  Activează radarul
                 </p>
-                <p className="text-xs text-slate-500 leading-snug mt-0.5">
-                  Primești notificări când apar sticle lângă tine
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Notificări când apar sticle lângă tine
                 </p>
               </div>
-
               <button
                 onClick={() => {
                   dismiss();
                   onConfigure();
                 }}
-                className="flex items-center gap-1 text-xs font-bold text-lime-700 bg-lime-50 border border-lime-200 px-3 py-2 rounded-xl hover:bg-lime-100 transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+                className="shrink-0 text-xs font-bold text-[#123424] bg-lime-50 border border-lime-200 px-3 py-1.5 rounded-xl hover:bg-lime-100 transition-colors cursor-pointer"
               >
-                Configurează
-                <ChevronRight className="w-3 h-3" />
+                Setează
               </button>
-
               <button
                 onClick={dismiss}
                 className="w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors cursor-pointer shrink-0"
