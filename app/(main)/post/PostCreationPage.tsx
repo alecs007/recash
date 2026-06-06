@@ -1162,82 +1162,88 @@ export default function PostCreationClient({
           </AnimatePresence>
         </div>
 
-        <div className="flex gap-3">
-          <AnimatePresence>
-            {step > 0 && (
-              <motion.button
-                type="button"
-                initial={{ opacity: 0, x: -12 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -12 }}
-                transition={{ duration: 0.22, ease: SLIDE_EASE }}
-                whileTap={{ scale: 0.96 }}
-                onClick={handleBack}
-                disabled={submitting}
-                className="flex items-center gap-2 px-5 py-3.5 rounded-full border-2 border-slate-200 text-slate-700 font-semibold text-sm hover:border-slate-300 transition-colors disabled:opacity-40 cursor-pointer"
-              >
-                <ChevronLeft className="w-4 h-4" /> Înapoi
-              </motion.button>
-            )}
-          </AnimatePresence>
+        <div className="space-y-2">
+          <div className="flex gap-3">
+            <AnimatePresence>
+              {step > 0 && (
+                <motion.button
+                  type="button"
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -12 }}
+                  transition={{ duration: 0.22, ease: SLIDE_EASE }}
+                  whileTap={{ scale: 0.96 }}
+                  onClick={handleBack}
+                  disabled={submitting}
+                  className="flex items-center gap-2 px-5 py-3.5 rounded-full border-2 border-slate-200 text-slate-700 font-semibold text-sm hover:border-slate-300 transition-colors disabled:opacity-40 cursor-pointer"
+                >
+                  <ChevronLeft className="w-4 h-4" /> Înapoi
+                </motion.button>
+              )}
+            </AnimatePresence>
 
-          <AnimatePresence mode="wait">
-            {step < STEPS.length - 1 ? (
-              <motion.button
-                key="next"
-                type="button"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.18 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={handleNext}
-                disabled={!canProceed()}
-                className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-full bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-              >
-                Continuă <ChevronRight className="w-4 h-4" />
-              </motion.button>
-            ) : (
-              <motion.button
-                key="submit"
-                type="button"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.18 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-full bg-lime-400 text-black font-bold text-sm hover:bg-lime-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-              >
-                <AnimatePresence mode="wait">
-                  {submitting ? (
-                    <motion.span
-                      key="loading"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="flex items-center gap-2"
-                    >
-                      <div className="w-4 h-4 border-2 border-black/40 border-t-black rounded-full animate-spin" />
-                      Se postează...
-                    </motion.span>
-                  ) : (
-                    <motion.span
-                      key="idle"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="flex items-center gap-2 font-[800] tracking-wide"
-                    >
-                      <FaWineBottle className="w-4 h-4" />
-                      Recash It!
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </motion.button>
-            )}
-          </AnimatePresence>
+            <AnimatePresence mode="wait">
+              {step < STEPS.length - 1 ? (
+                <motion.button
+                  key="next"
+                  type="button"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.18 }}
+                  whileTap={canProceed() ? { scale: 0.97 } : {}}
+                  onClick={handleNext}
+                  disabled={!canProceed()}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-full font-bold text-sm transition-all duration-200 ${
+                    canProceed()
+                      ? "bg-[#123424] text-white hover:bg-[#1a4d36] cursor-pointer"
+                      : "bg-slate-100 text-slate-400 border-2 border-dashed border-slate-200 cursor-not-allowed"
+                  }`}
+                >
+                  Continuă <ChevronRight className="w-4 h-4" />
+                </motion.button>
+              ) : (
+                <motion.button
+                  key="submit"
+                  type="button"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.18 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-full bg-lime-400 text-black font-bold text-sm hover:bg-lime-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  <AnimatePresence mode="wait">
+                    {submitting ? (
+                      <motion.span
+                        key="loading"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="flex items-center gap-2"
+                      >
+                        <div className="w-4 h-4 border-2 border-black/40 border-t-black rounded-full animate-spin" />
+                        Se postează...
+                      </motion.span>
+                    ) : (
+                      <motion.span
+                        key="idle"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="flex items-center gap-2 font-[800] tracking-wide"
+                      >
+                        <FaWineBottle className="w-4 h-4" />
+                        Recash It!
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
     </ActivePostGuard>

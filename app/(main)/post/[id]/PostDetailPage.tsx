@@ -8,6 +8,7 @@ import useSWR from "swr";
 import { usePostLive } from "@/hooks/usePostLive";
 import {
   ArrowLeft,
+  ArrowRight,
   MapPin,
   Clock,
   CheckCircle,
@@ -1342,15 +1343,38 @@ function DetailPanel({
 
               return (
                 <>
-                  <div className="flex items-baseline gap-2 mb-1">
-                    <span className="text-sm text-slate-500">{myLabel}</span>
-                    <span
-                      className={`text-4xl font-black leading-none ${earningColor}`}
-                    >
-                      {displayEarning.toFixed(2) != "0.00" ? "+" : ""}
-                      {displayEarning.toFixed(2)}
+                  <div className="flex items-center gap-1 sm:gap-2 mb-1">
+                    {isCollector &&
+                      post.status !== "COMPLETED" &&
+                      post.status !== "CANCELLED" &&
+                      post.status !== "EXPIRED" && (
+                        <>
+                          <span className="text-xs sm:text-sm text-slate-500 mr-1 sm:mr-0">
+                            Plătești
+                          </span>
+                          <span className="text-2xl font-black leading-none text-slate-500">
+                            {posterEarning.toFixed(2)}
+                          </span>
+                          <span className="text-xs sm:text-sm text-slate-400 font-light">
+                            RON
+                          </span>
+                          <ArrowRight className="w-4 h-4 text-slate-400 shrink-0 mx-1 sm:mx-0" />
+                        </>
+                      )}
+                    <span className="text-xs sm:text-sm text-slate-500 mr-1 sm:mr-0">
+                      {myLabel}
                     </span>
-                    <span className="text-lg text-slate-400 font-light">
+                    <span
+                      className={`text-2xl font-black leading-none ${earningColor}`}
+                    >
+                      {isCollector &&
+                      post.status !== "COMPLETED" &&
+                      post.status !== "CANCELLED" &&
+                      post.status !== "EXPIRED"
+                        ? `${post.estimatedValue.toFixed(2)}`
+                        : `${displayEarning.toFixed(2) != "0.00" ? "+" : ""}${displayEarning.toFixed(2)}`}
+                    </span>
+                    <span className="text-xs sm:text-sm text-slate-400 font-light">
                       RON
                     </span>
                   </div>
