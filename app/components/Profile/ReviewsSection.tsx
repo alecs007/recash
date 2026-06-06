@@ -232,7 +232,8 @@ export function ReviewsSection({
           className="mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-500 hover:border-lime-300 hover:text-lime-700 hover:bg-lime-50 transition-all cursor-pointer"
         >
           <ChevronDown className="w-4 h-4" />
-          Mai multe ({reviews.length - visibleCount} rămase)
+          Vezi mai multe ({reviews.length - visibleCount}{" "}
+          {reviews.length - visibleCount === 1 ? "rămasă" : "rămase"})
         </button>
       )}
     </div>

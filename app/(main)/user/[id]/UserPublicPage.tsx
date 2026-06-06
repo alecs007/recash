@@ -20,7 +20,7 @@ import { BADGE_CONFIG } from "@/lib/constants/badges";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-const REVIEWS_PER_PAGE = 5;
+const REVIEWS_PER_PAGE = 3;
 
 interface PublicUser {
   id: string;
@@ -715,7 +715,8 @@ export default function UserPublicPage({ userId }: { userId: string }) {
                 className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-500 hover:border-lime-300 hover:text-lime-700 hover:bg-lime-50 transition-all cursor-pointer"
               >
                 <ChevronDown className="w-4 h-4" />
-                Vezi mai multe ({reviews.length - visibleCount} rămase)
+                Vezi mai multe ({reviews.length - visibleCount}{" "}
+                {reviews.length - visibleCount === 1 ? "rămasă" : "rămase"})
               </button>
             )}
           </>

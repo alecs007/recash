@@ -370,7 +370,7 @@ function PostCard({
               </span>
             )}
             <span className="text-xs font-black text-slate-800">
-              ~{collectorEarning.toFixed(2)} RON
+              +{collectorEarning.toFixed(2)} RON
             </span>
           </div>
         </div>
@@ -522,7 +522,7 @@ function SelectedPostOverlay({
                 </span>
               )}
               <span className="text-xs font-black text-slate-800">
-                ~{collectorEarning.toFixed(2)} RON
+                +{collectorEarning.toFixed(2)} RON
               </span>
             </div>
           </div>
