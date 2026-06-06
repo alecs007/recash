@@ -100,9 +100,7 @@ export function EmailOptinPopup({ context, postId }: EmailOptinPopupProps) {
                 />
               </div>
 
-              <p className="text-xs text-slate-600 leading-relaxed">
-                {copy.body}
-              </p>
+              <p className="text-sm text-slate-600">{copy.body}</p>
             </div>
 
             <div className="flex gap-2">
