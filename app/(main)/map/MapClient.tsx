@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useAuthModal } from "@/context/AuthModalContext";
+import { CollectConfirmModal } from "@/app/components/UI/CollectConfirmModal";
 import { MapPin, Search, Loader2, X, Star, ChevronRight } from "lucide-react";
 import { LuFilter } from "react-icons/lu";
 import { FiMap } from "react-icons/fi";
@@ -842,6 +843,11 @@ export default function MapPage() {
   const topbarRef = useRef<HTMLDivElement>(null);
   const [topbarHeight, setTopbarHeight] = useState(57);
 
+  const [pendingClaimPostId, setPendingClaimPostId] = useState<string | null>(
+    null,
+  );
+  const [showCollectModal, setShowCollectModal] = useState(false);
+
   useEffect(() => {
     const el = topbarRef.current;
     if (!el) return;
@@ -977,40 +983,45 @@ export default function MapPage() {
         return;
       }
 
-      setClaiming(postId);
-      setClaimError(null);
-
-      try {
-        const res = await fetch(`/api/v1/posts/${postId}/claim`, {
-          method: "POST",
-        });
-        const json = (await res.json()) as { error?: string };
-
-        if (!res.ok) {
-          setClaimError(json.error ?? "Eroare la revendicare.");
-          setClaiming(null);
-          return;
-        }
-
-        await mutate();
-        setActiveCounts({ activeCollections: 1, activeCollectionId: postId });
-        router.push(`/post/${postId}`);
-      } catch {
-        setClaimError("Eroare de rețea. Încearcă din nou.");
-        setClaiming(null);
-      }
+      setPendingClaimPostId(postId);
+      setShowCollectModal(true);
     },
-    [
-      isLoggedIn,
-      activeData,
-      mutate,
-      router,
-      openAuthModal,
-      posts,
-      currentUserId,
-      setActiveCounts,
-    ],
+    [isLoggedIn, activeData, openAuthModal, posts, currentUserId],
   );
+
+  const handleCollectConfirmed = useCallback(async () => {
+    if (!pendingClaimPostId) return;
+
+    const postId = pendingClaimPostId;
+    setClaiming(postId);
+    setClaimError(null);
+
+    try {
+      const res = await fetch(`/api/v1/posts/${postId}/claim`, {
+        method: "POST",
+      });
+      const json = (await res.json()) as { error?: string };
+
+      if (!res.ok) {
+        setShowCollectModal(false);
+        setPendingClaimPostId(null);
+        setClaimError(json.error ?? "Eroare la revendicare.");
+        setClaiming(null);
+        return;
+      }
+
+      setShowCollectModal(false);
+      setPendingClaimPostId(null);
+      await mutate();
+      setActiveCounts({ activeCollections: 1, activeCollectionId: postId });
+      router.push(`/post/${postId}`);
+    } catch {
+      setShowCollectModal(false);
+      setPendingClaimPostId(null);
+      setClaimError("Eroare de rețea. Încearcă din nou.");
+      setClaiming(null);
+    }
+  }, [pendingClaimPostId, mutate, router, setActiveCounts]);
 
   const handleSelectPost = useCallback((id: string) => {
     setSelectedId((prev) => (prev === id ? null : id));
@@ -1358,6 +1369,23 @@ export default function MapPage() {
           )}
         </div>
       </div>
+      {(() => {
+        const pendingPost = pendingClaimPostId
+          ? (posts.find((p) => p.id === pendingClaimPostId) ?? null)
+          : null;
+        return (
+          <CollectConfirmModal
+            isOpen={showCollectModal}
+            onConfirm={handleCollectConfirmed}
+            onCancel={() => {
+              setShowCollectModal(false);
+              setPendingClaimPostId(null);
+            }}
+            post={pendingPost}
+            loading={!!claiming}
+          />
+        );
+      })()}
     </div>
   );
 }
