@@ -1,19 +1,70 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import Image from "next/image";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { RadioTower, MapPin, Mail, Loader2 } from "lucide-react";
+import { RadioTower, MapPin, Loader2, Search, X, Power } from "lucide-react";
+import { FaRegCompass } from "react-icons/fa";
 import useSWR from "swr";
-import {
-  RadarConfigModal,
-  type RadarConfig,
-} from "@/app/components/UI/RadarConfigModal";
+
+const API = process.env.NEXT_PUBLIC_API_VERSION ?? "v1";
+
+const RADII = [1, 2, 5, 10, 25, 50] as const;
+type RadiusKm = (typeof RADII)[number];
+
+interface RadarConfig {
+  id: string;
+  latitude: number;
+  longitude: number;
+  locationName: string | null;
+  radiusKm: RadiusKm;
+  emailEnabled: boolean;
+  active: boolean;
+}
+
+interface GeocodeResult {
+  lat: string;
+  lon: string;
+  display_name: string;
+}
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
+function useLeaflet() {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((window as any).L) {
+      setReady(true);
+      return;
+    }
+    if (!document.querySelector('link[href*="leaflet.css"]')) {
+      const css = document.createElement("link");
+      css.rel = "stylesheet";
+      css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+      document.head.appendChild(css);
+    }
+    const s = document.createElement("script");
+    s.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+    s.async = true;
+    s.onload = () => setReady(true);
+    document.head.appendChild(s);
+  }, []);
+  return ready;
+}
+
 export function RadarSection() {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [toggling, setToggling] = useState(false);
+  const leafletReady = useLeaflet();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const markerRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const circleRef = useRef<any>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data, mutate, isLoading } = useSWR<{ radar: RadarConfig | null }>(
     "/api/v1/radar",
@@ -23,33 +74,313 @@ export function RadarSection() {
 
   const radar = data?.radar ?? null;
 
-  const handleSaved = useCallback(
-    (updated: RadarConfig) => {
-      mutate({ radar: updated }, { revalidate: false });
-      setModalOpen(false);
-    },
-    [mutate],
-  );
+  const [lat, setLat] = useState<number | null>(null);
+  const [lng, setLng] = useState<number | null>(null);
+  const [locationName, setLocationName] = useState("");
+  const [radiusKm, setRadiusKm] = useState<RadiusKm>(5);
+  const [emailEnabled, setEmailEnabled] = useState(false);
+  const [active, setActive] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [toggling, setToggling] = useState(false);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [reverseLoading, setReverseLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<GeocodeResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
-  const handleDeleted = useCallback(() => {
-    mutate({ radar: null }, { revalidate: false });
-    setModalOpen(false);
+  // Track latest values in refs for use inside the auto-save closure
+  const latRef = useRef(lat);
+  const lngRef = useRef(lng);
+  const locationNameRef = useRef(locationName);
+  const radiusKmRef = useRef(radiusKm);
+  const emailEnabledRef = useRef(emailEnabled);
+  const activeRef = useRef(active);
+
+  useEffect(() => {
+    latRef.current = lat;
+  }, [lat]);
+  useEffect(() => {
+    lngRef.current = lng;
+  }, [lng]);
+  useEffect(() => {
+    locationNameRef.current = locationName;
+  }, [locationName]);
+  useEffect(() => {
+    radiusKmRef.current = radiusKm;
+  }, [radiusKm]);
+  useEffect(() => {
+    emailEnabledRef.current = emailEnabled;
+  }, [emailEnabled]);
+  useEffect(() => {
+    activeRef.current = active;
+  }, [active]);
+
+  // Sync from server on first load
+  const syncedRef = useRef(false);
+  useEffect(() => {
+    if (syncedRef.current || isLoading) return;
+    syncedRef.current = true;
+    if (radar) {
+      setLat(radar.latitude);
+      setLng(radar.longitude);
+      setLocationName(radar.locationName ?? "");
+      setSearchQuery(radar.locationName ?? "");
+      setRadiusKm(radar.radiusKm);
+      setEmailEnabled(radar.emailEnabled);
+      setActive(radar.active);
+      latRef.current = radar.latitude;
+      lngRef.current = radar.longitude;
+      locationNameRef.current = radar.locationName ?? "";
+      radiusKmRef.current = radar.radiusKm;
+      emailEnabledRef.current = radar.emailEnabled;
+      activeRef.current = radar.active;
+    }
+  }, [radar, isLoading]);
+
+  const scheduleAutoSave = useCallback(() => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(async () => {
+      const currentLat = latRef.current;
+      const currentLng = lngRef.current;
+      if (currentLat === null || currentLng === null) return;
+      setSaving(true);
+      try {
+        const res = await fetch("/api/v1/radar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            latitude: currentLat,
+            longitude: currentLng,
+            locationName: locationNameRef.current,
+            radiusKm: radiusKmRef.current,
+            emailEnabled: emailEnabledRef.current,
+            active: activeRef.current,
+          }),
+        });
+        if (res.ok) {
+          const d = await res.json();
+          mutate({ radar: d.radar }, { revalidate: false });
+        }
+      } catch {
+        /* non-fatal */
+      }
+      setSaving(false);
+    }, 700);
   }, [mutate]);
 
-  const toggleActive = useCallback(async () => {
+  const buildIcon = useCallback(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const L = (window as any).L;
+    return L.divIcon({
+      className: "custom-map-pin",
+      html: `<div style="position:relative;width:32px;height:32px;background-color:#f73138;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 3px 5px rgba(0,0,0,0.3)"><div style="width:14px;height:14px;background-color:#fff;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(45deg)"></div></div>`,
+      iconSize: [32, 44],
+      iconAnchor: [16, 44],
+    });
+  }, []);
+
+  const updateMapOverlay = useCallback(
+    (newLat: number, newLng: number, newRadius: RadiusKm) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const L = (window as any).L;
+      if (!L || !mapRef.current) return;
+      if (markerRef.current) {
+        markerRef.current.setLatLng([newLat, newLng]);
+      } else {
+        markerRef.current = L.marker([newLat, newLng], {
+          icon: buildIcon(),
+        }).addTo(mapRef.current);
+      }
+      if (circleRef.current) circleRef.current.remove();
+      circleRef.current = L.circle([newLat, newLng], {
+        radius: newRadius * 1000,
+        color: "#a3e635",
+        fillColor: "#a3e635",
+        fillOpacity: 0.08,
+        weight: 2,
+        dashArray: "6 4",
+      }).addTo(mapRef.current);
+      mapRef.current.setView(
+        [newLat, newLng],
+        Math.max(mapRef.current.getZoom(), 11),
+        { animate: true, duration: 0.5 },
+      );
+    },
+    [buildIcon],
+  );
+
+  // Redraw circle when radius changes
+  useEffect(() => {
+    if (lat !== null && lng !== null && mapRef.current) {
+      updateMapOverlay(lat, lng, radiusKm);
+    }
+  }, [radiusKm, lat, lng, updateMapOverlay]);
+
+  const reverseGeocode = useCallback(
+    async (la: number, lo: number): Promise<string> => {
+      setReverseLoading(true);
+      try {
+        const r = await fetch(
+          `/api/${API}/geocode?type=reverse&lat=${la}&lon=${lo}`,
+        );
+        const d = await r.json();
+        const addr = d.address ?? {};
+        const city =
+          addr.city ?? addr.town ?? addr.village ?? addr.county ?? "";
+        const road = addr.road ?? addr.neighbourhood ?? addr.suburb ?? "";
+        const name =
+          [road, city].filter(Boolean).join(", ") ||
+          d.display_name?.split(",")[0] ||
+          "";
+        setLocationName(name);
+        setSearchQuery(name);
+        locationNameRef.current = name;
+        return name;
+      } catch {
+        return "";
+      } finally {
+        setReverseLoading(false);
+      }
+    },
+    [],
+  );
+
+  // Init map
+  useEffect(() => {
+    if (!leafletReady || !mapContainerRef.current || mapRef.current) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const L = (window as any).L;
+    const initLat = latRef.current;
+    const initLng = lngRef.current;
+    const center: [number, number] =
+      initLat && initLng ? [initLat, initLng] : [45.9432, 24.9668];
+    const zoom = initLat ? 12 : 6;
+    const map = L.map(mapContainerRef.current, {
+      center,
+      zoom,
+      zoomControl: true,
+    });
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap",
+      maxZoom: 19,
+    }).addTo(map);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    map.on("click", async (e: any) => {
+      const newLat = e.latlng.lat;
+      const newLng = e.latlng.lng;
+      setLat(newLat);
+      setLng(newLng);
+      latRef.current = newLat;
+      lngRef.current = newLng;
+      updateMapOverlay(newLat, newLng, radiusKmRef.current);
+      await reverseGeocode(newLat, newLng);
+      scheduleAutoSave();
+    });
+    mapRef.current = map;
+    if (initLat && initLng)
+      updateMapOverlay(initLat, initLng, radiusKmRef.current);
+    return () => {
+      map.remove();
+      mapRef.current = null;
+      markerRef.current = null;
+      circleRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leafletReady]);
+
+  const handleSearch = (q: string) => {
+    setSearchQuery(q);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (q.trim().length < 3) {
+      setSearchResults([]);
+      return;
+    }
+    debounceRef.current = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const r = await fetch(
+          `/api/${API}/geocode?type=search&q=${encodeURIComponent(q)}`,
+        );
+        const d = await r.json();
+        setSearchResults(Array.isArray(d) ? d : []);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 450);
+  };
+
+  const handleSelectResult = (result: GeocodeResult) => {
+    const la = parseFloat(result.lat);
+    const lo = parseFloat(result.lon);
+    const name = result.display_name.split(",").slice(0, 2).join(", ").trim();
+    setLat(la);
+    setLng(lo);
+    setLocationName(name);
+    setSearchQuery(name);
+    setSearchResults([]);
+    latRef.current = la;
+    lngRef.current = lo;
+    locationNameRef.current = name;
+    updateMapOverlay(la, lo, radiusKmRef.current);
+    scheduleAutoSave();
+  };
+
+  const handleGPS = () => {
+    if (!navigator.geolocation) return;
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const la = pos.coords.latitude,
+          lo = pos.coords.longitude;
+        setLat(la);
+        setLng(lo);
+        latRef.current = la;
+        lngRef.current = lo;
+        updateMapOverlay(la, lo, radiusKmRef.current);
+        await reverseGeocode(la, lo);
+        scheduleAutoSave();
+        setGeoLoading(false);
+      },
+      () => setGeoLoading(false),
+      { enableHighAccuracy: true, timeout: 10_000 },
+    );
+  };
+
+  const handleRadiusChange = (r: RadiusKm) => {
+    setRadiusKm(r);
+    radiusKmRef.current = r;
+    scheduleAutoSave();
+  };
+
+  const handleEmailToggle = () => {
+    const next = !emailEnabled;
+    setEmailEnabled(next);
+    emailEnabledRef.current = next;
+    scheduleAutoSave();
+  };
+
+  const handleActiveToggle = useCallback(async () => {
     if (!radar) return;
     setToggling(true);
+    const next = !active;
+    setActive(next);
+    activeRef.current = next;
     try {
       const res = await fetch("/api/v1/radar", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ active: !radar.active }),
+        body: JSON.stringify({ active: next }),
       });
       const d = await res.json();
       if (res.ok) mutate({ radar: d.radar }, { revalidate: false });
-    } catch {}
+    } catch {
+      setActive(!next);
+      activeRef.current = !next;
+    }
     setToggling(false);
-  }, [radar, mutate]);
+  }, [radar, active, mutate]);
 
   if (isLoading) {
     return (
@@ -58,168 +389,231 @@ export function RadarSection() {
           <div className="h-5 w-20 bg-slate-200 rounded-lg" />
           <div className="h-7 w-24 bg-slate-200 rounded-xl" />
         </div>
-        <div className="h-16 bg-slate-200 rounded-xl" />
+        <div className="h-48 bg-slate-200 rounded-xl" />
       </div>
     );
   }
 
   return (
-    <>
-      <div className="mx-4 sm:mx-6 lg:mx-8 mb-8 p-4 sm:p-6 bg-slate-50 border border-slate-100 rounded-2xl">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-extrabold text-slate-900 tracking-tight">
-              Radar
-            </h2>
-            {radar && (
-              <AnimatePresence mode="wait">
-                <motion.span
-                  key={radar.active ? "active" : "paused"}
-                  initial={{ opacity: 0, scale: 0.85 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.85 }}
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                    radar.active
-                      ? "bg-lime-100 text-lime-700 border-lime-200"
-                      : "bg-slate-100 text-slate-500 border-slate-200"
-                  }`}
+    <div
+      id="radar"
+      className="mx-4 sm:mx-6 lg:mx-8 mb-8 p-4 sm:p-6 bg-slate-50 border border-slate-100 rounded-2xl"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3 sm:mb-2">
+        <div className="flex items-center gap-2">
+          <RadioTower className="w-5 h-5 text-lime-500" />
+          <h2 className="text-lg font-extrabold text-slate-900 tracking-tight">
+            Radar
+          </h2>
+          {radar && (
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={active ? "active" : "paused"}
+                initial={{ opacity: 0, scale: 0.85 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.85 }}
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                  active
+                    ? "bg-lime-100 text-lime-700 border-lime-200"
+                    : "bg-slate-100 text-slate-500 border-slate-200"
+                }`}
+              >
+                {active ? "activ" : "oprit"}
+              </motion.span>
+            </AnimatePresence>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {saving && (
+            <Loader2 className="w-3.5 h-3.5 text-slate-400 animate-spin" />
+          )}
+          {radar && (
+            <button
+              onClick={handleActiveToggle}
+              disabled={toggling}
+              className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all cursor-pointer disabled:opacity-50 ${
+                active
+                  ? "bg-white border-slate-200 text-slate-500 hover:border-red-200 hover:text-red-500 hover:bg-red-50"
+                  : "bg-white border-slate-200 text-slate-500 hover:border-lime-300 hover:text-lime-700 hover:bg-lime-50"
+              }`}
+            >
+              {toggling ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Power className="w-3 h-3" />
+              )}
+              {active ? "Oprește" : "Pornește"}
+            </button>
+          )}
+        </div>
+      </div>
+      <p className="text-sm text-slate-600 mb-4">
+        Setează-ți centrul de monitorizare și raza pentru a primi alerte despre
+        anunțurile noi din zona ta.
+      </p>
+      {/* Two-column layout on desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* LEFT column: search + map */}
+        <div className="space-y-3">
+          {/* Search */}
+          <div className="flex gap-2 relative">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                placeholder="Caută o adresă sau apasă pe hartă…"
+                className="w-full pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none text-sm bg-white transition-shadow"
+              />
+              {(searchLoading || reverseLoading) && (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-slate-400" />
+              )}
+              {searchQuery && !searchLoading && !reverseLoading && (
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSearchResults([]);
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer"
                 >
-                  {radar.active ? "activ" : "oprit"}
-                </motion.span>
+                  <X className="w-3.5 h-3.5 text-slate-400 hover:text-slate-600" />
+                </button>
+              )}
+              <AnimatePresence>
+                {searchResults.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-slate-200 z-10 overflow-hidden shadow-lg"
+                  >
+                    {searchResults.slice(0, 5).map((r, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => handleSelectResult(r)}
+                        className="w-full text-left px-4 py-2.5 hover:bg-lime-50 text-sm text-slate-700 flex items-start gap-2 border-b border-slate-50 last:border-0 cursor-pointer transition-colors"
+                      >
+                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                        <span className="line-clamp-1">{r.display_name}</span>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
               </AnimatePresence>
-            )}
+            </div>
+            <button
+              type="button"
+              onClick={handleGPS}
+              disabled={geoLoading}
+              className="w-10 h-10 rounded-xl border border-[#123424]/20 hover:bg-[#123424]/10 bg-white flex items-center justify-center transition-all disabled:opacity-50 cursor-pointer shrink-0"
+              title="Folosește locația mea"
+            >
+              {geoLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin text-[#123424]" />
+              ) : (
+                <FaRegCompass className="w-4 h-4 text-[#123424]" />
+              )}
+            </button>
           </div>
 
-          <button
-            onClick={() => setModalOpen(true)}
-            className={`text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
-              radar
-                ? "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-                : "bg-[#123424] border-[#123424] text-white hover:bg-[#1a4d36]"
-            }`}
+          {/* Map */}
+          <div
+            className="relative rounded-2xl overflow-hidden border-2 border-slate-200"
+            style={{ height: 230 }}
           >
-            {radar ? "Editează" : "Configurează"}
-          </button>
+            <div ref={mapContainerRef} className="w-full h-full" />
+            {!leafletReady && (
+              <div className="absolute inset-0 bg-slate-100 flex items-center justify-center">
+                <Loader2 className="w-6 h-6 animate-spin text-slate-300" />
+              </div>
+            )}
+            {reverseLoading && (
+              <div className="absolute inset-0 bg-white/50 backdrop-blur-[2px] flex items-center justify-center z-10">
+                <div className="bg-white rounded-xl px-4 py-2 shadow-md flex items-center gap-2 text-sm text-slate-600 font-medium">
+                  <Loader2 className="w-4 h-4 animate-spin text-[#123424]" />
+                  Se obține adresa...
+                </div>
+              </div>
+            )}
+            {!lat && leafletReady && (
+              <div className="absolute bottom-3 inset-x-0 flex justify-center pointer-events-none z-10">
+                <div className="bg-black/60 backdrop-blur text-white text-xs font-semibold px-3 py-1.5 rounded-full">
+                  Apasă pe hartă pentru a seta centrul
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        <AnimatePresence mode="wait">
-          {!radar ? (
-            <motion.div
-              key="empty"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              className="bg-white border border-dashed border-slate-200 rounded-2xl p-6 text-center"
-            >
-              <p className="text-sm font-semibold text-slate-700 mb-1">
-                Radarul nu e configurat
-              </p>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Setează o zonă și primești notificări când apar sticle lângă
-                tine.
-              </p>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="configured"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              className="bg-white border border-slate-100 rounded-2xl overflow-hidden"
-            >
-              <div className="flex items-center gap-4 p-4">
-                {/* Animated radar icon */}
-                <div className="relative shrink-0 w-12 h-12 flex items-center justify-center">
-                  {radar.active && (
-                    <>
-                      <motion.div
-                        className="absolute inset-0 rounded-full border-2 border-lime-400/40"
-                        animate={{ scale: [1, 1.8], opacity: [0.6, 0] }}
-                        transition={{
-                          duration: 1.8,
-                          repeat: Infinity,
-                          ease: "easeOut",
-                        }}
-                      />
-                      <motion.div
-                        className="absolute inset-0 rounded-full border-2 border-lime-400/25"
-                        animate={{ scale: [1, 2.4], opacity: [0.4, 0] }}
-                        transition={{
-                          duration: 1.8,
-                          repeat: Infinity,
-                          ease: "easeOut",
-                          delay: 0.6,
-                        }}
-                      />
-                    </>
-                  )}
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      radar.active
-                        ? "bg-lime-50 border-2 border-lime-300"
-                        : "bg-slate-100 border-2 border-slate-200"
-                    }`}
-                  >
-                    <RadioTower
-                      className={`w-5 h-5 ${
-                        radar.active ? "text-lime-600" : "text-slate-400"
-                      }`}
-                    />
-                  </div>
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0 space-y-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-bold text-slate-800">
-                      {radar.radiusKm} km rază
-                    </span>
-                    {radar.emailEnabled && (
-                      <span className="flex items-center gap-1 text-xs text-lime-600">
-                        <Mail className="w-3 h-3" />
-                        email activat
-                      </span>
-                    )}
-                  </div>
-                  {radar.locationName && (
-                    <div className="flex items-center gap-1 text-xs text-slate-400">
-                      <MapPin className="w-3 h-3 shrink-0" />
-                      <span className="truncate">{radar.locationName}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Toggle */}
-                <button
-                  onClick={toggleActive}
-                  disabled={toggling}
-                  className={`shrink-0 flex items-center justify-center min-w-[72px] text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all cursor-pointer disabled:opacity-50 ${
-                    radar.active
-                      ? "bg-white border-slate-200 text-slate-500 hover:border-red-200 hover:text-red-500 hover:bg-red-50"
-                      : "bg-white border-slate-200 text-slate-500 hover:border-lime-300 hover:text-lime-700 hover:bg-lime-50"
-                  }`}
+        {/* RIGHT column: radius + email + active radar display */}
+        <div className="space-y-3 flex flex-col">
+          {/* Radius */}
+          <div className="bg-white border border-slate-100 rounded-2xl p-4">
+            <p className="text-sm font-semibold text-slate-500 mb-3">
+              Raza de monitorizare
+            </p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {RADII.map((r) => (
+                <motion.button
+                  key={r}
+                  type="button"
+                  onClick={() => handleRadiusChange(r)}
+                  whileTap={{ scale: 0.94 }}
+                  animate={{
+                    backgroundColor: radiusKm === r ? "#123424" : "#f8fafc",
+                    borderColor: radiusKm === r ? "#123424" : "#e2e8f0",
+                    color: radiusKm === r ? "#ffffff" : "#475569",
+                  }}
+                  transition={{ duration: 0.15 }}
+                  className="py-3 rounded-xl border-2 text-sm font-bold cursor-pointer leading-none"
                 >
-                  {toggling ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : radar.active ? (
-                    "Oprește"
-                  ) : (
-                    "Pornește"
-                  )}
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+                  {r} km
+                </motion.button>
+              ))}
+            </div>
+          </div>
 
-      <RadarConfigModal
-        isOpen={modalOpen}
-        existing={radar}
-        onClose={() => setModalOpen(false)}
-        onSaved={handleSaved}
-        onDeleted={handleDeleted}
-      />
-    </>
+          {/* Email toggle */}
+          <div className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0">
+                <Image
+                  src="/images/email.svg"
+                  alt="Email"
+                  width={140}
+                  height={140}
+                  draggable={false}
+                  priority
+                />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-800">
+                  Notificări email
+                </p>
+                <p className="text-xs text-slate-400 mr-2">
+                  Primește email la fiecare anunț nou din zona ta.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleEmailToggle}
+              className={`relative w-11 h-6 rounded-full transition-colors duration-200 cursor-pointer focus:outline-none shrink-0 ${
+                emailEnabled ? "bg-lime-400" : "bg-slate-200"
+              }`}
+            >
+              <motion.div
+                animate={{ x: emailEnabled ? 22 : 6 }}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm"
+              />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -1,16 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { RadioTower, X } from "lucide-react";
 
 const DISMISSED_KEY = "radar-teaser-dismissed";
 
-interface RadarTeaserProps {
-  onConfigure: () => void;
-}
-
-export function RadarTeaser({ onConfigure }: RadarTeaserProps) {
+export function RadarTeaser() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -49,15 +46,13 @@ export function RadarTeaser({ onConfigure }: RadarTeaserProps) {
                   Notificări când apar sticle lângă tine
                 </p>
               </div>
-              <button
-                onClick={() => {
-                  dismiss();
-                  onConfigure();
-                }}
+              <Link
+                href="/profil#radar"
+                onClick={dismiss}
                 className="shrink-0 text-xs font-bold text-[#123424] bg-lime-50 border border-lime-200 px-3 py-1.5 rounded-xl hover:bg-lime-100 transition-colors cursor-pointer"
               >
                 Setează
-              </button>
+              </Link>
               <button
                 onClick={dismiss}
                 className="w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors cursor-pointer shrink-0"
