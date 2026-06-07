@@ -173,10 +173,10 @@ function buildRadarEmailHtml(opts: {
           <tr>
             <td style="padding:24px 32px 28px;border-top:1px solid #f1f5f9;">
               <p style="margin:0;font-size:12px;color:#94a3b8;line-height:1.6;">
-                Email generat automat de plataforma Recash.<br/>
-                <a href="${APP_URL}"style="color:#a3e635;text-decoration:none;font-weight:600;"">recash.ro</a>                
+                Email-ul a fost generat automat de platforma Recash.<br/>
+                <a href="${APP_URL}/profil" style="color:#a3e635;text-decoration:none;font-weight:600;">Modifică setările radarului</a>
                 &nbsp;·&nbsp;
-                <a href="${APP_URL}profil" style="color:#94a3b8;text-decoration:none;>Modifică setările radarului</a>
+                <a href="${APP_URL}" style="color:#94a3b8;text-decoration:none;">recash.ro</a>
               </p>
             </td>
           </tr>
