@@ -1116,7 +1116,7 @@ function DetailPanel({
                       </div>
                     </div>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Vrea să colecteze sticlele tale. Odată aprobat, va avea 30
+                      Vrea să colecteze sticlele tale. Odată aprobat, va avea 60
                       min la dispoziție să ajungă.
                     </p>
                   </div>
@@ -1210,14 +1210,19 @@ function DetailPanel({
                   className="flex items-center gap-3"
                 >
                   <motion.div
-                    animate={{ scale: [1, 1.15, 1] }}
+                    animate={{ scale: [1, 1.05, 1] }}
                     transition={{
                       repeat: Infinity,
                       duration: 2,
                       ease: "easeInOut",
                     }}
                   >
-                    <Clock className="w-5 h-5 text-blue-400 shrink-0" />
+                    <Image
+                      src="/images/claimed-clock.svg"
+                      alt="Claimed Clock"
+                      width={36}
+                      height={36}
+                    />
                   </motion.div>
                   <div>
                     <p className="text-sm font-semibold text-slate-800">
