@@ -260,7 +260,7 @@ export function RadarSection() {
 
     const map = L.map(mapContainerRef.current, {
       center,
-      zoom: initLat ? 12 : 6,
+      zoom: initLat ? 10 : 6,
       zoomControl: true,
     });
 
