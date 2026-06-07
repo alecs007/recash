@@ -698,7 +698,7 @@ function StepLocation({
           {!data.latitude && leafletReady && (
             <div className="absolute bottom-3 inset-x-0 flex justify-center z-10 pointer-events-none">
               <div className="bg-black/65 backdrop-blur text-white text-xs font-semibold px-3 py-1.5 rounded-full">
-                Apasă pe hartă pentru a plasa un pin
+                Apasă pe hartă pentru a selecta locația
               </div>
             </div>
           )}
@@ -768,11 +768,11 @@ function StepDetails({
             <div className="absolute w-full h-3 rounded-full overflow-hidden flex shadow-inner bg-slate-200">
               <div
                 className="h-full bg-lime-400"
-                style={{ width: `${data.collectorSharePercent}%` }}
+                style={{ width: `${100 - data.collectorSharePercent}%` }}
               />
               <div
                 className="h-full bg-[#123424]"
-                style={{ width: `${100 - data.collectorSharePercent}%` }}
+                style={{ width: `${data.collectorSharePercent}%` }}
               />
             </div>
             <input
@@ -780,9 +780,11 @@ function StepDetails({
               min={0}
               max={100}
               step={5}
-              value={data.collectorSharePercent}
+              value={100 - data.collectorSharePercent}
               onChange={(e) =>
-                onChange({ collectorSharePercent: parseInt(e.target.value) })
+                onChange({
+                  collectorSharePercent: 100 - parseInt(e.target.value),
+                })
               }
               className="absolute w-full h-full appearance-none bg-transparent cursor-pointer z-10
                 [&::-webkit-slider-thumb]:appearance-none

@@ -661,7 +661,7 @@ export function RadarSection() {
                 className="flex justify-center pointer-events-none"
               >
                 <div className="bg-black/60 backdrop-blur text-white text-xs font-semibold px-3 py-1.5 rounded-full">
-                  Apasă pe hartă pentru a seta centrul
+                  Apasă pe hartă pentru a selecta centrul
                 </div>
               </div>
             )}
