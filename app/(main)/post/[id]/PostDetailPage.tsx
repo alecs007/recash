@@ -1008,9 +1008,9 @@ function DetailPanel({
   }, [post.id, post.status, isAuthor, onRedirect, setActiveCounts]);
 
   return (
-    <div className="h-full relative">
+    <div className="h-full w-full relative">
       <div className="h-full overflow-y-auto" data-lenis-prevent>
-        <div className="px-6 lg:px-10 py-6 lg:py-8 space-y-0 max-w-xl lg:max-w-none">
+        <div className="px-6 lg:px-10 py-6 lg:py-8 space-y-0 max-w-2xl lg:max-w-none mx-auto">
           {/* ── BACK + STATUS ── */}
           <div className="flex items-center justify-between mb-7">
             <Link
@@ -1209,21 +1209,12 @@ function DetailPanel({
                   transition={{ delay: 0.1, duration: 0.3, ease: EASE }}
                   className="flex items-center gap-3"
                 >
-                  <motion.div
-                    animate={{ scale: [1, 1.05, 1] }}
-                    transition={{
-                      repeat: Infinity,
-                      duration: 2,
-                      ease: "easeInOut",
-                    }}
-                  >
-                    <Image
-                      src="/images/claimed-clock.svg"
-                      alt="Claimed Clock"
-                      width={36}
-                      height={36}
-                    />
-                  </motion.div>
+                  <Image
+                    src="/images/claimed-clock.svg"
+                    alt="Claimed Clock"
+                    width={40}
+                    height={40}
+                  />
                   <div>
                     <p className="text-sm font-semibold text-slate-800">
                       Cererea ta a fost trimisă
@@ -1788,15 +1779,23 @@ function DetailPanel({
                   <div className="mt-3 h-2.5 bg-slate-100 rounded-full overflow-hidden flex">
                     <motion.div
                       className={`h-full rounded-l-full ${posterBarColor}`}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${posterPct}%` }}
-                      transition={{ duration: 0.6, ease: EASE, delay: 0.2 }}
+                      initial={{ opacity: 0, scaleX: 0.85 }}
+                      animate={{ opacity: 1, scaleX: 1 }}
+                      transition={{ duration: 0.5, ease: EASE, delay: 0.15 }}
+                      style={{
+                        width: `${posterPct}%`,
+                        transformOrigin: "left center",
+                      }}
                     />
                     <motion.div
                       className={`h-full rounded-r-full ${collectorBarColor}`}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${post.collectorSharePercent}%` }}
-                      transition={{ duration: 0.6, ease: EASE, delay: 0.2 }}
+                      initial={{ opacity: 0, scaleX: 0.85 }}
+                      animate={{ opacity: 1, scaleX: 1 }}
+                      transition={{ duration: 0.5, ease: EASE, delay: 0.25 }}
+                      style={{
+                        width: `${post.collectorSharePercent}%`,
+                        transformOrigin: "right center",
+                      }}
                     />
                   </div>
                   <div className="flex justify-between text-[10px] text-slate-400 mt-1">
@@ -1985,15 +1984,15 @@ export default function PostDetailClient({
 
   return (
     <>
-      <div className="lg:hidden flex flex-col min-h-[calc(100vh-64px)]">
-        <div className="relative h-[260px] shrink-0">
+      <div className="lg:hidden flex flex-col items-center min-h-[calc(100vh-64px)]">
+        <div className="relative h-[260px] w-full shrink-0">
           <PostMap
             lat={post.latitude}
             lng={post.longitude}
             locationName={post.locationName}
           />
         </div>
-        <div className="flex-1 bg-white">
+        <div className="flex-1 bg-white w-full">
           <DetailPanel
             post={post}
             userId={userId}
