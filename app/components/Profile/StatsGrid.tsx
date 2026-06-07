@@ -31,7 +31,7 @@ export function StatsGrid({ user }: { user: UserProfile }) {
     },
   ];
   return (
-    <div className="mx-4 sm:mx-6 lg:mx-8 mb-8">
+    <div className="mx-4 sm:mx-6 lg:mx-8 mb-6">
       <div className="bg-white rounded-2xl overflow-hidden">
         <div className="grid grid-cols-1 md:grid-cols-4">
           {stats.map(({ icon, label, value, unit }, idx) => (

@@ -469,8 +469,8 @@ export function RadarSection() {
               disabled={toggling}
               className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
                 active
-                  ? "bg-lime-100 text-lime-700 border-lime-200 hover:bg-lime-200"
-                  : "bg-red-100 text-red-600 border-red-200 hover:bg-red-200"
+                  ? "bg-lime-100 text-lime-700 border-lime-200"
+                  : "bg-red-100 text-red-600 border-red-200"
               }`}
             >
               <Power className="w-3.5 h-3.5" />
