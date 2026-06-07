@@ -152,7 +152,7 @@ function buildRadarEmailHtml(opts: {
               </table>
 
               <p style="margin:0 0 12px;font-size:14px;color:#64748b;line-height:1.6;">
-                Grăbește-te, alte persoane pot revendica anunțul înaintea ta.
+                Grăbește-te, alte persoane pot revendica anunțul înaintea ta!
               </p>
             </td>
           </tr>

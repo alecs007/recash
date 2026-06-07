@@ -533,8 +533,8 @@ export function RadarSection() {
       </div>
 
       <p className="text-sm text-slate-600 mb-4">
-        Setează-ți centrul de monitorizare și raza pentru a primi alerte despre
-        anunțurile noi din zona ta.
+        Setează-ți centrul de monitorizare și raza pentru a primi alertă la
+        fiecare anunț nou din zona ta.
       </p>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
