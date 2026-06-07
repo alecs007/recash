@@ -129,6 +129,7 @@ export type NotificationType =
   | "COLLECTOR_ARRIVED"
   | "BADGE_EARNED"
   | "RATING_RECEIVED"
+  | "RADAR_ALERT"
   | "SYSTEM";
 
 export type Notification = {

@@ -10,6 +10,7 @@ import {
   FaInfo,
   FaTruck,
   FaStar,
+  FaBroadcastTower,
 } from "react-icons/fa";
 
 export type ToastVariant =
@@ -18,7 +19,8 @@ export type ToastVariant =
   | "warning"
   | "error"
   | "courier"
-  | "rating";
+  | "rating"
+  | "radar";
 
 type VariantCfg = {
   Icon: ComponentType<{ className?: string }>;
@@ -63,6 +65,12 @@ const VARIANT_CONFIG: Record<ToastVariant, VariantCfg> = {
     color: "text-yellow-500",
     bg: "bg-yellow-50",
     border: "border-yellow-200",
+  },
+  radar: {
+    Icon: FaBroadcastTower,
+    color: "text-lime-700",
+    bg: "bg-lime-50",
+    border: "border-lime-300",
   },
 };
 

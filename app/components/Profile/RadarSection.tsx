@@ -1,7 +1,5 @@
 "use client";
 
-// ✅ Import Leaflet CSS directly — required in Next.js.
-//    Dynamic DOM injection is unreliable; Next.js bundles this correctly.
 import "leaflet/dist/leaflet.css";
 
 import Image from "next/image";
@@ -10,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { RadioTower, MapPin, Loader2, Search, X, Power } from "lucide-react";
 import { FaRegCompass } from "react-icons/fa";
 import useSWR from "swr";
+import { showToast } from "@/lib/toast";
 
 const API = process.env.NEXT_PUBLIC_API_VERSION ?? "v1";
 
@@ -45,6 +44,7 @@ export function RadarSection() {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [leafletReady, setLeafletReady] = useState(false);
+  const [mapMounted, setMapMounted] = useState(false);
 
   const { data, mutate, isLoading } = useSWR<{ radar: RadarConfig | null }>(
     "/api/v1/radar",
@@ -117,9 +117,7 @@ export function RadarSection() {
 
   // ── Load Leaflet dynamically (client only) ─────────────────────────────
   useEffect(() => {
-    // Dynamic import so Leaflet never runs on the server
     import("leaflet").then((L) => {
-      // Fix default marker icons broken by webpack
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
@@ -129,7 +127,6 @@ export function RadarSection() {
         shadowUrl:
           "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
       });
-      // Store on window so other callbacks can reach it without re-importing
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).__L = L;
       setLeafletReady(true);
@@ -248,6 +245,9 @@ export function RadarSection() {
   );
 
   // ── Map init ───────────────────────────────────────────────────────────
+  // We watch leafletReady + mapMounted together.
+  // mapMounted flips to true after the section becomes visible so the
+  // container has real dimensions when we call L.map().
   useEffect(() => {
     if (!leafletReady || !mapContainerRef.current || mapRef.current) return;
 
@@ -269,12 +269,15 @@ export function RadarSection() {
       maxZoom: 19,
     }).addTo(map);
 
-    // Double rAF ensures the browser has painted the container before measuring
-    requestAnimationFrame(() => {
+    const invalidate = () => {
       requestAnimationFrame(() => {
-        map.invalidateSize({ animate: false });
+        requestAnimationFrame(() => {
+          map.invalidateSize({ animate: false });
+        });
       });
-    });
+    };
+    invalidate();
+    const t = setTimeout(invalidate, 300);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     map.on("click", async (e: any) => {
@@ -294,13 +297,33 @@ export function RadarSection() {
       updateMapOverlay(initLat, initLng, radiusKmRef.current);
 
     return () => {
+      clearTimeout(t);
       map.remove();
       mapRef.current = null;
       markerRef.current = null;
       circleRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leafletReady]);
+  }, [leafletReady, mapMounted]);
+
+  // Trigger mapMounted after a short delay so the component has rendered
+  useEffect(() => {
+    if (isLoading) return;
+    const t = setTimeout(() => setMapMounted(true), 50);
+    return () => clearTimeout(t);
+  }, [isLoading]);
+
+  // Also call invalidateSize when the section becomes visible via ResizeObserver
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+    const ro = new ResizeObserver(() => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize({ animate: false });
+      }
+    });
+    ro.observe(mapContainerRef.current);
+    return () => ro.disconnect();
+  }, []);
 
   // ── Search ─────────────────────────────────────────────────────────────
   const handleSearch = (q: string) => {
@@ -389,7 +412,20 @@ export function RadarSection() {
         body: JSON.stringify({ active: next }),
       });
       const d = await res.json();
-      if (res.ok) mutate({ radar: d.radar }, { revalidate: false });
+      if (res.ok) {
+        mutate({ radar: d.radar }, { revalidate: false });
+        showToast(
+          next ? "radar" : "info",
+          next ? "Radar activat" : "Radar oprit",
+          next
+            ? "Vei primi notificări pentru anunțuri noi din zona ta."
+            : "Nu vei mai primi notificări radar.",
+        );
+      } else {
+        // revert on error
+        setActive(!next);
+        activeRef.current = !next;
+      }
     } catch {
       setActive(!next);
       activeRef.current = !next;
@@ -467,14 +503,30 @@ export function RadarSection() {
             <button
               onClick={handleActiveToggle}
               disabled={toggling}
-              className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
+              className={[
+                "relative flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl border",
+                "transition-all duration-300 ease-in-out cursor-pointer",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
                 active
-                  ? "bg-lime-100 text-lime-700 border-lime-200"
-                  : "bg-red-100 text-red-600 border-red-200"
-              }`}
+                  ? "bg-lime-100 text-lime-700 border-lime-200 hover:bg-lime-200"
+                  : "bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200",
+              ].join(" ")}
             >
-              <Power className="w-3.5 h-3.5" />
-              {active ? "Activează" : "Oprește"}
+              <Power
+                className={[
+                  "w-3.5 h-3.5 transition-all duration-300",
+                  active ? "text-lime-600" : "text-slate-400",
+                ].join(" ")}
+              />
+              <span className="transition-all duration-200">
+                {toggling ? (
+                  <Loader2 className="w-3 h-3 animate-spin inline" />
+                ) : active ? (
+                  "Activ"
+                ) : (
+                  "Oprit"
+                )}
+              </span>
             </button>
           )}
         </div>
@@ -553,10 +605,8 @@ export function RadarSection() {
 
           {/*
             Map container.
-            - NO overflow-hidden anywhere near the map — clips Leaflet tiles.
-            - Explicit px height on wrapper AND inner div.
-            - position:relative on wrapper, position:absolute inset-0 on map div
-              so it fills the space without relying on h-full which can be 0.
+            - NO overflow-hidden — clips Leaflet tiles.
+            - Explicit px height; position:relative wrapper + absolute inner div.
           */}
           <div
             style={{
@@ -669,7 +719,7 @@ export function RadarSection() {
             <button
               type="button"
               onClick={handleEmailToggle}
-              className={`relative w-11 h-6 rounded-full transition-colors duration-200 cursor-pointer focus:outline-none shrink-0 ${
+              className={`relative w-11 h-6 rounded-full transition-colors duration-300 ease-in-out cursor-pointer focus:outline-none shrink-0 ${
                 emailEnabled ? "bg-lime-400" : "bg-slate-200"
               }`}
             >

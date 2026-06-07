@@ -7,6 +7,7 @@ import {
   FaClock,
   FaBell,
   FaShieldAlt,
+  FaBroadcastTower,
 } from "react-icons/fa";
 import { NotificationType } from "@/types";
 
@@ -59,6 +60,12 @@ export const NOTIF_CONFIG: Record<NotificationType, NotifConfig> = {
     color: "text-yellow-600",
     bg: "bg-yellow-50",
     border: "border-yellow-200",
+  },
+  RADAR_ALERT: {
+    Icon: FaBroadcastTower,
+    color: "text-lime-700",
+    bg: "bg-lime-50",
+    border: "border-lime-300",
   },
   SYSTEM: {
     Icon: FaBell,
