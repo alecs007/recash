@@ -68,9 +68,9 @@ const VARIANT_CONFIG: Record<ToastVariant, VariantCfg> = {
   },
   radar: {
     Icon: FaBroadcastTower,
-    color: "text-lime-700",
-    bg: "bg-lime-50",
-    border: "border-lime-300",
+    color: "text-indigo-600",
+    bg: "bg-indigo-50",
+    border: "border-indigo-200",
   },
 };
 

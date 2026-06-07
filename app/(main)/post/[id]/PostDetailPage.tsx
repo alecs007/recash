@@ -25,6 +25,9 @@ import {
 import { FaWineBottle } from "react-icons/fa";
 import { PostStatus, Post } from "@/types";
 import type { Map as LeafletMap } from "leaflet";
+import { CollectConfirmModal } from "@/app/components/UI/CollectConfirmModal";
+import { useSession } from "next-auth/react";
+import { useAuthModal } from "@/context/AuthModalContext";
 import { useSetActiveCounts } from "@/hooks/useActiveCounts";
 import { useRecashSocket } from "@/hooks/useRecashSocket";
 import { PostChat, ChatTriggerButton } from "./PostChat";
@@ -860,19 +863,6 @@ function DetailPanel({
   const posterEarning = (post.estimatedValue * posterPct) / 100;
   const collectorEarning =
     (post.estimatedValue * post.collectorSharePercent) / 100;
-  const myEarning = isAuthor ? posterEarning : collectorEarning;
-  const myLabel =
-    post.status === "COMPLETED"
-      ? isAuthor
-        ? "Ai primit"
-        : "Ai câștigat"
-      : post.status === "EXPIRED" || post.status === "CANCELLED"
-        ? isAuthor
-          ? "Ai fi primit"
-          : "Ai fi câștigat"
-        : isAuthor
-          ? "Primești"
-          : "Câștigi";
 
   const myActualEarning = post.transaction
     ? isAuthor
@@ -905,6 +895,46 @@ function DetailPanel({
       post.status === "COMPLETED" ||
       post.status === "CANCELLED" ||
       (post.status === "CLAIMED" && isAuthor));
+
+  const { data: session } = useSession();
+  const { open: openAuthModal } = useAuthModal();
+  const isLoggedIn = !!session?.user?.id;
+
+  const [showClaimModal, setShowClaimModal] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+  const [claimError, setClaimError] = useState<string | null>(null);
+
+  const handleClaimClick = () => {
+    if (!isLoggedIn) {
+      openAuthModal();
+      return;
+    }
+    setShowClaimModal(true);
+  };
+
+  const handleClaimConfirmed = async () => {
+    setClaiming(true);
+    setClaimError(null);
+    try {
+      const res = await fetch(`/api/v1/posts/${post.id}/claim`, {
+        method: "POST",
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setShowClaimModal(false);
+        setClaimError(json.error ?? "Eroare la revendicare.");
+        setClaiming(false);
+        return;
+      }
+      setShowClaimModal(false);
+      setActiveCounts({ activeCollections: 1, activeCollectionId: post.id });
+      await mutate();
+    } catch {
+      setShowClaimModal(false);
+      setClaimError("Eroare de rețea. Încearcă din nou.");
+      setClaiming(false);
+    }
+  };
 
   const handleReviewDone = () => {
     setJustReviewed(true);
@@ -1619,6 +1649,44 @@ function DetailPanel({
             </div>
           </motion.div>
 
+          {/* Collect CTA for non-participants on OPEN posts */}
+          {post.status === "OPEN" && !isAuthor && !isCollector && (
+            <>
+              <AnimatePresence>
+                {claimError && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden mb-4"
+                  >
+                    <div className="flex items-center justify-between bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+                      <span className="text-xs font-semibold text-red-600">
+                        {claimError}
+                      </span>
+                      <button
+                        onClick={() => setClaimError(null)}
+                        className="text-red-400 hover:text-red-600 ml-2"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <motion.button
+                onClick={handleClaimClick}
+                whileTap={{ scale: 0.97 }}
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all cursor-pointer shadow-sm mb-7"
+              >
+                <FaWineBottle className="w-4 h-4 text-lime-400" />
+                {isLoggedIn
+                  ? "Colectează sticlele"
+                  : "Conectează-te și colectează!"}
+              </motion.button>
+            </>
+          )}
+
           <div className="h-px bg-slate-100 mb-7" />
 
           {/* ── EARNINGS SPLIT ── */}
@@ -1636,23 +1704,42 @@ function DetailPanel({
                     ? { bar: "bg-lime-700", text: "text-lime-700" }
                     : { bar: "bg-[#123424]", text: "text-[#123424]" };
 
+              // Non-participants see it from the collector's perspective
+              const viewAsCollector = !isAuthor;
               const myPct = isAuthor ? posterPct : post.collectorSharePercent;
               const { bar: myBarColor, text: earningColor } =
                 getPercentColor(myPct);
 
               const posterBarColor = isAuthor ? myBarColor : "bg-slate-200";
-              const collectorBarColor = isCollector
+              const collectorBarColor = viewAsCollector
                 ? myBarColor
                 : "bg-slate-200";
+
               const displayEarning =
                 post.status === "COMPLETED" && myActualEarning !== null
                   ? myActualEarning
-                  : myEarning;
+                  : isAuthor
+                    ? posterEarning
+                    : collectorEarning;
+
+              const myLabel = isAuthor
+                ? post.status === "COMPLETED"
+                  ? "Ai primit"
+                  : post.status === "EXPIRED" || post.status === "CANCELLED"
+                    ? "Ai fi primit"
+                    : "Primești"
+                : isCollector
+                  ? post.status === "COMPLETED"
+                    ? "Ai câștigat"
+                    : post.status === "EXPIRED" || post.status === "CANCELLED"
+                      ? "Ai fi câștigat"
+                      : "Câștigi"
+                  : "Câștigi";
 
               return (
                 <>
                   <div className="flex items-center gap-1 sm:gap-2 mb-1">
-                    {isCollector &&
+                    {viewAsCollector &&
                       post.status !== "COMPLETED" &&
                       post.status !== "CANCELLED" &&
                       post.status !== "EXPIRED" && (
@@ -1681,7 +1768,7 @@ function DetailPanel({
                         transition={{ duration: 0.25 }}
                         className={`text-2xl font-black leading-none ${earningColor}`}
                       >
-                        {isCollector &&
+                        {viewAsCollector &&
                         post.status !== "COMPLETED" &&
                         post.status !== "CANCELLED" &&
                         post.status !== "EXPIRED"
@@ -1836,6 +1923,14 @@ function DetailPanel({
       {isCollector && post.status === "CLAIMED" && (
         <EmailOptinPopup context="collector" postId={post.id} />
       )}
+
+      <CollectConfirmModal
+        isOpen={showClaimModal}
+        onConfirm={handleClaimConfirmed}
+        onCancel={() => setShowClaimModal(false)}
+        post={post}
+        loading={claiming}
+      />
     </div>
   );
 }

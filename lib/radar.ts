@@ -75,7 +75,7 @@ export async function dispatchRadarNotifications(
 
         await createNotification({
           userId: r.user.id,
-          type: "SYSTEM",
+          type: "RADAR_ALERT",
           title: `Radar: anunț nou la ${locationLabel}`,
           message: `${opts.bottleCount} sticle disponibile la ${locationLabel}. Câștiguri posibile: +${collectorEarning.toFixed(2)} RON.`,
           link: `/post/${opts.postId}`,
