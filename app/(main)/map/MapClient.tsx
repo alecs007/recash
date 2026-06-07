@@ -8,10 +8,6 @@ import { useSession } from "next-auth/react";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { CollectConfirmModal } from "@/app/components/UI/CollectConfirmModal";
 import { RadarTeaser } from "@/app/components/UI/RadarTeaser";
-import {
-  RadarConfigModal,
-  type RadarConfig,
-} from "@/app/components/UI/RadarConfigModal";
 import { MapPin, Search, Loader2, X, Star, ChevronRight } from "lucide-react";
 import { LuFilter } from "react-icons/lu";
 import { FiMap } from "react-icons/fi";
@@ -1401,19 +1397,6 @@ export default function MapPage() {
           />
         );
       })()}
-      <RadarConfigModal
-        isOpen={radarModalOpen}
-        existing={radarData?.radar ?? null}
-        onClose={() => setRadarModalOpen(false)}
-        onSaved={(radar) => {
-          mutateRadar({ radar }, { revalidate: false });
-          setRadarModalOpen(false);
-        }}
-        onDeleted={() => {
-          mutateRadar({ radar: null }, { revalidate: false });
-          setRadarModalOpen(false);
-        }}
-      />
     </div>
   );
 }

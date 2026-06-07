@@ -1,5 +1,9 @@
 "use client";
 
+// ✅ Import Leaflet CSS directly — required in Next.js.
+//    Dynamic DOM injection is unreliable; Next.js bundles this correctly.
+import "leaflet/dist/leaflet.css";
+
 import Image from "next/image";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -30,32 +34,7 @@ interface GeocodeResult {
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-function useLeaflet() {
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if ((window as any).L) {
-      setReady(true);
-      return;
-    }
-    if (!document.querySelector('link[href*="leaflet.css"]')) {
-      const css = document.createElement("link");
-      css.rel = "stylesheet";
-      css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-      document.head.appendChild(css);
-    }
-    const s = document.createElement("script");
-    s.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-    s.async = true;
-    s.onload = () => setReady(true);
-    document.head.appendChild(s);
-  }, []);
-  return ready;
-}
-
 export function RadarSection() {
-  const leafletReady = useLeaflet();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -65,6 +44,7 @@ export function RadarSection() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [leafletReady, setLeafletReady] = useState(false);
 
   const { data, mutate, isLoading } = useSWR<{ radar: RadarConfig | null }>(
     "/api/v1/radar",
@@ -88,7 +68,6 @@ export function RadarSection() {
   const [searchResults, setSearchResults] = useState<GeocodeResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
 
-  // Track latest values in refs for use inside the auto-save closure
   const latRef = useRef(lat);
   const lngRef = useRef(lng);
   const locationNameRef = useRef(locationName);
@@ -115,42 +94,61 @@ export function RadarSection() {
     activeRef.current = active;
   }, [active]);
 
-  // Sync from server on first load
+  // ── Sync server → state (once) ─────────────────────────────────────────
   const syncedRef = useRef(false);
   useEffect(() => {
-    if (syncedRef.current || isLoading) return;
+    if (syncedRef.current || isLoading || data === undefined) return;
     syncedRef.current = true;
-    if (radar) {
-      setLat(radar.latitude);
-      setLng(radar.longitude);
-      setLocationName(radar.locationName ?? "");
-      setSearchQuery(radar.locationName ?? "");
-      setRadiusKm(radar.radiusKm);
-      setEmailEnabled(radar.emailEnabled);
-      setActive(radar.active);
-      latRef.current = radar.latitude;
-      lngRef.current = radar.longitude;
-      locationNameRef.current = radar.locationName ?? "";
-      radiusKmRef.current = radar.radiusKm;
-      emailEnabledRef.current = radar.emailEnabled;
-      activeRef.current = radar.active;
-    }
-  }, [radar, isLoading]);
+    if (!radar) return;
+    setLat(radar.latitude);
+    setLng(radar.longitude);
+    setLocationName(radar.locationName ?? "");
+    setSearchQuery(radar.locationName ?? "");
+    setRadiusKm(radar.radiusKm);
+    setEmailEnabled(radar.emailEnabled);
+    setActive(radar.active);
+    latRef.current = radar.latitude;
+    lngRef.current = radar.longitude;
+    locationNameRef.current = radar.locationName ?? "";
+    radiusKmRef.current = radar.radiusKm;
+    emailEnabledRef.current = radar.emailEnabled;
+    activeRef.current = radar.active;
+  }, [radar, isLoading, data]);
 
+  // ── Load Leaflet dynamically (client only) ─────────────────────────────
+  useEffect(() => {
+    // Dynamic import so Leaflet never runs on the server
+    import("leaflet").then((L) => {
+      // Fix default marker icons broken by webpack
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (L.Icon.Default.prototype as any)._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl:
+          "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+        shadowUrl:
+          "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+      });
+      // Store on window so other callbacks can reach it without re-importing
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).__L = L;
+      setLeafletReady(true);
+    });
+  }, []);
+
+  // ── Auto-save ──────────────────────────────────────────────────────────
   const scheduleAutoSave = useCallback(() => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(async () => {
-      const currentLat = latRef.current;
-      const currentLng = lngRef.current;
-      if (currentLat === null || currentLng === null) return;
+      if (latRef.current === null || lngRef.current === null) return;
       setSaving(true);
       try {
         const res = await fetch("/api/v1/radar", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            latitude: currentLat,
-            longitude: currentLng,
+            latitude: latRef.current,
+            longitude: lngRef.current,
             locationName: locationNameRef.current,
             radiusKm: radiusKmRef.current,
             emailEnabled: emailEnabledRef.current,
@@ -168,12 +166,13 @@ export function RadarSection() {
     }, 700);
   }, [mutate]);
 
+  // ── Map helpers ────────────────────────────────────────────────────────
   const buildIcon = useCallback(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const L = (window as any).L;
+    const L = (window as any).__L;
     return L.divIcon({
-      className: "custom-map-pin",
-      html: `<div style="position:relative;width:32px;height:32px;background-color:#f73138;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 3px 5px rgba(0,0,0,0.3)"><div style="width:14px;height:14px;background-color:#fff;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(45deg)"></div></div>`,
+      className: "",
+      html: `<div style="position:relative;width:32px;height:32px;background:#f73138;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 3px 5px rgba(0,0,0,.3)"><div style="width:14px;height:14px;background:#fff;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(45deg)"></div></div>`,
       iconSize: [32, 44],
       iconAnchor: [16, 44],
     });
@@ -182,8 +181,9 @@ export function RadarSection() {
   const updateMapOverlay = useCallback(
     (newLat: number, newLng: number, newRadius: RadiusKm) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const L = (window as any).L;
+      const L = (window as any).__L;
       if (!L || !mapRef.current) return;
+
       if (markerRef.current) {
         markerRef.current.setLatLng([newLat, newLng]);
       } else {
@@ -191,15 +191,17 @@ export function RadarSection() {
           icon: buildIcon(),
         }).addTo(mapRef.current);
       }
+
       if (circleRef.current) circleRef.current.remove();
       circleRef.current = L.circle([newLat, newLng], {
         radius: newRadius * 1000,
-        color: "#a3e635",
-        fillColor: "#a3e635",
+        color: "#FF6B6B",
+        fillColor: "#FF6B6B",
         fillOpacity: 0.08,
         weight: 2,
         dashArray: "6 4",
       }).addTo(mapRef.current);
+
       mapRef.current.setView(
         [newLat, newLng],
         Math.max(mapRef.current.getZoom(), 11),
@@ -209,13 +211,13 @@ export function RadarSection() {
     [buildIcon],
   );
 
-  // Redraw circle when radius changes
   useEffect(() => {
     if (lat !== null && lng !== null && mapRef.current) {
       updateMapOverlay(lat, lng, radiusKm);
     }
   }, [radiusKm, lat, lng, updateMapOverlay]);
 
+  // ── Reverse geocode ────────────────────────────────────────────────────
   const reverseGeocode = useCallback(
     async (la: number, lo: number): Promise<string> => {
       setReverseLoading(true);
@@ -245,25 +247,35 @@ export function RadarSection() {
     [],
   );
 
-  // Init map
+  // ── Map init ───────────────────────────────────────────────────────────
   useEffect(() => {
     if (!leafletReady || !mapContainerRef.current || mapRef.current) return;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const L = (window as any).L;
+    const L = (window as any).__L;
     const initLat = latRef.current;
     const initLng = lngRef.current;
     const center: [number, number] =
       initLat && initLng ? [initLat, initLng] : [45.9432, 24.9668];
-    const zoom = initLat ? 12 : 6;
+
     const map = L.map(mapContainerRef.current, {
       center,
-      zoom,
+      zoom: initLat ? 12 : 6,
       zoomControl: true,
     });
+
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "© OpenStreetMap",
       maxZoom: 19,
     }).addTo(map);
+
+    // Double rAF ensures the browser has painted the container before measuring
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        map.invalidateSize({ animate: false });
+      });
+    });
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     map.on("click", async (e: any) => {
       const newLat = e.latlng.lat;
@@ -276,9 +288,11 @@ export function RadarSection() {
       await reverseGeocode(newLat, newLng);
       scheduleAutoSave();
     });
+
     mapRef.current = map;
     if (initLat && initLng)
       updateMapOverlay(initLat, initLng, radiusKmRef.current);
+
     return () => {
       map.remove();
       mapRef.current = null;
@@ -288,6 +302,7 @@ export function RadarSection() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leafletReady]);
 
+  // ── Search ─────────────────────────────────────────────────────────────
   const handleSearch = (q: string) => {
     setSearchQuery(q);
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -382,18 +397,55 @@ export function RadarSection() {
     setToggling(false);
   }, [radar, active, mutate]);
 
+  // ── Skeleton ───────────────────────────────────────────────────────────
   if (isLoading) {
     return (
       <div className="mx-4 sm:mx-6 lg:mx-8 mb-8 p-4 sm:p-6 bg-slate-50 border border-slate-100 rounded-2xl animate-pulse">
-        <div className="flex items-center justify-between mb-4">
-          <div className="h-5 w-20 bg-slate-200 rounded-lg" />
-          <div className="h-7 w-24 bg-slate-200 rounded-xl" />
+        <div className="flex items-center justify-between mb-3 sm:mb-2">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 bg-slate-200 rounded-md" />
+            <div className="h-6 w-16 bg-slate-200 rounded-md" />
+          </div>
+          <div className="h-8 w-20 bg-slate-200 rounded-full" />
         </div>
-        <div className="h-48 bg-slate-200 rounded-xl" />
+        <div className="h-4 w-3/4 max-w-md bg-slate-200 rounded mb-4" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <div className="h-11 flex-1 bg-slate-200 rounded-xl" />
+              <div className="h-11 w-11 bg-slate-200 rounded-xl shrink-0" />
+            </div>
+            <div className="h-[230px] w-full bg-slate-200 rounded-2xl border-2 border-slate-100" />
+          </div>
+          <div className="space-y-3 flex flex-col">
+            <div className="bg-white border border-slate-100 rounded-2xl p-4">
+              <div className="h-4 w-32 bg-slate-200 rounded mb-3" />
+              <div className="grid grid-cols-2 gap-1.5">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div
+                    key={i}
+                    className="h-[42px] bg-slate-200 rounded-xl border-2 border-slate-100"
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-slate-200 rounded-full shrink-0" />
+                <div className="space-y-1.5">
+                  <div className="h-4 w-24 bg-slate-200 rounded" />
+                  <div className="h-3 w-48 bg-slate-200 rounded" />
+                </div>
+              </div>
+              <div className="w-11 h-6 bg-slate-200 rounded-full shrink-0" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
+  // ── Render ─────────────────────────────────────────────────────────────
   return (
     <div
       id="radar"
@@ -406,23 +458,6 @@ export function RadarSection() {
           <h2 className="text-lg font-extrabold text-slate-900 tracking-tight">
             Radar
           </h2>
-          {radar && (
-            <AnimatePresence mode="wait">
-              <motion.span
-                key={active ? "active" : "paused"}
-                initial={{ opacity: 0, scale: 0.85 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.85 }}
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                  active
-                    ? "bg-lime-100 text-lime-700 border-lime-200"
-                    : "bg-slate-100 text-slate-500 border-slate-200"
-                }`}
-              >
-                {active ? "activ" : "oprit"}
-              </motion.span>
-            </AnimatePresence>
-          )}
         </div>
         <div className="flex items-center gap-2">
           {saving && (
@@ -432,29 +467,26 @@ export function RadarSection() {
             <button
               onClick={handleActiveToggle}
               disabled={toggling}
-              className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all cursor-pointer disabled:opacity-50 ${
+              className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
                 active
-                  ? "bg-white border-slate-200 text-slate-500 hover:border-red-200 hover:text-red-500 hover:bg-red-50"
-                  : "bg-white border-slate-200 text-slate-500 hover:border-lime-300 hover:text-lime-700 hover:bg-lime-50"
+                  ? "bg-lime-100 text-lime-700 border-lime-200 hover:bg-lime-200"
+                  : "bg-red-100 text-red-600 border-red-200 hover:bg-red-200"
               }`}
             >
-              {toggling ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <Power className="w-3 h-3" />
-              )}
-              {active ? "Oprește" : "Pornește"}
+              <Power className="w-3.5 h-3.5" />
+              {active ? "Activează" : "Oprește"}
             </button>
           )}
         </div>
       </div>
+
       <p className="text-sm text-slate-600 mb-4">
         Setează-ți centrul de monitorizare și raza pentru a primi alerte despre
         anunțurile noi din zona ta.
       </p>
-      {/* Two-column layout on desktop */}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* LEFT column: search + map */}
+        {/* Left: search + map */}
         <div className="space-y-3">
           {/* Search */}
           <div className="flex gap-2 relative">
@@ -464,8 +496,8 @@ export function RadarSection() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
-                placeholder="Caută o adresă sau apasă pe hartă…"
-                className="w-full pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none text-sm bg-white transition-shadow"
+                placeholder="Caută o adresă…"
+                className="w-full pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none bg-white transition-shadow"
               />
               {(searchLoading || reverseLoading) && (
                 <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-slate-400" />
@@ -487,7 +519,7 @@ export function RadarSection() {
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
-                    className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-slate-200 z-10 overflow-hidden shadow-lg"
+                    className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-slate-200 z-[1000] overflow-hidden shadow-lg"
                   >
                     {searchResults.slice(0, 5).map((r, i) => (
                       <button
@@ -508,38 +540,76 @@ export function RadarSection() {
               type="button"
               onClick={handleGPS}
               disabled={geoLoading}
-              className="w-10 h-10 rounded-xl border border-[#123424]/20 hover:bg-[#123424]/10 bg-white flex items-center justify-center transition-all disabled:opacity-50 cursor-pointer shrink-0"
+              className="w-11 h-11 rounded-xl border border-[#123424]/20 hover:bg-[#123424]/10 bg-white flex items-center justify-center transition-all disabled:opacity-50 cursor-pointer shrink-0"
               title="Folosește locația mea"
             >
               {geoLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin text-[#123424]" />
+                <Loader2 className="w-4.5 h-4.5 animate-spin text-[#123424]" />
               ) : (
-                <FaRegCompass className="w-4 h-4 text-[#123424]" />
+                <FaRegCompass className="w-4.5 h-4.5 text-[#123424]" />
               )}
             </button>
           </div>
 
-          {/* Map */}
+          {/*
+            Map container.
+            - NO overflow-hidden anywhere near the map — clips Leaflet tiles.
+            - Explicit px height on wrapper AND inner div.
+            - position:relative on wrapper, position:absolute inset-0 on map div
+              so it fills the space without relying on h-full which can be 0.
+          */}
           <div
-            className="relative rounded-2xl overflow-hidden border-2 border-slate-200"
-            style={{ height: 230 }}
+            style={{
+              position: "relative",
+              height: 230,
+              borderRadius: 16,
+              border: "2px solid #e2e8f0",
+            }}
           >
-            <div ref={mapContainerRef} className="w-full h-full" />
+            <div
+              ref={mapContainerRef}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                borderRadius: 14,
+              }}
+            />
+
             {!leafletReady && (
-              <div className="absolute inset-0 bg-slate-100 flex items-center justify-center">
+              <div
+                style={{ position: "absolute", inset: 0, borderRadius: 14 }}
+                className="bg-slate-100 flex items-center justify-center z-10"
+              >
                 <Loader2 className="w-6 h-6 animate-spin text-slate-300" />
               </div>
             )}
+
             {reverseLoading && (
-              <div className="absolute inset-0 bg-white/50 backdrop-blur-[2px] flex items-center justify-center z-10">
+              <div
+                style={{ position: "absolute", inset: 0, zIndex: 1001 }}
+                className="bg-white/50 backdrop-blur-[2px] flex items-center justify-center"
+              >
                 <div className="bg-white rounded-xl px-4 py-2 shadow-md flex items-center gap-2 text-sm text-slate-600 font-medium">
                   <Loader2 className="w-4 h-4 animate-spin text-[#123424]" />
                   Se obține adresa...
                 </div>
               </div>
             )}
+
             {!lat && leafletReady && (
-              <div className="absolute bottom-3 inset-x-0 flex justify-center pointer-events-none z-10">
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 12,
+                  left: 0,
+                  right: 0,
+                  zIndex: 1001,
+                }}
+                className="flex justify-center pointer-events-none"
+              >
                 <div className="bg-black/60 backdrop-blur text-white text-xs font-semibold px-3 py-1.5 rounded-full">
                   Apasă pe hartă pentru a seta centrul
                 </div>
@@ -548,9 +618,8 @@ export function RadarSection() {
           </div>
         </div>
 
-        {/* RIGHT column: radius + email + active radar display */}
+        {/* Right: radius + email */}
         <div className="space-y-3 flex flex-col">
-          {/* Radius */}
           <div className="bg-white border border-slate-100 rounded-2xl p-4">
             <p className="text-sm font-semibold text-slate-500 mb-3">
               Raza de monitorizare
@@ -576,7 +645,6 @@ export function RadarSection() {
             </div>
           </div>
 
-          {/* Email toggle */}
           <div className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0">
