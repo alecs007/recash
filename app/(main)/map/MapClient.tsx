@@ -1368,9 +1368,7 @@ export default function MapPage() {
               isOwnPost={selectedPost.author.id === currentUserId}
             />
           )}
-          {isLoggedIn && !hasRadar && (
-            <RadarTeaser onConfigure={() => setRadarModalOpen(true)} />
-          )}
+          {isLoggedIn && !hasRadar && <RadarTeaser />}
 
           {!isLoading && filtered.length === 0 && !selectedPost && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
