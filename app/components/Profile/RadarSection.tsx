@@ -709,7 +709,7 @@ export function RadarSection() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-slate-800">
-                  Notificări email
+                  Email delivery
                 </p>
                 <p className="text-xs text-slate-400 mr-2">
                   Primește email la fiecare anunț nou din zona ta.
