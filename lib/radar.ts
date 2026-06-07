@@ -152,7 +152,7 @@ function buildRadarEmailHtml(opts: {
               </table>
 
               <p style="margin:0 0 12px;font-size:14px;color:#64748b;line-height:1.6;">
-                Grăbește-te — alte persoane pot revendica anunțul înaintea ta.
+                Grăbește-te, alte persoane pot revendica anunțul înaintea ta.
               </p>
             </td>
           </tr>
@@ -173,10 +173,10 @@ function buildRadarEmailHtml(opts: {
           <tr>
             <td style="padding:24px 32px 28px;border-top:1px solid #f1f5f9;">
               <p style="margin:0;font-size:12px;color:#94a3b8;line-height:1.6;">
-                Primești acest email deoarece ai configurat un radar Recash.<br/>
-                <a href="${APP_URL}/profil" style="color:#a3e635;text-decoration:none;font-weight:600;">Modifică setările radarului</a>
+                Email generat automat de plataforma Recash.<br/>
+                <a href="${APP_URL}"style="color:#a3e635;text-decoration:none;font-weight:600;"">recash.ro</a>                
                 &nbsp;·&nbsp;
-                <a href="${APP_URL}" style="color:#94a3b8;text-decoration:none;">recash.ro</a>
+                <a href="${APP_URL}profil" style="color:#94a3b8;text-decoration:none;>Modifică setările radarului</a>
               </p>
             </td>
           </tr>
