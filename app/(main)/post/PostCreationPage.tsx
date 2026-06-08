@@ -29,6 +29,7 @@ import { BOTTLE_PRESETS, RON_PER_BOTTLE } from "@/lib/validations/post";
 import { showToast } from "@/lib/toast";
 import useSWR from "swr";
 import { useSetActiveCounts } from "@/hooks/useActiveCounts";
+import { AiBottleAnalyzer } from "@/app/components/UI/AIBottleAnalyzer";
 
 const API = process.env.NEXT_PUBLIC_API_VERSION ?? "v1";
 
@@ -269,6 +270,7 @@ function StepBottles({
   data: FormData;
   onChange: (d: Partial<FormData>) => void;
 }) {
+  const [showAi, setShowAi] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const estimatedValue = parseFloat(
@@ -360,7 +362,6 @@ function StepBottles({
             <span className="text-xs text-slate-500">
               {data.bottleCount} × 0,50 RON =
             </span>
-
             <AnimatePresence mode="popLayout">
               <motion.span
                 key={estimatedValue}
@@ -393,10 +394,7 @@ function StepBottles({
                   ),
                 })
               }
-              initial={{
-                borderColor: "#f1f5f9",
-                backgroundColor: "#ffffff",
-              }}
+              initial={{ borderColor: "#f1f5f9", backgroundColor: "#ffffff" }}
               animate={{
                 borderColor: isActive ? "#a3e635" : "#f1f5f9",
                 backgroundColor: isActive ? "#f7fee7" : "#ffffff",
@@ -446,6 +444,42 @@ function StepBottles({
           );
         })}
       </div>
+
+      {/* ── AI Estimator button ── */}
+      <div className="pt-1">
+        <button
+          type="button"
+          onClick={() => setShowAi(true)}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-slate-200 text-slate-500 text-xs font-semibold hover:border-[#123424]/30 hover:text-[#123424] hover:bg-slate-50 transition-all cursor-pointer"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            className="w-3.5 h-3.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"
+            />
+          </svg>
+          Estimează cu AI dintr-o fotografie
+        </button>
+      </div>
+
+      {showAi && (
+        <AiBottleAnalyzer
+          onApply={(count) => {
+            onChange({
+              bottleCount: count,
+              collectorSharePercent: computeDefaultSharePercent(count),
+            });
+          }}
+          onClose={() => setShowAi(false)}
+        />
+      )}
     </div>
   );
 }
