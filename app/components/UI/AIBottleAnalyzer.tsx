@@ -131,7 +131,7 @@ export function AiBottleAnalyzer({ onApply, onClose }: AiBottleAnalyzerProps) {
                 Estimare AI
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                Fotografiază sticlele pentru o estimare automată
+                Fotografiază sticlele pentru a estima cantitatea
               </p>
             </div>
             <button

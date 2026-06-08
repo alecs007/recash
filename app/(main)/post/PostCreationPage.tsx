@@ -450,11 +450,11 @@ function StepBottles({
         <button
           type="button"
           onClick={() => setShowAi(true)}
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-slate-200 text-slate-500 text-xs font-semibold hover:border-[#123424]/30 hover:text-[#123424] hover:bg-slate-50 transition-all cursor-pointer"
+          className="w-full flex items-center justify-center gap-1 py-2.5 rounded-xl border border-dashed border-slate-200 text-slate-500 text-xs font-semibold hover:border-[#123424]/30 hover:text-[#123424] hover:bg-slate-50 transition-all cursor-pointer"
         >
           <svg
             viewBox="0 0 24 24"
-            className="w-3.5 h-3.5"
+            className="w-5 h-5"
             fill="none"
             stroke="currentColor"
             strokeWidth={2}
@@ -465,7 +465,7 @@ function StepBottles({
               d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"
             />
           </svg>
-          Estimează cu AI dintr-o fotografie
+          Estimează cu AI printr-o fotografie
         </button>
       </div>
 
