@@ -11,7 +11,9 @@ import {
   FaPercent,
   FaCheckCircle,
   FaRegCompass,
+  FaExclamationTriangle,
 } from "react-icons/fa";
+import { FcIdea } from "react-icons/fc";
 import {
   MapPin,
   ChevronLeft,
@@ -77,6 +79,16 @@ const EXPIRY_OPTIONS = [
   { h: 48, label: "48h" },
   { h: 72, label: "72h" },
 ];
+
+const MIN_COLLECTOR_RON = 5;
+
+function computeDefaultSharePercent(bottleCount: number): number {
+  const totalValue = bottleCount * RON_PER_BOTTLE;
+  if (totalValue <= 0) return 30;
+  if (totalValue * 0.3 >= MIN_COLLECTOR_RON) return 30;
+
+  return Math.min(100, Math.ceil((MIN_COLLECTOR_RON / totalValue) * 100));
+}
 
 const SLIDE_EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -265,11 +277,20 @@ function StepBottles({
 
   const clamp = (n: number) => Math.max(0, Math.min(10_000, n));
 
-  const applyCount = (fn: (prev: number) => number) =>
-    onChange({ bottleCount: fn(data.bottleCount) });
+  const applyCount = (fn: (prev: number) => number) => {
+    const newVal = fn(data.bottleCount);
+    onChange({
+      bottleCount: newVal,
+      collectorSharePercent: computeDefaultSharePercent(newVal),
+    });
+  };
 
   const startPress = (dir: 1 | -1) => {
-    onChange({ bottleCount: clamp(data.bottleCount + dir) });
+    const next1 = clamp(data.bottleCount + dir);
+    onChange({
+      bottleCount: next1,
+      collectorSharePercent: computeDefaultSharePercent(next1),
+    });
     timeoutRef.current = setTimeout(() => {
       intervalRef.current = setInterval(() => {
         applyCount((prev) => clamp(prev + dir));
@@ -311,7 +332,11 @@ function StepBottles({
             value={data.bottleCount || ""}
             onChange={(e) => {
               const v = parseInt(e.target.value, 10);
-              onChange({ bottleCount: isNaN(v) ? 0 : clamp(v) });
+              const newCount = isNaN(v) ? 0 : clamp(v);
+              onChange({
+                bottleCount: newCount,
+                collectorSharePercent: computeDefaultSharePercent(newCount),
+              });
             }}
             placeholder="0"
             className="flex-1 text-center text-4xl font-black text-[#123424] bg-transparent outline-none tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
@@ -360,7 +385,14 @@ function StepBottles({
               key={preset.value}
               type="button"
               whileTap={{ scale: 0.95 }}
-              onClick={() => onChange({ bottleCount: preset.value })}
+              onClick={() =>
+                onChange({
+                  bottleCount: preset.value,
+                  collectorSharePercent: computeDefaultSharePercent(
+                    preset.value,
+                  ),
+                })
+              }
               initial={{
                 borderColor: "#f1f5f9",
                 backgroundColor: "#ffffff",
@@ -759,6 +791,14 @@ function StepDetails({
     (data.bottleCount * RON_PER_BOTTLE).toFixed(2),
   );
 
+  const collectorEarningRON = parseFloat(
+    ((estimatedValue * data.collectorSharePercent) / 100).toFixed(2),
+  );
+  const isGoodOffer =
+    (collectorEarningRON >= MIN_COLLECTOR_RON &&
+      data.collectorSharePercent >= 30) ||
+    (estimatedValue <= MIN_COLLECTOR_RON && data.collectorSharePercent == 100);
+
   return (
     <div className="space-y-6">
       <div>
@@ -832,6 +872,34 @@ function StepDetails({
               </span>
             </div>
           </div>
+
+          <motion.div
+            key={isGoodOffer ? "good" : "low"}
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+            className={`mt-3 flex items-start gap-2 p-3 rounded-xl text-sm font-medium leading-relaxed transition-colors text-slate-700 border border-slate-200 bg-slate-50
+            }`}
+          >
+            <span className="text-base leading-none mt-px shrink-0">
+              {isGoodOffer ? (
+                <FcIdea className="w-5 h-5" />
+              ) : (
+                <FaExclamationTriangle className="w-5 h-5 text-red-600" />
+              )}
+            </span>
+            <span>
+              {isGoodOffer ? (
+                "Oferta este atractivă, va fi preluată rapid de către colectorii din zonă!"
+              ) : (
+                <>
+                  Recomandăm minim <strong className="font-bold">5 RON</strong>{" "}
+                  sau <strong className="font-bold">30%</strong> din valoarea
+                  totală pentru colector.
+                </>
+              )}
+            </span>
+          </motion.div>
         </div>
       </div>
 
