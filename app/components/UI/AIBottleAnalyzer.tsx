@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
+import { PiStarFourBold } from "react-icons/pi";
 
 interface AnalyzeResult {
   estimate: number;
@@ -127,7 +128,8 @@ export function AiBottleAnalyzer({ onApply, onClose }: AiBottleAnalyzerProps) {
           {/* Header */}
           <div className="flex items-center justify-between px-6 pt-6 pb-4">
             <div>
-              <h2 className="text-base font-extrabold text-slate-900 tracking-tight">
+              <h2 className="text-base font-extrabold text-slate-900 tracking-tight flex items-center">
+                <PiStarFourBold className="inline-block w-4.5 h-4.5 text-[#a3e635] mr-1" />
                 Estimare AI
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
@@ -360,7 +362,7 @@ export function AiBottleAnalyzer({ onApply, onClose }: AiBottleAnalyzerProps) {
               )}
             </div>
 
-            <p className="text-[10px] text-slate-400 text-center leading-relaxed">
+            <p className="text-[11px] text-slate-400 text-center leading-relaxed">
               3 analize/zi · Funcționează cu saci, cutii sau grămezi de sticle
             </p>
           </div>
