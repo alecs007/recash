@@ -6,6 +6,11 @@ import { redis } from "@/lib/redis";
 
 const SUMMARY_TTL = 30;
 
+export const metadata = {
+  title: "Profilul meu | Recash",
+  description: "Vezi activitatea, recenziile și badge-urile câștigate.",
+};
+
 async function getSafeTransactions(userId: string, take: number) {
   const rawTx = await prisma.transaction.findMany({
     where: {
