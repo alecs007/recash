@@ -11,9 +11,8 @@ import {
   FaPercent,
   FaCheckCircle,
   FaRegCompass,
-  FaExclamationTriangle,
 } from "react-icons/fa";
-import { FcIdea } from "react-icons/fc";
+import { FcIdea, FcHighPriority, FcBullish } from "react-icons/fc";
 import {
   MapPin,
   ChevronLeft,
@@ -24,6 +23,8 @@ import {
   Plus,
   Minus,
   AlertTriangle,
+  Heart,
+  Coins,
 } from "lucide-react";
 import { BOTTLE_PRESETS, RON_PER_BOTTLE } from "@/lib/validations/post";
 import { showToast } from "@/lib/toast";
@@ -86,9 +87,17 @@ const MIN_COLLECTOR_RON = 5;
 function computeDefaultSharePercent(bottleCount: number): number {
   const totalValue = bottleCount * RON_PER_BOTTLE;
   if (totalValue <= 0) return 30;
-  if (totalValue * 0.3 >= MIN_COLLECTOR_RON) return 30;
 
-  return Math.min(100, Math.ceil((MIN_COLLECTOR_RON / totalValue) * 100));
+  // Target at least 30% or the minimum collector fee (5 RON)
+  let targetRON = Math.max(MIN_COLLECTOR_RON, totalValue * 0.3);
+  // Cap it at the maximum total value available
+  targetRON = Math.min(totalValue, targetRON);
+
+  // Round up to the nearest 0.50 RON to ensure it ends in .00 or .50
+  // and keeps the collector percentage >= 30%
+  const cleanRON = Math.ceil(targetRON * 2) / 2;
+
+  return (cleanRON / totalValue) * 100;
 }
 
 const SLIDE_EASE = [0.22, 1, 0.36, 1] as const;
@@ -825,6 +834,24 @@ function StepDetails({
     (data.bottleCount * RON_PER_BOTTLE).toFixed(2),
   );
 
+  // 1. Determine the RON step increment based on total value tier
+  let ronStep = 1;
+  if (estimatedValue < 50) {
+    ronStep = 0.5;
+  } else if (estimatedValue <= 100) {
+    ronStep = 1;
+  } else if (estimatedValue <= 200) {
+    ronStep = 2;
+  } else if (estimatedValue <= 500) {
+    ronStep = 5;
+  } else {
+    ronStep = 10;
+  }
+
+  // 2. Clear out any floating decimals for UI display
+  const displayCollectorPercent = Math.round(data.collectorSharePercent);
+  const displayUserPercent = 100 - displayCollectorPercent; // Prevents rounding mismatches (e.g., 65% + 34%)
+
   const collectorEarningRON = parseFloat(
     ((estimatedValue * data.collectorSharePercent) / 100).toFixed(2),
   );
@@ -832,6 +859,49 @@ function StepDetails({
     (collectorEarningRON >= MIN_COLLECTOR_RON &&
       data.collectorSharePercent >= 30) ||
     (estimatedValue <= MIN_COLLECTOR_RON && data.collectorSharePercent == 100);
+
+  // Determine which message configuration to show
+  const getFeedbackMessage = () => {
+    if (estimatedValue < 5) {
+      return {
+        key: "under-5",
+        icon: <Coins className="w-5 h-5 text-amber-500" />,
+        text: "Valoarea totală este sub 5 RON. Cel mai bine este să donezi întreaga sumă colectorului, întrucât valoarea este prea mică pentru a fi împărțită.",
+      };
+    }
+
+    if (data.collectorSharePercent === 100) {
+      return {
+        key: "donation-100",
+        icon: <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />,
+        text: "Toate sticlele merg ca donație! Oferta este de nerefuzat pentru colectori, iar preluarea va fi foarte rapidă.",
+      };
+    }
+
+    if (data.collectorSharePercent >= 50) {
+      return {
+        key: "generous",
+        icon: <FcBullish className="w-5 h-5" />,
+        text: "Ești foarte generos! Suma oferită este atractivă și sigur va atrage colectorii din zonă.",
+      };
+    }
+
+    if (isGoodOffer) {
+      return {
+        key: "good-offer",
+        icon: <FcIdea className="w-5 h-5" />,
+        text: "Ofertă foarte bună! Cu siguranță vei găsi un colector interesat de sticlele tale în scurt timp.",
+      };
+    }
+
+    return {
+      key: "low-offer",
+      icon: <FcHighPriority className="w-5 h-5" />,
+      text: "Suma oferită colectorului este prea mică. S-ar putea ca preluarea să dureze mai mult.",
+    };
+  };
+
+  const feedback = getFeedbackMessage();
 
   return (
     <div className="space-y-6">
@@ -853,13 +923,56 @@ function StepDetails({
               type="range"
               min={0}
               max={100}
-              step={5}
+              step="any" // Continuous drag allowing precise programmatic calculations
               value={100 - data.collectorSharePercent}
-              onChange={(e) =>
+              onChange={(e) => {
+                const uiPercent = parseFloat(e.target.value);
+
+                // 1. Direct absolute edge handling for physical limits
+                if (uiPercent <= 0 || estimatedValue <= 0) {
+                  onChange({ collectorSharePercent: 100 });
+                  return;
+                }
+                if (uiPercent >= 100) {
+                  onChange({ collectorSharePercent: 0 });
+                  return;
+                }
+
+                // 2. Convert slider percentage to raw cash value
+                const targetUserRON = (uiPercent / 100) * estimatedValue;
+
+                // 3. Round to the nearest clean standard cash step
+                let snappedUserRON =
+                  Math.round(targetUserRON / ronStep) * ronStep;
+
+                // 4. Dynamic edge snapping based on CASH distances instead of percentages
+                if (targetUserRON < ronStep / 2) {
+                  // If dragged less than half a step away from 0, snap to 0
+                  snappedUserRON = 0;
+                } else if (estimatedValue - targetUserRON < ronStep / 2) {
+                  // If within half a step of the absolute maximum, snap to total value
+                  snappedUserRON = estimatedValue;
+                } else {
+                  // Elegant fix for uneven remainders (like the extra 0.50 RON on top of 50.00 RON)
+                  const highestStandardStep =
+                    Math.floor(estimatedValue / ronStep) * ronStep;
+
+                  // Prevents standard rounding from overshooting the total budget (e.g., trying to round up to 51)
+                  if (snappedUserRON > highestStandardStep) {
+                    const midpoint = (highestStandardStep + estimatedValue) / 2;
+                    snappedUserRON =
+                      targetUserRON >= midpoint
+                        ? estimatedValue
+                        : highestStandardStep;
+                  }
+                }
+
+                // 5. Save the perfectly scaled percentage to state
                 onChange({
-                  collectorSharePercent: 100 - parseInt(e.target.value),
-                })
-              }
+                  collectorSharePercent:
+                    ((estimatedValue - snappedUserRON) / estimatedValue) * 100,
+                });
+              }}
               className="absolute w-full h-full appearance-none bg-transparent cursor-pointer z-10
                 [&::-webkit-slider-thumb]:appearance-none
                 [&::-webkit-slider-thumb]:w-6
@@ -878,7 +991,7 @@ function StepDetails({
                 Partea ta
               </span>
               <span className="text-lg font-black text-lime-600">
-                {100 - data.collectorSharePercent}%
+                {displayUserPercent}%
                 <span className="ml-1 text-xs font-semibold text-lime-600/60">
                   (
                   {(
@@ -894,7 +1007,7 @@ function StepDetails({
                 Partea colectorului
               </span>
               <span className="text-lg font-black text-[#123424]">
-                {data.collectorSharePercent}%{" "}
+                {displayCollectorPercent}%{" "}
                 <span className="ml-1 text-xs font-semibold text-slate-400">
                   (
                   {(
@@ -908,31 +1021,16 @@ function StepDetails({
           </div>
 
           <motion.div
-            key={isGoodOffer ? "good" : "low"}
+            key={feedback.key}
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25 }}
-            className={`mt-3 flex items-start gap-2 p-3 rounded-xl text-sm font-medium leading-relaxed transition-colors text-slate-700 border border-slate-200 bg-slate-50
-            }`}
+            className="mt-3 flex items-start gap-2 p-3 rounded-xl text-sm font-medium leading-relaxed transition-colors text-slate-700 border border-slate-200 bg-slate-50"
           >
             <span className="text-base leading-none mt-px shrink-0">
-              {isGoodOffer ? (
-                <FcIdea className="w-5 h-5" />
-              ) : (
-                <FaExclamationTriangle className="w-5 h-5 text-red-600" />
-              )}
+              {feedback.icon}
             </span>
-            <span>
-              {isGoodOffer ? (
-                "Oferta este atractivă, va fi preluată rapid de către colectorii din zonă!"
-              ) : (
-                <>
-                  Recomandăm minim <strong className="font-bold">5 RON</strong>{" "}
-                  sau <strong className="font-bold">30%</strong> din valoarea
-                  totală pentru colector.
-                </>
-              )}
-            </span>
+            <span>{feedback.text}</span>
           </motion.div>
         </div>
       </div>
