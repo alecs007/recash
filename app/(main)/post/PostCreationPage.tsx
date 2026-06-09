@@ -1020,18 +1020,23 @@ function StepDetails({
             </div>
           </div>
 
-          <motion.div
-            key={feedback.key}
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25 }}
-            className="mt-3 flex items-start gap-2 p-3 rounded-xl text-sm font-medium leading-relaxed transition-colors text-slate-700 border border-slate-200 bg-slate-50"
-          >
-            <span className="text-base leading-none mt-px shrink-0">
-              {feedback.icon}
-            </span>
-            <span>{feedback.text}</span>
-          </motion.div>
+          <div className="min-h-[60px] overflow-hidden w-full">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={feedback.key}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="flex items-start gap-3 p-3 mt-3 rounded-xl bg-gray-50 border border-gray-100"
+              >
+                <div className="flex-shrink-0 mt-0.5">{feedback.icon}</div>
+                <p className="text-sm font-medium text-gray-700 leading-relaxed">
+                  {feedback.text}
+                </p>
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
       </div>
 
