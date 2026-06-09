@@ -1697,11 +1697,16 @@ function DetailPanel({
                     ? { bar: "bg-lime-700", text: "text-lime-700" }
                     : { bar: "bg-[#123424]", text: "text-[#123424]" };
 
-              // Non-participants see it from the collector's perspective
               const viewAsCollector = !isAuthor;
               const myPct = isAuthor ? posterPct : post.collectorSharePercent;
-              const { bar: myBarColor, text: earningColor } =
+              const isTerminated =
+                post.status === "EXPIRED" || post.status === "CANCELLED";
+              const { bar: rawBarColor, text: rawEarningColor } =
                 getPercentColor(myPct);
+              const myBarColor = isTerminated ? "bg-slate-400" : rawBarColor;
+              const earningColor = isTerminated
+                ? "text-slate-400"
+                : rawEarningColor;
 
               const posterBarColor = isAuthor ? myBarColor : "bg-slate-200";
               const collectorBarColor = viewAsCollector
@@ -1727,7 +1732,9 @@ function DetailPanel({
                     : post.status === "EXPIRED" || post.status === "CANCELLED"
                       ? "Ai fi câștigat"
                       : "Câștigi"
-                  : "Câștigi";
+                  : isTerminated
+                    ? "Ai fi câștigat"
+                    : "Câștigi";
 
               return (
                 <>
