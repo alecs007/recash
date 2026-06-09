@@ -878,6 +878,14 @@ function StepDetails({
       };
     }
 
+    if (collectorEarningRON < 5) {
+      return {
+        key: "low-offer",
+        icon: <FcHighPriority className="w-5 h-5" />,
+        text: "Suma oferită colectorului este prea mică. S-ar putea ca preluarea să dureze mai mult.",
+      };
+    }
+
     if (data.collectorSharePercent >= 50) {
       return {
         key: "generous",
