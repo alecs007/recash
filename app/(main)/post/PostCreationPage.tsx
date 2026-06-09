@@ -459,7 +459,7 @@ function StepBottles({
         <button
           type="button"
           onClick={() => setShowAi(true)}
-          className="w-full flex items-center justify-center gap-1 py-2.5 rounded-xl border border-dashed border-slate-200 text-slate-500 text-xs font-semibold hover:border-[#123424]/30 hover:text-[#123424] hover:bg-slate-50 transition-all cursor-pointer"
+          className="w-full flex items-center justify-center gap-1 py-2.5 rounded-xl border-2 border-slate-100 text-slate-500 text-xs font-semibold hover:border-[#123424]/30 hover:text-[#123424] hover:bg-slate-50 transition-all cursor-pointer"
         >
           <svg
             viewBox="0 0 24 24"
@@ -866,7 +866,7 @@ function StepDetails({
       return {
         key: "under-5",
         icon: <Coins className="w-5 h-5 text-amber-500" />,
-        text: "Valoarea totală este sub 5 RON. Cel mai bine este să donezi întreaga sumă colectorului, întrucât valoarea este prea mică pentru a fi împărțită.",
+        text: "Valoarea totală este sub 5 RON. Recomandat ar fi să donezi întreaga sumă colectorului, întrucât valoarea este prea mică pentru a fi împărțită.",
       };
     }
 
@@ -1067,15 +1067,26 @@ function StepDetails({
         <FieldLabel hint="Opțional, vizibil doar colectorului">
           Telefon de contact
         </FieldLabel>
-        <input
-          type="tel"
-          value={data.phone}
-          onChange={(e) => onChange({ phone: e.target.value })}
-          placeholder="+40 700 000 000"
-          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none bg-white transition-shadow"
-        />
+        <div className="relative">
+          <input
+            type="tel"
+            value={data.phone}
+            onChange={(e) => onChange({ phone: e.target.value })}
+            placeholder="+40 700 000 000"
+            className="w-full px-4 py-3 pr-10 rounded-xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none bg-white transition-shadow"
+          />
+          {data.phone && (
+            <button
+              type="button"
+              onClick={() => onChange({ phone: "" })}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors cursor-pointer"
+              aria-label="Șterge numărul de telefon"
+            >
+              <X className="w-3 h-3 text-slate-500" />
+            </button>
+          )}
+        </div>
       </div>
-
       <div>
         <FieldLabel>Cât timp vrei să fie valabil anunțul?</FieldLabel>
         <div className="grid grid-cols-4 gap-2">
@@ -1135,12 +1146,12 @@ function StepConfirm({
     {
       label: "Tu primești",
       value: `${posterEarning.toFixed(2)} RON (${posterPct}%)`,
-      accent: "green",
+      accent: data.collectorSharePercent === 100 ? "green" : "lime",
     },
     {
       label: "Colectorul primește",
       value: `${collectorEarning.toFixed(2)} RON (${data.collectorSharePercent}%)`,
-      accent: data.collectorSharePercent === 100 ? "purple" : "lime",
+      accent: data.collectorSharePercent === 100 ? "purple" : "green",
     },
     { label: "Locație", value: data.locationName || "Coordonate setate" },
     ...(data.description

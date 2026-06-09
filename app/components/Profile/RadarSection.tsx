@@ -416,9 +416,9 @@ export function RadarSection() {
         mutate({ radar: d.radar }, { revalidate: false });
         showToast(
           next ? "radar" : "info",
-          next ? "Radar activat" : "Radar oprit",
+          next ? "Radar activat ✅" : "Radar oprit",
           next
-            ? "Vei primi notificări pentru anunțuri noi din zona ta."
+            ? "Vei primi notificări pentru fiecare anunț nou din zona ta."
             : "Nu vei mai primi notificări radar.",
         );
       } else {

@@ -1397,10 +1397,7 @@ function DetailPanel({
                       "Valoare totală",
                       `${post.transaction.actualValue.toFixed(2)} RON`,
                     ],
-                    [
-                      isAuthor ? "Ai primit" : "Ai câștigat",
-                      `+${myActualEarning?.toFixed(2)} RON`,
-                    ],
+                    ["Câștigul tău", `+${myActualEarning?.toFixed(2)} RON`],
                   ].map(([label, value], i) => (
                     <motion.div
                       key={label}
