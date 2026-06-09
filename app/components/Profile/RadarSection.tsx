@@ -190,11 +190,12 @@ export function RadarSection() {
       }
 
       if (circleRef.current) circleRef.current.remove();
+      const circleColor = activeRef.current ? "#FF6B6B" : "#94a3b8";
       circleRef.current = L.circle([newLat, newLng], {
         radius: newRadius * 1000,
-        color: "#FF6B6B",
-        fillColor: "#FF6B6B",
-        fillOpacity: 0.08,
+        color: circleColor,
+        fillColor: circleColor,
+        fillOpacity: activeRef.current ? 0.12 : 0.09,
         weight: 2,
         dashArray: "6 4",
       }).addTo(mapRef.current);
@@ -324,6 +325,16 @@ export function RadarSection() {
     ro.observe(mapContainerRef.current);
     return () => ro.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (!circleRef.current) return;
+    const circleColor = active ? "#FF6B6B" : "#94a3b8";
+    circleRef.current.setStyle({
+      color: circleColor,
+      fillColor: circleColor,
+      fillOpacity: active ? 0.12 : 0.09,
+    });
+  }, [active]);
 
   // ── Search ─────────────────────────────────────────────────────────────
   const handleSearch = (q: string) => {
@@ -490,7 +501,9 @@ export function RadarSection() {
       {/* Header */}
       <div className="flex items-center justify-between mb-3 sm:mb-2">
         <div className="flex items-center gap-2">
-          <RadioTower className="w-5 h-5 text-lime-500" />
+          <RadioTower
+            className={`w-5 h-5  ${active ? "text-lime-500" : "text-slate-400"}`}
+          />
           <h2 className="text-lg font-extrabold text-slate-900 tracking-tight">
             Radar
           </h2>
@@ -682,8 +695,18 @@ export function RadarSection() {
                   onClick={() => handleRadiusChange(r)}
                   whileTap={{ scale: 0.94 }}
                   animate={{
-                    backgroundColor: radiusKm === r ? "#123424" : "#f8fafc",
-                    borderColor: radiusKm === r ? "#123424" : "#e2e8f0",
+                    backgroundColor:
+                      radiusKm === r
+                        ? active
+                          ? "#123424"
+                          : "#94a3b8"
+                        : "#f8fafc",
+                    borderColor:
+                      radiusKm === r
+                        ? active
+                          ? "#123424"
+                          : "#94a3b8"
+                        : "#e2e8f0",
                     color: radiusKm === r ? "#ffffff" : "#475569",
                   }}
                   transition={{ duration: 0.15 }}
@@ -720,7 +743,11 @@ export function RadarSection() {
               type="button"
               onClick={handleEmailToggle}
               className={`relative w-11 h-6 rounded-full transition-colors duration-300 ease-in-out cursor-pointer focus:outline-none shrink-0 ${
-                emailEnabled ? "bg-lime-400" : "bg-slate-200"
+                emailEnabled
+                  ? active
+                    ? "bg-lime-400"
+                    : "bg-slate-400"
+                  : "bg-slate-200"
               }`}
             >
               <motion.div
