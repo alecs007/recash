@@ -200,11 +200,11 @@ export function RadarSection() {
         dashArray: "6 4",
       }).addTo(mapRef.current);
 
-      mapRef.current.setView(
-        [newLat, newLng],
-        Math.max(mapRef.current.getZoom(), 11),
-        { animate: true, duration: 0.5 },
-      );
+      mapRef.current.fitBounds(circleRef.current.getBounds(), {
+        padding: [24, 24],
+        animate: true,
+        duration: 0.5,
+      });
     },
     [buildIcon],
   );
