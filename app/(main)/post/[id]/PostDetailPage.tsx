@@ -860,9 +860,10 @@ function DetailPanel({
 
   const statusCfg = STATUS_CONFIG[post.status];
   const posterPct = 100 - post.collectorSharePercent;
-  const posterEarning = (post.estimatedValue * posterPct) / 100;
   const collectorEarning =
-    (post.estimatedValue * post.collectorSharePercent) / 100;
+    Math.round(((post.estimatedValue * post.collectorSharePercent) / 100) * 2) /
+    2;
+  const posterEarning = post.estimatedValue - collectorEarning;
 
   const myActualEarning = post.transaction
     ? isAuthor

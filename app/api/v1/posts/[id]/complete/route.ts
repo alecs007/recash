@@ -82,7 +82,8 @@ export async function POST(
 
     const bottleCount = post.bottleCount;
     const actualValue = bottleCount * SGR_VALUE_PER_BOTTLE;
-    const collectorEarning = (actualValue * post.collectorSharePercent) / 100;
+    const collectorEarning =
+      Math.round(((actualValue * post.collectorSharePercent) / 100) * 2) / 2;
     const posterEarning = actualValue - collectorEarning;
 
     await prisma.$transaction(async (tx) => {

@@ -271,7 +271,8 @@ function PostCard({
   isOwnPost: boolean;
 }) {
   const collectorEarning =
-    (post.estimatedValue * post.collectorSharePercent) / 100;
+    Math.round(((post.estimatedValue * post.collectorSharePercent) / 100) * 2) /
+    2;
   const hoursLeft = useMemo(
     () => computeHoursLeft(post.expiresAt),
     [post.expiresAt],
@@ -422,7 +423,8 @@ function SelectedPostOverlay({
   isOwnPost: boolean;
 }) {
   const collectorEarning =
-    (post.estimatedValue * post.collectorSharePercent) / 100;
+    Math.round(((post.estimatedValue * post.collectorSharePercent) / 100) * 2) /
+    2;
   const hoursLeft = useMemo(
     () => computeHoursLeft(post.expiresAt),
     [post.expiresAt],

@@ -36,7 +36,7 @@ const API = process.env.NEXT_PUBLIC_API_VERSION ?? "v1";
 
 interface FormData {
   bottleCount: number;
-  collectorSharePercent: number;
+  collectorRonAmount: number;
   description: string;
   latitude: number | null;
   longitude: number | null;
@@ -48,7 +48,7 @@ interface FormData {
 
 const INITIAL: FormData = {
   bottleCount: 0,
-  collectorSharePercent: 30,
+  collectorRonAmount: 0,
   description: "",
   latitude: null,
   longitude: null,
@@ -57,7 +57,6 @@ const INITIAL: FormData = {
   phone: "",
   expiresInHours: 24,
 };
-
 interface GeocodeResult {
   lat: string;
   lon: string;
@@ -84,20 +83,12 @@ const EXPIRY_OPTIONS = [
 
 const MIN_COLLECTOR_RON = 5;
 
-function computeDefaultSharePercent(bottleCount: number): number {
+function computeDefaultCollectorRON(bottleCount: number): number {
   const totalValue = bottleCount * RON_PER_BOTTLE;
-  if (totalValue <= 0) return 30;
-
-  // Target at least 30% or the minimum collector fee (5 RON)
-  let targetRON = Math.max(MIN_COLLECTOR_RON, totalValue * 0.3);
-  // Cap it at the maximum total value available
-  targetRON = Math.min(totalValue, targetRON);
-
-  // Round up to the nearest 0.50 RON to ensure it ends in .00 or .50
-  // and keeps the collector percentage >= 30%
-  const cleanRON = Math.ceil(targetRON * 2) / 2;
-
-  return (cleanRON / totalValue) * 100;
+  if (totalValue <= 0) return 0;
+  const targetRON = Math.max(MIN_COLLECTOR_RON, totalValue * 0.3);
+  const capped = Math.min(totalValue, targetRON);
+  return Math.ceil(capped * 2) / 2;
 }
 
 const SLIDE_EASE = [0.22, 1, 0.36, 1] as const;
@@ -292,7 +283,7 @@ function StepBottles({
     const newVal = fn(data.bottleCount);
     onChange({
       bottleCount: newVal,
-      collectorSharePercent: computeDefaultSharePercent(newVal),
+      collectorRonAmount: computeDefaultCollectorRON(newVal),
     });
   };
 
@@ -300,7 +291,7 @@ function StepBottles({
     const next1 = clamp(data.bottleCount + dir);
     onChange({
       bottleCount: next1,
-      collectorSharePercent: computeDefaultSharePercent(next1),
+      collectorRonAmount: computeDefaultCollectorRON(next1),
     });
     timeoutRef.current = setTimeout(() => {
       intervalRef.current = setInterval(() => {
@@ -346,7 +337,7 @@ function StepBottles({
               const newCount = isNaN(v) ? 0 : clamp(v);
               onChange({
                 bottleCount: newCount,
-                collectorSharePercent: computeDefaultSharePercent(newCount),
+                collectorRonAmount: computeDefaultCollectorRON(newCount),
               });
             }}
             placeholder="0"
@@ -398,9 +389,7 @@ function StepBottles({
               onClick={() =>
                 onChange({
                   bottleCount: preset.value,
-                  collectorSharePercent: computeDefaultSharePercent(
-                    preset.value,
-                  ),
+                  collectorRonAmount: computeDefaultCollectorRON(preset.value),
                 })
               }
               initial={{ borderColor: "#f1f5f9", backgroundColor: "#ffffff" }}
@@ -483,7 +472,7 @@ function StepBottles({
           onApply={(count) => {
             onChange({
               bottleCount: count,
-              collectorSharePercent: computeDefaultSharePercent(count),
+              collectorRonAmount: computeDefaultCollectorRON(count),
             });
           }}
           onClose={() => setShowAi(false)}
@@ -834,33 +823,32 @@ function StepDetails({
     (data.bottleCount * RON_PER_BOTTLE).toFixed(2),
   );
 
-  // 1. Determine the RON step increment based on total value tier
-  let ronStep = 1;
-  if (estimatedValue < 50) {
-    ronStep = 0.5;
-  } else if (estimatedValue <= 100) {
-    ronStep = 1;
-  } else if (estimatedValue <= 200) {
-    ronStep = 2;
-  } else if (estimatedValue <= 500) {
-    ronStep = 5;
-  } else {
-    ronStep = 10;
-  }
+  // Step size for slider snapping (in RON)
+  let ronStep = 0.5;
+  if (estimatedValue >= 50) ronStep = 1;
+  if (estimatedValue > 100) ronStep = 2;
+  if (estimatedValue > 200) ronStep = 5;
+  if (estimatedValue > 500) ronStep = 10;
 
-  // 2. Clear out any floating decimals for UI display
-  const displayCollectorPercent = Math.round(data.collectorSharePercent);
-  const displayUserPercent = 100 - displayCollectorPercent; // Prevents rounding mismatches (e.g., 65% + 34%)
-
-  const collectorEarningRON = parseFloat(
-    ((estimatedValue * data.collectorSharePercent) / 100).toFixed(2),
+  // Source of truth: exact RON amounts (0.5 multiples)
+  const collectorRON = parseFloat(
+    Math.min(data.collectorRonAmount, estimatedValue).toFixed(2),
   );
-  const isGoodOffer =
-    (collectorEarningRON >= MIN_COLLECTOR_RON &&
-      data.collectorSharePercent >= 30) ||
-    (estimatedValue <= MIN_COLLECTOR_RON && data.collectorSharePercent == 100);
+  const posterRON = parseFloat((estimatedValue - collectorRON).toFixed(2));
 
-  // Determine which message configuration to show
+  // Integer percentages — only for display and submission, never stored as float
+  const displayCollectorPercent =
+    estimatedValue > 0 ? Math.round((collectorRON / estimatedValue) * 100) : 0;
+  const displayPosterPercent = 100 - displayCollectorPercent;
+
+  // Slider tracks poster's share (lime side)
+  const sliderValue =
+    estimatedValue > 0 ? (posterRON / estimatedValue) * 100 : 50;
+
+  const isGoodOffer =
+    (collectorRON >= MIN_COLLECTOR_RON && displayCollectorPercent >= 30) ||
+    (estimatedValue <= MIN_COLLECTOR_RON && collectorRON === estimatedValue);
+
   const getFeedbackMessage = () => {
     if (estimatedValue < 5) {
       return {
@@ -869,31 +857,27 @@ function StepDetails({
         text: "Valoarea totală este sub 5 RON. Recomandat ar fi să donezi întreaga sumă colectorului, întrucât valoarea este prea mică pentru a fi împărțită.",
       };
     }
-
-    if (data.collectorSharePercent === 100) {
+    if (displayCollectorPercent === 100) {
       return {
         key: "donation-100",
         icon: <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />,
         text: "Toate sticlele merg ca donație! Oferta este de nerefuzat pentru colectori, iar preluarea va fi foarte rapidă.",
       };
     }
-
-    if (collectorEarningRON < 5) {
+    if (collectorRON < 5) {
       return {
         key: "low-offer",
         icon: <FcHighPriority className="w-5 h-5" />,
         text: "Suma oferită colectorului este prea mică. S-ar putea ca preluarea să dureze mai mult.",
       };
     }
-
-    if (data.collectorSharePercent >= 50) {
+    if (displayCollectorPercent >= 50) {
       return {
         key: "generous",
         icon: <FcBullish className="w-5 h-5" />,
         text: "Ești foarte generos! Suma oferită este atractivă și sigur va atrage colectorii din zonă.",
       };
     }
-
     if (isGoodOffer) {
       return {
         key: "good-offer",
@@ -901,7 +885,6 @@ function StepDetails({
         text: "Ofertă foarte bună! Cu siguranță vei găsi un colector interesat de sticlele tale în scurt timp.",
       };
     }
-
     return {
       key: "low-offer",
       icon: <FcHighPriority className="w-5 h-5" />,
@@ -910,6 +893,46 @@ function StepDetails({
   };
 
   const feedback = getFeedbackMessage();
+
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (estimatedValue <= 0) return;
+    const uiPercent = parseFloat(e.target.value); // poster's side
+
+    if (uiPercent <= 0) {
+      onChange({ collectorRonAmount: estimatedValue });
+      return;
+    }
+    if (uiPercent >= 100) {
+      onChange({ collectorRonAmount: 0 });
+      return;
+    }
+
+    const targetPosterRON = (uiPercent / 100) * estimatedValue;
+    let snappedPosterRON = Math.round(targetPosterRON / ronStep) * ronStep;
+
+    if (targetPosterRON < ronStep / 2) {
+      snappedPosterRON = 0;
+    } else if (estimatedValue - targetPosterRON < ronStep / 2) {
+      snappedPosterRON = estimatedValue;
+    } else {
+      const highestStep = Math.floor(estimatedValue / ronStep) * ronStep;
+      if (snappedPosterRON > highestStep) {
+        const midpoint = (highestStep + estimatedValue) / 2;
+        snappedPosterRON =
+          targetPosterRON >= midpoint ? estimatedValue : highestStep;
+      }
+    }
+
+    const newCollectorRON = parseFloat(
+      (estimatedValue - snappedPosterRON).toFixed(2),
+    );
+    onChange({
+      collectorRonAmount: Math.max(
+        0,
+        Math.min(estimatedValue, newCollectorRON),
+      ),
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -920,67 +943,20 @@ function StepDetails({
             <div className="absolute w-full h-3 rounded-full overflow-hidden flex shadow-inner bg-slate-200">
               <div
                 className="h-full bg-lime-400"
-                style={{ width: `${100 - data.collectorSharePercent}%` }}
+                style={{ width: `${sliderValue}%` }}
               />
               <div
                 className="h-full bg-[#123424]"
-                style={{ width: `${data.collectorSharePercent}%` }}
+                style={{ width: `${100 - sliderValue}%` }}
               />
             </div>
             <input
               type="range"
               min={0}
               max={100}
-              step="any" // Continuous drag allowing precise programmatic calculations
-              value={100 - data.collectorSharePercent}
-              onChange={(e) => {
-                const uiPercent = parseFloat(e.target.value);
-
-                // 1. Direct absolute edge handling for physical limits
-                if (uiPercent <= 0 || estimatedValue <= 0) {
-                  onChange({ collectorSharePercent: 100 });
-                  return;
-                }
-                if (uiPercent >= 100) {
-                  onChange({ collectorSharePercent: 0 });
-                  return;
-                }
-
-                // 2. Convert slider percentage to raw cash value
-                const targetUserRON = (uiPercent / 100) * estimatedValue;
-
-                // 3. Round to the nearest clean standard cash step
-                let snappedUserRON =
-                  Math.round(targetUserRON / ronStep) * ronStep;
-
-                // 4. Dynamic edge snapping based on CASH distances instead of percentages
-                if (targetUserRON < ronStep / 2) {
-                  // If dragged less than half a step away from 0, snap to 0
-                  snappedUserRON = 0;
-                } else if (estimatedValue - targetUserRON < ronStep / 2) {
-                  // If within half a step of the absolute maximum, snap to total value
-                  snappedUserRON = estimatedValue;
-                } else {
-                  // Elegant fix for uneven remainders (like the extra 0.50 RON on top of 50.00 RON)
-                  const highestStandardStep =
-                    Math.floor(estimatedValue / ronStep) * ronStep;
-
-                  // Prevents standard rounding from overshooting the total budget (e.g., trying to round up to 51)
-                  if (snappedUserRON > highestStandardStep) {
-                    const midpoint = (highestStandardStep + estimatedValue) / 2;
-                    snappedUserRON =
-                      targetUserRON >= midpoint
-                        ? estimatedValue
-                        : highestStandardStep;
-                  }
-                }
-
-                // 5. Save the perfectly scaled percentage to state
-                onChange({
-                  collectorSharePercent:
-                    ((estimatedValue - snappedUserRON) / estimatedValue) * 100,
-                });
-              }}
+              step="any"
+              value={sliderValue}
+              onChange={handleSliderChange}
               className="absolute w-full h-full appearance-none bg-transparent cursor-pointer z-10
                 [&::-webkit-slider-thumb]:appearance-none
                 [&::-webkit-slider-thumb]:w-6
@@ -999,14 +975,9 @@ function StepDetails({
                 Partea ta
               </span>
               <span className="text-lg font-black text-lime-600">
-                {displayUserPercent}%
+                {displayPosterPercent}%
                 <span className="ml-1 text-xs font-semibold text-lime-600/60">
-                  (
-                  {(
-                    (estimatedValue * (100 - data.collectorSharePercent)) /
-                    100
-                  ).toFixed(2)}{" "}
-                  RON)
+                  ({posterRON.toFixed(2)} RON)
                 </span>
               </span>
             </div>
@@ -1017,17 +988,13 @@ function StepDetails({
               <span className="text-lg font-black text-[#123424]">
                 {displayCollectorPercent}%{" "}
                 <span className="ml-1 text-xs font-semibold text-slate-400">
-                  (
-                  {(
-                    (estimatedValue * data.collectorSharePercent) /
-                    100
-                  ).toFixed(2)}{" "}
-                  RON)
+                  ({collectorRON.toFixed(2)} RON)
                 </span>
               </span>
             </div>
           </div>
 
+          {/* feedback block — unchanged JSX, just uses updated `feedback` variable */}
           <div className="min-h-[60px] overflow-hidden w-full">
             <AnimatePresence mode="wait">
               <motion.div
@@ -1125,13 +1092,17 @@ function StepConfirm({
   const estimatedValue = parseFloat(
     (data.bottleCount * RON_PER_BOTTLE).toFixed(2),
   );
-  const posterPct = 100 - data.collectorSharePercent;
-  const posterEarning = parseFloat(
-    ((estimatedValue * posterPct) / 100).toFixed(2),
-  );
   const collectorEarning = parseFloat(
-    (estimatedValue - posterEarning).toFixed(2),
+    Math.min(data.collectorRonAmount, estimatedValue).toFixed(2),
   );
+  const posterEarning = parseFloat(
+    (estimatedValue - collectorEarning).toFixed(2),
+  );
+  const collectorPercent =
+    estimatedValue > 0
+      ? Math.round((collectorEarning / estimatedValue) * 100)
+      : 0;
+  const posterPercent = 100 - collectorPercent;
 
   const rows: Array<{
     label: string;
@@ -1145,13 +1116,13 @@ function StepConfirm({
     },
     {
       label: "Tu primești",
-      value: `${posterEarning.toFixed(2)} RON (${posterPct.toFixed()}%)`,
-      accent: data.collectorSharePercent === 100 ? "green" : "lime",
+      value: `${posterEarning.toFixed(2)} RON (${posterPercent}%)`,
+      accent: collectorPercent === 100 ? "green" : "lime",
     },
     {
       label: "Colectorul primește",
-      value: `${collectorEarning.toFixed(2)} RON (${data.collectorSharePercent.toFixed()}%)`,
-      accent: data.collectorSharePercent === 100 ? "purple" : "green",
+      value: `${collectorEarning.toFixed(2)} RON (${collectorPercent}%)`,
+      accent: collectorPercent === 100 ? "purple" : "green",
     },
     { label: "Locație", value: data.locationName || "Coordonate setate" },
     ...(data.description
@@ -1302,13 +1273,18 @@ export default function PostCreationClient({
         (form.bottleCount * RON_PER_BOTTLE).toFixed(2),
       );
 
+      const collectorSharePercent =
+        estimatedValue > 0
+          ? Math.round((form.collectorRonAmount / estimatedValue) * 100)
+          : 0;
+
       const res = await fetch(`/api/${API}/posts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           bottleCount: form.bottleCount,
           estimatedValue,
-          collectorSharePercent: form.collectorSharePercent,
+          collectorSharePercent,
           description: form.description.trim(),
           latitude: form.latitude,
           longitude: form.longitude,
