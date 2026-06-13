@@ -6,6 +6,10 @@ import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { showToast } from "@/lib/toast";
 import { scrollToTop } from "@/app/components/UX/SmoothScroll";
 
+if (typeof window !== "undefined") {
+  window.history.scrollRestoration = "manual";
+}
+
 type ToastLevel = "success" | "info" | "warning" | "error";
 
 type Toast = {
@@ -51,9 +55,14 @@ export default function Template({ children }: { children: React.ReactNode }) {
   const isMapPage = pathname === "/map";
 
   useEffect(() => {
-    scrollToTop(true);
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
+
+    const rafId = requestAnimationFrame(() => {
+      scrollToTop(true);
+    });
+
+    return () => cancelAnimationFrame(rafId);
   }, [pathname]);
 
   useEffect(() => {

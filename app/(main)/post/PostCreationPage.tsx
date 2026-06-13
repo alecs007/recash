@@ -1145,12 +1145,12 @@ function StepConfirm({
     },
     {
       label: "Tu primești",
-      value: `${posterEarning.toFixed(2)} RON (${posterPct}%)`,
+      value: `${posterEarning.toFixed(2)} RON (${posterPct.toFixed()}%)`,
       accent: data.collectorSharePercent === 100 ? "green" : "lime",
     },
     {
       label: "Colectorul primește",
-      value: `${collectorEarning.toFixed(2)} RON (${data.collectorSharePercent}%)`,
+      value: `${collectorEarning.toFixed(2)} RON (${data.collectorSharePercent.toFixed()}%)`,
       accent: data.collectorSharePercent === 100 ? "purple" : "green",
     },
     { label: "Locație", value: data.locationName || "Coordonate setate" },

@@ -111,7 +111,7 @@ export function BadgeCard({ badge, onSeen, earned = true }: Props) {
           <p className="text-[9px] text-slate-600 leading-snug">{cfg.desc}</p>
         </div>
 
-        <div className="w-full pt-2 border-t border-slate-100 text-center">
+        <div className="hidden sm:block w-full pt-2 border-t border-slate-100 text-center">
           <span className="text-[9px] font-semibold text-slate-600">
             {earned
               ? new Date(badge.earnedAt).toLocaleDateString("ro-RO", {

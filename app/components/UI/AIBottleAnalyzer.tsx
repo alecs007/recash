@@ -363,7 +363,7 @@ export function AiBottleAnalyzer({ onApply, onClose }: AiBottleAnalyzerProps) {
             </div>
 
             <p className="text-[11px] text-slate-400 text-center leading-relaxed">
-              3 analize/zi · Funcționează cu saci, cutii sau grămezi de sticle
+              Funcționează cu saci, cutii sau grămezi de sticle
             </p>
           </div>
         </motion.div>

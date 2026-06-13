@@ -193,7 +193,7 @@ export async function sendClaimApprovedEmail({
         <strong style="color:#123424;">${posterName}</strong>! 🎉
       </p>
       <p style="margin:0 0 12px;font-size:15px;color:#334155;line-height:1.6;">
-        Ai <strong>30 de minute</strong> să ajungi la locație și să colectezi cele
+        Ai <strong>60 de minute</strong> să ajungi la locație și să colectezi cele
         <strong>${bottleCount} sticle</strong>.<br/> Nu întârzia!
       </p>
     `,

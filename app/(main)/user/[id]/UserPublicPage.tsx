@@ -473,7 +473,7 @@ export default function UserPublicPage({ userId }: { userId: string }) {
     },
     {
       icon: "/images/icons/total-earnings.svg",
-      label: "Valoare generată",
+      label: "Încasări totale",
       value: totalEarning.toFixed(2),
       unit: "RON",
     },
