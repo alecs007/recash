@@ -1430,7 +1430,7 @@ export default function PostCreationClient({
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setShowOnboarding(true), 600);
+    const t = setTimeout(() => setShowOnboarding(true), 1000);
     return () => clearTimeout(t);
   }, []);
 
