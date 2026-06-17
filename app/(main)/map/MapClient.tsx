@@ -371,7 +371,7 @@ function PostCard({
                 {hoursLeft}h rămase
               </span>
             )}
-            <span className="text-xs font-black text-slate-800">
+            <span className="text-xs font-black text-lime-700">
               +{collectorEarning.toFixed(2)} RON
             </span>
           </div>
@@ -524,7 +524,7 @@ function SelectedPostOverlay({
                   {hoursLeft}h rămase
                 </span>
               )}
-              <span className="text-xs font-black text-slate-800">
+              <span className="text-xs font-black text-lime-700">
                 +{collectorEarning.toFixed(2)} RON
               </span>
             </div>

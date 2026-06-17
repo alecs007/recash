@@ -23,6 +23,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { FaWineBottle } from "react-icons/fa";
+import { LuSendHorizontal } from "react-icons/lu";
 import { PostStatus, Post } from "@/types";
 import type { Map as LeafletMap } from "leaflet";
 import { CollectConfirmModal } from "@/app/components/UI/CollectConfirmModal";
@@ -545,9 +546,10 @@ function ReviewForm({
         onClick={submit}
         disabled={loading || !rating}
         whileTap={{ scale: 0.97 }}
-        className="w-full py-3 rounded-xl bg-lime-400 text-black font-bold text-sm hover:bg-lime-300 disabled:opacity-40 transition-all cursor-pointer"
+        className="w-full py-3 rounded-xl bg-lime-400 text-black font-bold text-sm hover:bg-lime-300 disabled:opacity-40 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:cursor-not-allowed"
       >
         {loading ? "Se trimite..." : "Trimite rating"}
+        {!loading && <LuSendHorizontal className="w-4 h-4" />}
       </motion.button>
     </motion.div>
   );

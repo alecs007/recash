@@ -79,7 +79,7 @@ export function ProfileRankBadge({ rank, totalBottles }: Props) {
   return (
     <Link
       href="/leaderboard"
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border transition-colors ${cfg.bg} ${cfg.text} ${cfg.border} hover:brightness-110`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors ${cfg.bg} ${cfg.text} ${cfg.border} hover:brightness-110`}
     >
       <cfg.Icon className={`w-3 h-3 ${cfg.iconColor}`} />
       {cfg.label}
