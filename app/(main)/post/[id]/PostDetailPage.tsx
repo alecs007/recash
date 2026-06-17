@@ -83,6 +83,56 @@ const slideUpVariants: Variants = {
   exit: { opacity: 0, y: -8, transition: { duration: 0.18 } },
 };
 
+function MapQuickNav({ lat, lng }: { lat: number; lng: number }) {
+  const links = [
+    {
+      label: "Google Maps",
+      icon: "/images/icons/google-maps.svg",
+      url: `https://www.google.com/maps?q=${lat},${lng}`,
+    },
+    {
+      label: "Waze",
+      icon: "/images/icons/waze-icon.svg",
+      url: `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`,
+    },
+    {
+      label: "Apple Maps",
+      icon: "/images/icons/apple-maps-icon.svg",
+      url: `https://maps.apple.com/?q=${lat},${lng}`,
+    },
+  ];
+
+  return (
+    <div className="absolute bottom-3 left-3 z-[1000] flex items-center gap-2">
+      {links.map((b, i) => (
+        <motion.a
+          key={b.label}
+          href={b.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={b.label}
+          aria-label={b.label}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.06, duration: 0.3, ease: EASE }}
+          whileHover={{ y: -2 }}
+          whileTap={{ scale: 0.92 }}
+          className="w-10 h-10 rounded-full bg-white shadow border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors"
+        >
+          <Image
+            src={b.icon}
+            alt={b.label}
+            width={20}
+            height={20}
+            draggable={false}
+            className="w-5 h-5 object-contain"
+          />
+        </motion.a>
+      ))}
+    </div>
+  );
+}
+
 function PostMap({
   lat,
   lng,
@@ -1996,6 +2046,7 @@ export default function PostDetailClient({
             lng={post.longitude}
             locationName={post.locationName}
           />
+          <MapQuickNav lat={post.latitude} lng={post.longitude} />
         </div>
         <div className="flex-1 bg-white w-full">
           <DetailPanel
@@ -2016,6 +2067,7 @@ export default function PostDetailClient({
             lng={post.longitude}
             locationName={post.locationName}
           />
+          <MapQuickNav lat={post.latitude} lng={post.longitude} />
         </div>
         <div className="flex-1 bg-white border-l border-slate-100 overflow-hidden">
           <DetailPanel
