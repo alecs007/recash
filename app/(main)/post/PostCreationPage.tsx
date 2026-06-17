@@ -11,6 +11,8 @@ import {
   FaPercent,
   FaCheckCircle,
   FaRegCompass,
+  FaKey,
+  FaExclamationTriangle,
 } from "react-icons/fa";
 import { FcIdea, FcHighPriority, FcBullish } from "react-icons/fc";
 import {
@@ -31,6 +33,7 @@ import { showToast } from "@/lib/toast";
 import useSWR from "swr";
 import { useSetActiveCounts } from "@/hooks/useActiveCounts";
 import { AiBottleAnalyzer } from "@/app/components/UI/AIBottleAnalyzer";
+import { createPortal } from "react-dom";
 
 const API = process.env.NEXT_PUBLIC_API_VERSION ?? "v1";
 
@@ -994,7 +997,6 @@ function StepDetails({
             </div>
           </div>
 
-          {/* feedback block — unchanged JSX, just uses updated `feedback` variable */}
           <div className="min-h-[60px] overflow-hidden w-full">
             <AnimatePresence mode="wait">
               <motion.div
@@ -1017,17 +1019,82 @@ function StepDetails({
 
       <div>
         <FieldLabel>Detalii suplimentare</FieldLabel>
-        <textarea
-          value={data.description}
-          onChange={(e) => onChange({ description: e.target.value })}
-          placeholder="ex: Sticle PET și doze de aluminiu, la intrarea în bloc, scara A..."
-          rows={3}
-          maxLength={500}
-          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none bg-white transition-shadow"
-        />
-        <p className="text-right text-[11px] text-slate-400 mt-1">
-          {data.description.length} / 500
-        </p>
+
+        {(() => {
+          const SENSITIVE_PATTERN =
+            /(\b[\w.-]+@[\w.-]+\.\w{2,}\b)|((https?:\/\/|www\.)\S+)|(\b(\+4|0)[\d\s\-().]{8,}\b)/i;
+          const hasSensitive = SENSITIVE_PATTERN.test(data.description);
+
+          const appendChip = (chip: string) => {
+            const sep =
+              data.description && !data.description.endsWith(" ") ? " " : "";
+            const next = (data.description + sep + chip + ".")
+              .trim()
+              .slice(0, 500);
+            if (!SENSITIVE_PATTERN.test(next)) onChange({ description: next });
+          };
+
+          return (
+            <>
+              <div className="flex flex-wrap gap-1.5 mb-2.5">
+                {[
+                  "Cantitate aproximativă",
+                  "La intrarea în bloc",
+                  "Sticle curate",
+                  "Se pot duce cu mâna",
+                  "Este nevoie de mașină",
+                  "Sunt puse în saci",
+                ].map((chip) => (
+                  <button
+                    key={chip}
+                    type="button"
+                    onClick={() => appendChip(chip)}
+                    className="px-2.5 py-1 rounded-full border border-slate-200 bg-slate-50 text-xs font-medium text-slate-600 hover:border-lime-400 hover:bg-lime-50 hover:text-lime-800 transition-all cursor-pointer"
+                  >
+                    + {chip}
+                  </button>
+                ))}
+              </div>
+
+              <div className="relative">
+                <textarea
+                  value={data.description}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    onChange({ description: val });
+                  }}
+                  placeholder="ex: Sticle PET și doze de aluminiu, la intrarea în bloc, scara A..."
+                  rows={3}
+                  maxLength={500}
+                  className={`w-full px-4 py-3 pb-6 rounded-xl border focus:ring-2 outline-none bg-white transition-shadow ${
+                    hasSensitive
+                      ? "border-red-300 focus:border-red-400 focus:ring-red-100"
+                      : "border-slate-200 focus:border-lime-400 focus:ring-lime-100"
+                  }`}
+                />
+                <span className="absolute -bottom-4 right-3 text-[11px] text-slate-400 pointer-events-none">
+                  {data.description.length} / 500
+                </span>
+              </div>
+
+              <AnimatePresence>
+                {hasSensitive && (
+                  <motion.p
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden text-xs text-red-500 font-medium mt-1.5 flex items-center gap-2"
+                  >
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    Descrierea nu poate conține numere de telefon, adrese de
+                    email sau linkuri.
+                  </motion.p>
+                )}
+              </AnimatePresence>
+            </>
+          );
+        })()}
       </div>
 
       <div>
@@ -1224,6 +1291,125 @@ function ActivePostGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function OnboardingSheet({ onDismiss }: { onDismiss: () => void }) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onDismiss();
+    };
+    document.addEventListener("keydown", handler);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", handler);
+      document.body.style.overflow = "";
+    };
+  }, [onDismiss]);
+
+  const tips = [
+    {
+      icon: <FaCheckCircle className="w-4 h-4 text-lime-600 shrink-0 mt-0.5" />,
+      label: (
+        <>
+          Sticlele trebuie să fie valabile pentru RetuRO SGR, cu marcaj
+          <Image
+            src="/images/returo-mark.svg"
+            alt="SGR"
+            width={24}
+            height={12}
+            className="inline-block align-middle ml-1 -mt-0.5"
+          />
+        </>
+      ),
+    },
+    {
+      icon: (
+        <FaExclamationTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+      ),
+      label: "Sticlele nu trebuie să fie turtite, sparte sau murdare excesiv.",
+    },
+    {
+      icon: (
+        <FaMapMarkerAlt className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+      ),
+      label:
+        "Colectorii din zona ta vor cere preluarea sticlelor, iar tu îl aprobi pe cel care îți convine.",
+    },
+    {
+      icon: <Coins className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />,
+      label:
+        "Odată ajuns la tine, colectorul îți va oferi suma convenită și va prelua sticlele.",
+    },
+    {
+      icon: <FaKey className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />,
+      label:
+        "Pentru a finaliza, îi vei arăta codul unic din pagina postării și totul este gata!",
+    },
+  ];
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <AnimatePresence>
+      <motion.div
+        key="onboarding-backdrop"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.22 }}
+        onClick={onDismiss}
+        className="fixed inset-0 z-[9990] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+      >
+        <motion.div
+          key="onboarding-sheet"
+          initial={{ opacity: 0, y: 40, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 24, scale: 0.97 }}
+          transition={{ type: "spring", stiffness: 340, damping: 28 }}
+          onClick={(e) => e.stopPropagation()}
+          className="relative w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
+        >
+          <div className="p-6">
+            <div className="mb-5">
+              <p className="font-extrabold text-slate-900 text-base leading-tight">
+                Înainte să postezi...
+              </p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Câteva lucruri importante de știut
+              </p>
+            </div>
+
+            <div className="space-y-3 mb-6">
+              {tips.map(({ icon, label }, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 + i * 0.07, duration: 0.28 }}
+                  className={`flex items-start gap-3 px-3 py-2.5 rounded-2xl bg-slate-50 border border-slate-100`}
+                >
+                  {icon}
+                  <p className="text-sm font-semibold text-slate-700 leading-snug">
+                    {label}
+                  </p>
+                </motion.div>
+              ))}
+            </div>
+
+            <motion.button
+              onClick={onDismiss}
+              whileTap={{ scale: 0.97 }}
+              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all cursor-pointer shadow-sm"
+            >
+              <FaCheckCircle className="w-4 h-4 text-lime-400" />
+              Am înțeles, continuă
+            </motion.button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>,
+    document.body,
+  );
+}
+
 export default function PostCreationClient({
   userPhone,
 }: {
@@ -1240,6 +1426,13 @@ export default function PostCreationClient({
   const [error, setError] = useState("");
   const [originalPhone] = useState(userPhone);
   const setActiveCounts = useSetActiveCounts();
+
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setShowOnboarding(true), 600);
+    return () => clearTimeout(t);
+  }, []);
 
   const update = useCallback((partial: Partial<FormData>) => {
     setForm((prev) => ({ ...prev, ...partial }));
@@ -1328,126 +1521,132 @@ export default function PostCreationClient({
   };
 
   return (
-    <ActivePostGuard>
-      <div className="max-w-lg mx-auto px-4 py-8 min-h-[100dvh]">
-        <StepIndicator current={step} />
+    <>
+      {showOnboarding && (
+        <OnboardingSheet onDismiss={() => setShowOnboarding(false)} />
+      )}
 
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm shadow-slate-100/50 overflow-hidden mb-6">
-          <AnimatePresence mode="wait" custom={direction} initial={false}>
-            <motion.div
-              key={step}
-              custom={direction}
-              variants={stepVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-            >
-              <div className="p-6">
-                {step === 0 && <StepBottles data={form} onChange={update} />}
-                {step === 1 && <StepLocation data={form} onChange={update} />}
-                {step === 2 && (
-                  <StepDetails
-                    data={form}
-                    onChange={update}
-                    originalPhone={originalPhone}
-                  />
-                )}
-                {step === 3 && (
-                  <StepConfirm
-                    data={form}
-                    submitting={submitting}
-                    error={error}
-                  />
-                )}
-              </div>
-            </motion.div>
-          </AnimatePresence>
-        </div>
+      <ActivePostGuard>
+        <div className="max-w-lg mx-auto px-4 py-8 min-h-[100dvh]">
+          <StepIndicator current={step} />
 
-        <div className="space-y-2">
-          <div className="flex gap-3">
-            <AnimatePresence>
-              {step > 0 && (
-                <motion.button
-                  type="button"
-                  initial={{ opacity: 0, x: -12 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -12 }}
-                  transition={{ duration: 0.22, ease: SLIDE_EASE }}
-                  whileTap={{ scale: 0.96 }}
-                  onClick={handleBack}
-                  disabled={submitting}
-                  className="flex items-center gap-2 px-5 py-3.5 rounded-full border-2 border-slate-200 text-slate-700 font-semibold text-sm hover:border-slate-300 transition-colors disabled:opacity-40 cursor-pointer"
-                >
-                  <ChevronLeft className="w-4 h-4" /> Înapoi
-                </motion.button>
-              )}
-            </AnimatePresence>
-
-            <AnimatePresence mode="wait">
-              {step < STEPS.length - 1 ? (
-                <motion.button
-                  key="next"
-                  type="button"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.18 }}
-                  whileTap={canProceed() ? { scale: 0.97 } : {}}
-                  onClick={handleNext}
-                  disabled={!canProceed()}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-full font-bold text-sm transition-all duration-200 ${
-                    canProceed()
-                      ? "bg-[#123424] text-white hover:bg-[#1a4d36] cursor-pointer"
-                      : "bg-slate-100 text-slate-400 border-2 border-dashed border-slate-200 cursor-not-allowed"
-                  }`}
-                >
-                  Continuă <ChevronRight className="w-4 h-4" />
-                </motion.button>
-              ) : (
-                <motion.button
-                  key="submit"
-                  type="button"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.18 }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={handleSubmit}
-                  disabled={submitting}
-                  className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-full bg-lime-400 text-black font-bold text-sm hover:bg-lime-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                >
-                  <AnimatePresence mode="wait">
-                    {submitting ? (
-                      <motion.span
-                        key="loading"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="flex items-center gap-2"
-                      >
-                        <div className="w-4 h-4 border-2 border-black/40 border-t-black rounded-full animate-spin" />
-                        Se postează...
-                      </motion.span>
-                    ) : (
-                      <motion.span
-                        key="idle"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="flex items-center gap-2 font-[800] tracking-wide"
-                      >
-                        <FaWineBottle className="w-4 h-4" />
-                        Recash It!
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                </motion.button>
-              )}
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm shadow-slate-100/50 overflow-hidden mb-6">
+            <AnimatePresence mode="wait" custom={direction} initial={false}>
+              <motion.div
+                key={step}
+                custom={direction}
+                variants={stepVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+              >
+                <div className="p-6">
+                  {step === 0 && <StepBottles data={form} onChange={update} />}
+                  {step === 1 && <StepLocation data={form} onChange={update} />}
+                  {step === 2 && (
+                    <StepDetails
+                      data={form}
+                      onChange={update}
+                      originalPhone={originalPhone}
+                    />
+                  )}
+                  {step === 3 && (
+                    <StepConfirm
+                      data={form}
+                      submitting={submitting}
+                      error={error}
+                    />
+                  )}
+                </div>
+              </motion.div>
             </AnimatePresence>
           </div>
+
+          <div className="space-y-2">
+            <div className="flex gap-3">
+              <AnimatePresence>
+                {step > 0 && (
+                  <motion.button
+                    type="button"
+                    initial={{ opacity: 0, x: -12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -12 }}
+                    transition={{ duration: 0.22, ease: SLIDE_EASE }}
+                    whileTap={{ scale: 0.96 }}
+                    onClick={handleBack}
+                    disabled={submitting}
+                    className="flex items-center gap-2 px-5 py-3.5 rounded-full border-2 border-slate-200 text-slate-700 font-semibold text-sm hover:border-slate-300 transition-colors disabled:opacity-40 cursor-pointer"
+                  >
+                    <ChevronLeft className="w-4 h-4" /> Înapoi
+                  </motion.button>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence mode="wait">
+                {step < STEPS.length - 1 ? (
+                  <motion.button
+                    key="next"
+                    type="button"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.18 }}
+                    whileTap={canProceed() ? { scale: 0.97 } : {}}
+                    onClick={handleNext}
+                    disabled={!canProceed()}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-full font-bold text-sm transition-all duration-200 ${
+                      canProceed()
+                        ? "bg-[#123424] text-white hover:bg-[#1a4d36] cursor-pointer"
+                        : "bg-slate-100 text-slate-400 border-2 border-dashed border-slate-200 cursor-not-allowed"
+                    }`}
+                  >
+                    Continuă <ChevronRight className="w-4 h-4" />
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    key="submit"
+                    type="button"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.18 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={handleSubmit}
+                    disabled={submitting}
+                    className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-full bg-lime-400 text-black font-bold text-sm hover:bg-lime-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    <AnimatePresence mode="wait">
+                      {submitting ? (
+                        <motion.span
+                          key="loading"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="flex items-center gap-2"
+                        >
+                          <div className="w-4 h-4 border-2 border-black/40 border-t-black rounded-full animate-spin" />
+                          Se postează...
+                        </motion.span>
+                      ) : (
+                        <motion.span
+                          key="idle"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="flex items-center gap-2 font-[800] tracking-wide"
+                        >
+                          <FaWineBottle className="w-4 h-4" />
+                          Recash It!
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
         </div>
-      </div>
-    </ActivePostGuard>
+      </ActivePostGuard>
+    </>
   );
 }

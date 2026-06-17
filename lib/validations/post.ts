@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+const SENSITIVE_PATTERN =
+  /(\b[\w.-]+@[\w.-]+\.\w{2,}\b)|((https?:\/\/|www\.)\S+)|(\b(\+4|0)[\d\s\-().]{8,}\b)/i;
+
 export const BOTTLE_PRESETS = [
   {
     value: 5,
@@ -65,6 +68,10 @@ export const createPostSchema = z.object({
     .string()
     .max(500, "Maxim 500 de caractere")
     .trim()
+    .refine(
+      (v) => !SENSITIVE_PATTERN.test(v),
+      "Descrierea nu poate conține numere de telefon, adrese de email sau linkuri.",
+    )
     .optional()
     .default(""),
 
