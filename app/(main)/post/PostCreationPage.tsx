@@ -1084,7 +1084,7 @@ function StepDetails({
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="overflow-hidden text-xs text-red-500 font-medium mt-1.5 flex items-center gap-2"
+                    className="overflow-hidden text-xs text-red-500 font-medium mt-5 flex items-center gap-2"
                   >
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     Descrierea nu poate conține numere de telefon, adrese de
