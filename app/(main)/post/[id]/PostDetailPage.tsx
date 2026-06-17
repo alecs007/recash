@@ -1406,217 +1406,132 @@ function DetailPanel({
             )}
 
             {/* COMPLETED */}
-            {post.status === "COMPLETED" && post.transaction && (
-              <motion.div
-                key="completed"
-                variants={sectionVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                className="mb-7 space-y-5"
-              >
+            {post.status === "COMPLETED" &&
+              post.transaction &&
+              (isAuthor || isCollector) && (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.97 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.1, duration: 0.35, ease: EASE }}
-                  className="bg-lime-50 border border-lime-200 rounded-2xl p-4 space-y-2.5"
+                  key="completed"
+                  variants={sectionVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  className="mb-7 space-y-5"
                 >
                   <motion.div
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.15, duration: 0.3 }}
-                    className="flex items-center gap-2 mb-3"
+                    initial={{ opacity: 0, scale: 0.97 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.1, duration: 0.35, ease: EASE }}
+                    className="bg-lime-50 border border-lime-200 rounded-2xl p-4 space-y-2.5"
                   >
-                    <CheckCircle className="w-4 h-4 text-lime-600" />
-                    <span className="text-sm font-bold text-lime-800">
-                      Tranzacție finalizată
-                    </span>
-                    <span className="text-xs text-lime-500 ml-auto">
-                      {new Date(
-                        post.transaction.completedAt,
-                      ).toLocaleDateString("ro-RO", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </span>
-                  </motion.div>
-                  {[
-                    [
-                      "Sticle colectate",
-                      `${Math.round(post.transaction.actualValue / 0.5)} buc`,
-                    ],
-                    [
-                      "Valoare totală",
-                      `${post.transaction.actualValue.toFixed(2)} RON`,
-                    ],
-                    ["Câștigul tău", `+${myActualEarning?.toFixed(2)} RON`],
-                  ].map(([label, value], i) => (
                     <motion.div
-                      key={label}
-                      custom={i}
-                      variants={slideUpVariants}
-                      initial="hidden"
-                      animate="visible"
-                      className="flex justify-between text-sm"
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.15, duration: 0.3 }}
+                      className="flex items-center gap-2 mb-3"
                     >
-                      <span className="text-slate-500">{label}</span>
-                      <span
-                        className={`font-bold ${i === 2 ? "text-lime-700" : "text-slate-800"}`}
-                      >
-                        {value}
+                      <CheckCircle className="w-4 h-4 text-lime-600" />
+                      <span className="text-sm font-bold text-lime-800">
+                        Tranzacție finalizată
+                      </span>
+                      <span className="text-xs text-lime-500 ml-auto">
+                        {new Date(
+                          post.transaction.completedAt,
+                        ).toLocaleDateString("ro-RO", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
                       </span>
                     </motion.div>
-                  ))}
-                </motion.div>
-
-                <div className="space-y-4">
-                  <AnimatePresence>
-                    {ratingIReceived && (
+                    {[
+                      [
+                        "Sticle colectate",
+                        `${Math.round(post.transaction.actualValue / 0.5)} buc`,
+                      ],
+                      [
+                        "Valoare totală",
+                        `${post.transaction.actualValue.toFixed(2)} RON`,
+                      ],
+                      ["Câștigul tău", `+${myActualEarning?.toFixed(2)} RON`],
+                    ].map(([label, value], i) => (
                       <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2, duration: 0.35, ease: EASE }}
-                        className="bg-white border border-slate-100 rounded-2xl p-4"
+                        key={label}
+                        custom={i}
+                        variants={slideUpVariants}
+                        initial="hidden"
+                        animate="visible"
+                        className="flex justify-between text-sm"
                       >
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-slate-600">
-                              Rating-ul primit de la{" "}
-                              <span className="font-semibold text-slate-800">
-                                {targetName}
-                              </span>
-                            </span>
-                            <div className="flex items-center gap-0.5">
-                              {[1, 2, 3, 4, 5].map((i) => (
-                                <motion.svg
-                                  key={i}
-                                  initial={{ scale: 0, rotate: -20 }}
-                                  animate={{ scale: 1, rotate: 0 }}
-                                  transition={{
-                                    delay: 0.25 + i * 0.05,
-                                    type: "spring",
-                                    stiffness: 400,
-                                    damping: 20,
-                                  }}
-                                  className="w-4 h-4"
-                                  viewBox="0 0 20 20"
-                                >
-                                  <path
-                                    fill={
-                                      i <= ratingIReceived
-                                        ? "#FFDF00"
-                                        : "#e2e8f0"
-                                    }
-                                    d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-                                  />
-                                </motion.svg>
-                              ))}
-                            </div>
-                          </div>
-                          <AnimatePresence>
-                            {reviewIReceived && (
-                              <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: "auto" }}
-                                exit={{ opacity: 0, height: 0 }}
-                                transition={{ duration: 0.25 }}
-                                className="overflow-hidden"
-                              >
-                                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 italic text-slate-700 text-sm">
-                                  &quot;{reviewIReceived}&quot;
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* Review form / sent state */}
-                  <div className="relative">
-                    <AnimatePresence mode="wait">
-                      {!ratingIGave && !justReviewed ? (
-                        <motion.div
-                          key="review-form"
-                          variants={sectionVariants}
-                          initial="hidden"
-                          animate="visible"
-                          exit="exit"
+                        <span className="text-slate-500">{label}</span>
+                        <span
+                          className={`font-bold ${i === 2 ? "text-lime-700" : "text-slate-800"}`}
                         >
-                          <ReviewForm
-                            postId={post.id}
-                            targetName={targetName}
-                            alreadyReviewed={false}
-                            onDone={handleReviewDone}
-                          />
-                        </motion.div>
-                      ) : (
+                          {value}
+                        </span>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+
+                  <div className="space-y-4">
+                    <AnimatePresence>
+                      {ratingIReceived && (
                         <motion.div
-                          key="review-sent"
-                          variants={sectionVariants}
-                          initial="hidden"
-                          animate="visible"
-                          exit="exit"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{
+                            delay: 0.2,
+                            duration: 0.35,
+                            ease: EASE,
+                          }}
                           className="bg-white border border-slate-100 rounded-2xl p-4"
                         >
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
                               <span className="text-sm text-slate-600">
-                                Rating-ul tău pentru{" "}
+                                Rating-ul primit de la{" "}
                                 <span className="font-semibold text-slate-800">
                                   {targetName}
                                 </span>
                               </span>
                               <div className="flex items-center gap-0.5">
                                 {[1, 2, 3, 4, 5].map((i) => (
-                                  <svg
+                                  <motion.svg
                                     key={i}
+                                    initial={{ scale: 0, rotate: -20 }}
+                                    animate={{ scale: 1, rotate: 0 }}
+                                    transition={{
+                                      delay: 0.25 + i * 0.05,
+                                      type: "spring",
+                                      stiffness: 400,
+                                      damping: 20,
+                                    }}
                                     className="w-4 h-4"
                                     viewBox="0 0 20 20"
                                   >
                                     <path
                                       fill={
-                                        i <= (ratingIGave || 0)
+                                        i <= ratingIReceived
                                           ? "#FFDF00"
                                           : "#e2e8f0"
                                       }
                                       d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
                                     />
-                                  </svg>
+                                  </motion.svg>
                                 ))}
                               </div>
                             </div>
                             <AnimatePresence>
-                              {reviewIGave && (
+                              {reviewIReceived && (
                                 <motion.div
                                   initial={{ opacity: 0, height: 0 }}
                                   animate={{ opacity: 1, height: "auto" }}
                                   exit={{ opacity: 0, height: 0 }}
+                                  transition={{ duration: 0.25 }}
                                   className="overflow-hidden"
                                 >
                                   <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 italic text-slate-700 text-sm">
-                                    &quot;{reviewIGave}&quot;
+                                    &quot;{reviewIReceived}&quot;
                                   </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                            <AnimatePresence>
-                              {justReviewed && (
-                                <motion.div
-                                  initial={{ opacity: 0, scale: 0.9 }}
-                                  animate={{ opacity: 1, scale: 1 }}
-                                  exit={{ opacity: 0 }}
-                                  transition={{
-                                    type: "spring",
-                                    stiffness: 400,
-                                    damping: 22,
-                                  }}
-                                  className="flex items-center gap-2 text-[11px] text-lime-600 font-medium bg-lime-50 w-fit px-2 py-1 rounded-lg"
-                                >
-                                  <CheckCircle className="w-3 h-3" />
-                                  Feedback trimis cu succes
                                 </motion.div>
                               )}
                             </AnimatePresence>
@@ -1624,12 +1539,195 @@ function DetailPanel({
                         </motion.div>
                       )}
                     </AnimatePresence>
-                  </div>
-                </div>
 
-                <div className="h-px bg-slate-100 mb-7 mt-7" />
-              </motion.div>
-            )}
+                    {/* Review form / sent state */}
+                    <div className="relative">
+                      <AnimatePresence mode="wait">
+                        {!ratingIGave && !justReviewed ? (
+                          <motion.div
+                            key="review-form"
+                            variants={sectionVariants}
+                            initial="hidden"
+                            animate="visible"
+                            exit="exit"
+                          >
+                            <ReviewForm
+                              postId={post.id}
+                              targetName={targetName}
+                              alreadyReviewed={false}
+                              onDone={handleReviewDone}
+                            />
+                          </motion.div>
+                        ) : (
+                          <motion.div
+                            key="review-sent"
+                            variants={sectionVariants}
+                            initial="hidden"
+                            animate="visible"
+                            exit="exit"
+                            className="bg-white border border-slate-100 rounded-2xl p-4"
+                          >
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-slate-600">
+                                  Rating-ul tău pentru{" "}
+                                  <span className="font-semibold text-slate-800">
+                                    {targetName}
+                                  </span>
+                                </span>
+                                <div className="flex items-center gap-0.5">
+                                  {[1, 2, 3, 4, 5].map((i) => (
+                                    <svg
+                                      key={i}
+                                      className="w-4 h-4"
+                                      viewBox="0 0 20 20"
+                                    >
+                                      <path
+                                        fill={
+                                          i <= (ratingIGave || 0)
+                                            ? "#FFDF00"
+                                            : "#e2e8f0"
+                                        }
+                                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+                                      />
+                                    </svg>
+                                  ))}
+                                </div>
+                              </div>
+                              <AnimatePresence>
+                                {reviewIGave && (
+                                  <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: "auto" }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="overflow-hidden"
+                                  >
+                                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 italic text-slate-700 text-sm">
+                                      &quot;{reviewIGave}&quot;
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                              <AnimatePresence>
+                                {justReviewed && (
+                                  <motion.div
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{
+                                      type: "spring",
+                                      stiffness: 400,
+                                      damping: 22,
+                                    }}
+                                    className="flex items-center gap-2 text-[11px] text-lime-600 font-medium bg-lime-50 w-fit px-2 py-1 rounded-lg"
+                                  >
+                                    <CheckCircle className="w-3 h-3" />
+                                    Feedback trimis cu succes
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-slate-100 mb-7 mt-7" />
+                </motion.div>
+              )}
+
+            {/* Public reviews — visible to non-participants */}
+            {post.status === "COMPLETED" &&
+              post.transaction &&
+              !isAuthor &&
+              !isCollector && (
+                <motion.div
+                  key="public-reviews"
+                  variants={sectionVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  className="mb-7 space-y-3"
+                >
+                  {(post.transaction.posterRating ||
+                    post.transaction.collectorRating) && (
+                    <>
+                      {post.transaction.collectorRating && (
+                        <div className="bg-white border border-slate-100 rounded-2xl p-4 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-slate-600">
+                              Rating-ul lui{" "}
+                              <span className="font-semibold text-slate-800">
+                                {post.author.name ?? "Autor"}
+                              </span>
+                            </span>
+                            <div className="flex items-center gap-0.5">
+                              {[1, 2, 3, 4, 5].map((i) => (
+                                <svg
+                                  key={i}
+                                  className="w-4 h-4"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fill={
+                                      i <= post.transaction!.collectorRating!
+                                        ? "#FFDF00"
+                                        : "#e2e8f0"
+                                    }
+                                    d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+                                  />
+                                </svg>
+                              ))}
+                            </div>
+                          </div>
+                          {post.transaction.collectorReview && (
+                            <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 italic text-slate-700 text-sm">
+                              &quot;{post.transaction.collectorReview}&quot;
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {post.transaction.posterRating && (
+                        <div className="bg-white border border-slate-100 rounded-2xl p-4 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-slate-600">
+                              Rating-ul lui{" "}
+                              <span className="font-semibold text-slate-800">
+                                {post.collector?.name ?? "Colector"}
+                              </span>
+                            </span>
+                            <div className="flex items-center gap-0.5">
+                              {[1, 2, 3, 4, 5].map((i) => (
+                                <svg
+                                  key={i}
+                                  className="w-4 h-4"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fill={
+                                      i <= post.transaction!.posterRating!
+                                        ? "#FFDF00"
+                                        : "#e2e8f0"
+                                    }
+                                    d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+                                  />
+                                </svg>
+                              ))}
+                            </div>
+                          </div>
+                          {post.transaction.posterReview && (
+                            <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 italic text-slate-700 text-sm">
+                              &quot;{post.transaction.posterReview}&quot;
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <div className="h-px bg-slate-100 mb-7 mt-2" />
+                    </>
+                  )}
+                </motion.div>
+              )}
           </AnimatePresence>
 
           {/* ── POST INFO ── */}
@@ -1766,33 +1864,40 @@ function DetailPanel({
                 ? myBarColor
                 : "bg-slate-200";
 
-              const displayEarning =
-                post.status === "COMPLETED" && myActualEarning !== null
-                  ? myActualEarning
-                  : isAuthor
-                    ? posterEarning
-                    : collectorEarning;
+              const isNonParticipant = !isAuthor && !isCollector;
 
-              const myLabel = isAuthor
+              const myLabel = isNonParticipant
                 ? post.status === "COMPLETED"
-                  ? "Ai primit"
-                  : post.status === "EXPIRED" || post.status === "CANCELLED"
-                    ? "Ai fi primit"
-                    : "Primești"
-                : isCollector
-                  ? post.status === "COMPLETED"
-                    ? "Ai câștigat"
-                    : post.status === "EXPIRED" || post.status === "CANCELLED"
-                      ? "Ai fi câștigat"
-                      : "Câștigi"
+                  ? "Colectorul a câștigat"
                   : isTerminated
-                    ? "Ai fi câștigat"
-                    : "Câștigi";
+                    ? "Colectorul ar fi câștigat"
+                    : "Colectorul câștigă"
+                : isAuthor
+                  ? post.status === "COMPLETED"
+                    ? "Ai primit"
+                    : isTerminated
+                      ? "Ai fi primit"
+                      : "Primești"
+                  : post.status === "COMPLETED"
+                    ? "Ai câștigat"
+                    : isTerminated
+                      ? "Ai fi câștigat"
+                      : "Câștigi";
+
+              const displayEarning =
+                post.status === "COMPLETED" &&
+                myActualEarning !== null &&
+                !isNonParticipant
+                  ? myActualEarning
+                  : isNonParticipant || !isAuthor
+                    ? collectorEarning
+                    : posterEarning;
 
               return (
                 <>
                   <div className="flex items-center gap-1 sm:gap-2 mb-1">
-                    {viewAsCollector &&
+                    {!isNonParticipant &&
+                      viewAsCollector &&
                       post.status !== "COMPLETED" &&
                       post.status !== "CANCELLED" &&
                       post.status !== "EXPIRED" && (
@@ -1821,7 +1926,8 @@ function DetailPanel({
                         transition={{ duration: 0.25 }}
                         className={`text-2xl font-black leading-none ${earningColor}`}
                       >
-                        {viewAsCollector &&
+                        {!isNonParticipant &&
+                        viewAsCollector &&
                         post.status !== "COMPLETED" &&
                         post.status !== "CANCELLED" &&
                         post.status !== "EXPIRED"
