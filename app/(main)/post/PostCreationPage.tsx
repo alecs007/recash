@@ -13,6 +13,7 @@ import {
   FaRegCompass,
   FaKey,
   FaExclamationTriangle,
+  FaInfinity,
 } from "react-icons/fa";
 import { FcIdea, FcHighPriority, FcBullish } from "react-icons/fc";
 import {
@@ -46,7 +47,8 @@ interface FormData {
   locationName: string;
   address: string;
   phone: string;
-  expiresInHours: number;
+  expiresInHours: number | null;
+  availabilitySchedule: { day: number; start: string; end: string }[] | null;
 }
 
 const INITIAL: FormData = {
@@ -58,7 +60,8 @@ const INITIAL: FormData = {
   locationName: "",
   address: "",
   phone: "",
-  expiresInHours: 24,
+  expiresInHours: 48,
+  availabilitySchedule: null,
 };
 interface GeocodeResult {
   lat: string;
@@ -77,11 +80,15 @@ interface GeocodeResult {
 
 const PRESETS = BOTTLE_PRESETS.filter((p) => p.value > 0);
 
-const EXPIRY_OPTIONS = [
+const EXPIRY_OPTIONS: { h: number | null; label: string }[] = [
   { h: 12, label: "12h" },
   { h: 24, label: "24h" },
   { h: 48, label: "48h" },
   { h: 72, label: "72h" },
+  { h: 168, label: "1 săpt." },
+  { h: 336, label: "2 săpt." },
+  { h: 720, label: "1 lună" },
+  { h: null, label: "Nelimitat" },
 ];
 
 const MIN_COLLECTOR_RON = 5;
@@ -1128,7 +1135,7 @@ function StepDetails({
             const active = data.expiresInHours === h;
             return (
               <button
-                key={h}
+                key={String(h)}
                 type="button"
                 onClick={() => onChange({ expiresInHours: h })}
                 style={{
@@ -1136,13 +1143,187 @@ function StepDetails({
                   borderColor: active ? "#123424" : "#e2e8f0",
                   color: active ? "#ffffff" : "#475569",
                 }}
-                className="py-3 rounded-xl border-2 text-sm font-bold cursor-pointer flex flex-col items-center gap-0.5"
+                className="py-3 rounded-xl border-2 text-sm font-bold cursor-pointer flex items-center justify-center"
               >
-                {label}
+                {h === null ? (
+                  <>
+                    <FaInfinity className="w-4 h-4 sm:hidden" />
+                    <span className="hidden sm:inline">{label}</span>
+                  </>
+                ) : (
+                  label
+                )}
               </button>
             );
           })}
         </div>
+      </div>
+
+      {/* ── Availability Picker ── */}
+      <div>
+        <div className="flex items-center justify-between py-3 px-4 bg-slate-50 border border-slate-200 rounded-xl">
+          <div>
+            <p className="text-sm font-bold text-slate-800">
+              Program de disponibilitate
+            </p>
+            <p className="text-xs text-slate-400 mt-0.5 mr-2">
+              {data.availabilitySchedule
+                ? "Anunțul este disponibil doar în intervalele selectate"
+                : "Anunțul este disponibil oricând"}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (data.availabilitySchedule) {
+                onChange({ availabilitySchedule: null });
+              } else {
+                onChange({
+                  availabilitySchedule: [1, 2, 3, 4, 5].map((day) => ({
+                    day,
+                    start: "09:00",
+                    end: "18:00",
+                  })),
+                });
+              }
+            }}
+            className={`relative w-11 h-6 rounded-full transition-colors duration-300 cursor-pointer focus:outline-none shrink-0 ${
+              data.availabilitySchedule ? "bg-lime-400" : "bg-slate-200"
+            }`}
+          >
+            <motion.div
+              animate={{ x: data.availabilitySchedule ? 22 : 6 }}
+              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+              className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm"
+            />
+          </button>
+        </div>
+
+        <AnimatePresence>
+          {data.availabilitySchedule && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="mt-3 space-y-3">
+                {/* Day toggles */}
+                <div className="grid grid-cols-7 gap-1.5">
+                  {[
+                    { value: 1, short: "L" },
+                    { value: 2, short: "Ma" },
+                    { value: 3, short: "Mi" },
+                    { value: 4, short: "J" },
+                    { value: 5, short: "V" },
+                    { value: 6, short: "S" },
+                    { value: 0, short: "D" },
+                  ].map(({ value, short }) => {
+                    const active = data.availabilitySchedule!.some(
+                      (s) => s.day === value,
+                    );
+                    return (
+                      <motion.button
+                        key={value}
+                        type="button"
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => {
+                          const cur = data.availabilitySchedule!;
+                          if (active) {
+                            const updated = cur.filter((s) => s.day !== value);
+                            onChange({
+                              availabilitySchedule: updated.length
+                                ? updated
+                                : null,
+                            });
+                          } else {
+                            onChange({
+                              availabilitySchedule: [
+                                ...cur,
+                                { day: value, start: "09:00", end: "18:00" },
+                              ],
+                            });
+                          }
+                        }}
+                        className={`aspect-square w-full rounded-xl text-xs sm:text-sm font-black border-2 cursor-pointer transition-colors flex items-center justify-center ${
+                          active
+                            ? "bg-[#123424] border-[#123424] text-white"
+                            : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+                        }`}
+                      >
+                        {short}
+                      </motion.button>
+                    );
+                  })}
+                </div>
+
+                {/* Time ranges */}
+                {[1, 2, 3, 4, 5, 6, 0]
+                  .map((v) =>
+                    data.availabilitySchedule!.find((s) => s.day === v),
+                  )
+                  .filter(Boolean)
+                  .map((s) => {
+                    const dayLabel = [
+                      { value: 1, long: "Luni" },
+                      { value: 2, long: "Marți" },
+                      { value: 3, long: "Miercuri" },
+                      { value: 4, long: "Joi" },
+                      { value: 5, long: "Vineri" },
+                      { value: 6, long: "Sâmbătă" },
+                      { value: 0, long: "Duminică" },
+                    ].find((d) => d.value === s!.day)?.long;
+                    return (
+                      <div
+                        key={s!.day}
+                        className="flex items-center gap-2 bg-slate-50 rounded-xl px-2.5 py-2"
+                      >
+                        <span className="text-xs font-bold text-slate-600 w-9 shrink-0">
+                          {dayLabel?.slice(0, 3)}
+                        </span>
+                        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                          <input
+                            type="time"
+                            value={s!.start}
+                            onChange={(e) => {
+                              onChange({
+                                availabilitySchedule:
+                                  data.availabilitySchedule!.map((item) =>
+                                    item.day === s!.day
+                                      ? { ...item, start: e.target.value }
+                                      : item,
+                                  ),
+                              });
+                            }}
+                            className="flex-1 min-w-0 text-xs sm:text-sm border border-slate-200 rounded-lg px-1.5 py-1 focus:border-lime-400 outline-none"
+                          />
+                          <span className="text-slate-400 text-xs shrink-0">
+                            –
+                          </span>
+                          <input
+                            type="time"
+                            value={s!.end}
+                            onChange={(e) => {
+                              onChange({
+                                availabilitySchedule:
+                                  data.availabilitySchedule!.map((item) =>
+                                    item.day === s!.day
+                                      ? { ...item, end: e.target.value }
+                                      : item,
+                                  ),
+                              });
+                            }}
+                            className="flex-1 min-w-0 text-xs sm:text-sm border border-slate-200 rounded-lg px-1.5 py-1 focus:border-lime-400 outline-none"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
@@ -1173,7 +1354,7 @@ function StepConfirm({
 
   const rows: Array<{
     label: string;
-    value: string;
+    value: React.ReactNode;
     accent?: "green" | "lime" | "purple";
   }> = [
     { label: "Număr sticle", value: `${data.bottleCount} buc` },
@@ -1196,7 +1377,52 @@ function StepConfirm({
       ? [{ label: "Detalii", value: data.description }]
       : []),
     ...(data.phone ? [{ label: "Telefon", value: data.phone }] : []),
-    { label: "Valabilitate", value: `${data.expiresInHours} ore` },
+    {
+      label: "Valabilitate",
+      value:
+        data.expiresInHours === null
+          ? "Nelimitată"
+          : (EXPIRY_OPTIONS.find((o) => o.h === data.expiresInHours)?.label ??
+            `${data.expiresInHours} ore`),
+    },
+    ...(data.availabilitySchedule?.length
+      ? [
+          {
+            label: "Program",
+            value: (
+              <div className="flex flex-col items-end gap-1.5">
+                {data.availabilitySchedule
+                  .slice()
+                  .sort(
+                    (a, b) =>
+                      [1, 2, 3, 4, 5, 6, 0].indexOf(a.day) -
+                      [1, 2, 3, 4, 5, 6, 0].indexOf(b.day),
+                  )
+                  .map((s) => {
+                    const d = [
+                      { v: 1, s: "Lun" },
+                      { v: 2, s: "Mar" },
+                      { v: 3, s: "Mie" },
+                      { v: 4, s: "Joi" },
+                      { v: 5, s: "Vin" },
+                      { v: 6, s: "Sâm" },
+                      { v: 0, s: "Dum" },
+                    ].find((x) => x.v === s.day);
+                    return (
+                      <span
+                        key={s.day}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 text-xs font-semibold text-slate-700"
+                      >
+                        <span className="text-slate-400">{d?.s}</span>
+                        {s.start}–{s.end}
+                      </span>
+                    );
+                  })}
+              </div>
+            ),
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -1214,7 +1440,7 @@ function StepConfirm({
             className={`flex items-start justify-between gap-4 px-4 py-3 border-b border-slate-50 last:border-0 ${i % 2 === 1 ? "bg-slate-50/50" : "bg-white"}`}
           >
             <span className="text-sm text-slate-500 shrink-0">{label}</span>
-            <span
+            <div
               className={`text-sm font-semibold text-right break-words max-w-[55%]
                 ${accent === "green" ? "text-[#123424]" : ""}
                 ${accent === "lime" ? "text-lime-600" : ""}
@@ -1223,7 +1449,7 @@ function StepConfirm({
               `}
             >
               {value}
-            </span>
+            </div>
           </motion.div>
         ))}
       </div>
@@ -1324,7 +1550,7 @@ function OnboardingSheet({ onDismiss }: { onDismiss: () => void }) {
       icon: (
         <FaExclamationTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
       ),
-      label: "Sticlele nu trebuie să fie turtite, sparte sau murdare excesiv.",
+      label: "Sticlele turtite, sparte sau murdare excesiv NU sunt acceptate.",
     },
     {
       icon: (
@@ -1486,6 +1712,7 @@ export default function PostCreationClient({
           phone: form.phone.trim() || null,
           images: [],
           expiresInHours: form.expiresInHours,
+          availabilitySchedule: form.availabilitySchedule,
         }),
       });
 
@@ -1521,132 +1748,129 @@ export default function PostCreationClient({
   };
 
   return (
-    <>
+    <ActivePostGuard>
       {showOnboarding && (
         <OnboardingSheet onDismiss={() => setShowOnboarding(false)} />
       )}
+      <div className="max-w-lg mx-auto px-4 py-8 min-h-[100dvh]">
+        <StepIndicator current={step} />
 
-      <ActivePostGuard>
-        <div className="max-w-lg mx-auto px-4 py-8 min-h-[100dvh]">
-          <StepIndicator current={step} />
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm shadow-slate-100/50 overflow-hidden mb-6">
+          <AnimatePresence mode="wait" custom={direction} initial={false}>
+            <motion.div
+              key={step}
+              custom={direction}
+              variants={stepVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+            >
+              <div className="p-6">
+                {step === 0 && <StepBottles data={form} onChange={update} />}
+                {step === 1 && <StepLocation data={form} onChange={update} />}
+                {step === 2 && (
+                  <StepDetails
+                    data={form}
+                    onChange={update}
+                    originalPhone={originalPhone}
+                  />
+                )}
+                {step === 3 && (
+                  <StepConfirm
+                    data={form}
+                    submitting={submitting}
+                    error={error}
+                  />
+                )}
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
 
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm shadow-slate-100/50 overflow-hidden mb-6">
-            <AnimatePresence mode="wait" custom={direction} initial={false}>
-              <motion.div
-                key={step}
-                custom={direction}
-                variants={stepVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-              >
-                <div className="p-6">
-                  {step === 0 && <StepBottles data={form} onChange={update} />}
-                  {step === 1 && <StepLocation data={form} onChange={update} />}
-                  {step === 2 && (
-                    <StepDetails
-                      data={form}
-                      onChange={update}
-                      originalPhone={originalPhone}
-                    />
-                  )}
-                  {step === 3 && (
-                    <StepConfirm
-                      data={form}
-                      submitting={submitting}
-                      error={error}
-                    />
-                  )}
-                </div>
-              </motion.div>
+        <div className="space-y-2">
+          <div className="flex gap-3">
+            <AnimatePresence>
+              {step > 0 && (
+                <motion.button
+                  type="button"
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -12 }}
+                  transition={{ duration: 0.22, ease: SLIDE_EASE }}
+                  whileTap={{ scale: 0.96 }}
+                  onClick={handleBack}
+                  disabled={submitting}
+                  className="flex items-center gap-2 px-5 py-3.5 rounded-full border-2 border-slate-200 text-slate-700 font-semibold text-sm hover:border-slate-300 transition-colors disabled:opacity-40 cursor-pointer"
+                >
+                  <ChevronLeft className="w-4 h-4" /> Înapoi
+                </motion.button>
+              )}
+            </AnimatePresence>
+
+            <AnimatePresence mode="wait">
+              {step < STEPS.length - 1 ? (
+                <motion.button
+                  key="next"
+                  type="button"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.18 }}
+                  whileTap={canProceed() ? { scale: 0.97 } : {}}
+                  onClick={handleNext}
+                  disabled={!canProceed()}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-full font-bold text-sm transition-all duration-200 ${
+                    canProceed()
+                      ? "bg-[#123424] text-white hover:bg-[#1a4d36] cursor-pointer"
+                      : "bg-slate-100 text-slate-400 border-2 border-dashed border-slate-200 cursor-not-allowed"
+                  }`}
+                >
+                  Continuă <ChevronRight className="w-4 h-4" />
+                </motion.button>
+              ) : (
+                <motion.button
+                  key="submit"
+                  type="button"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.18 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-full bg-lime-400 text-black font-bold text-sm hover:bg-lime-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  <AnimatePresence mode="wait">
+                    {submitting ? (
+                      <motion.span
+                        key="loading"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="flex items-center gap-2"
+                      >
+                        <div className="w-4 h-4 border-2 border-black/40 border-t-black rounded-full animate-spin" />
+                        Se postează...
+                      </motion.span>
+                    ) : (
+                      <motion.span
+                        key="idle"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="flex items-center gap-2 font-[800] tracking-wide"
+                      >
+                        <FaWineBottle className="w-4 h-4" />
+                        Recash It!
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
+              )}
             </AnimatePresence>
           </div>
-
-          <div className="space-y-2">
-            <div className="flex gap-3">
-              <AnimatePresence>
-                {step > 0 && (
-                  <motion.button
-                    type="button"
-                    initial={{ opacity: 0, x: -12 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -12 }}
-                    transition={{ duration: 0.22, ease: SLIDE_EASE }}
-                    whileTap={{ scale: 0.96 }}
-                    onClick={handleBack}
-                    disabled={submitting}
-                    className="flex items-center gap-2 px-5 py-3.5 rounded-full border-2 border-slate-200 text-slate-700 font-semibold text-sm hover:border-slate-300 transition-colors disabled:opacity-40 cursor-pointer"
-                  >
-                    <ChevronLeft className="w-4 h-4" /> Înapoi
-                  </motion.button>
-                )}
-              </AnimatePresence>
-
-              <AnimatePresence mode="wait">
-                {step < STEPS.length - 1 ? (
-                  <motion.button
-                    key="next"
-                    type="button"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.18 }}
-                    whileTap={canProceed() ? { scale: 0.97 } : {}}
-                    onClick={handleNext}
-                    disabled={!canProceed()}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-full font-bold text-sm transition-all duration-200 ${
-                      canProceed()
-                        ? "bg-[#123424] text-white hover:bg-[#1a4d36] cursor-pointer"
-                        : "bg-slate-100 text-slate-400 border-2 border-dashed border-slate-200 cursor-not-allowed"
-                    }`}
-                  >
-                    Continuă <ChevronRight className="w-4 h-4" />
-                  </motion.button>
-                ) : (
-                  <motion.button
-                    key="submit"
-                    type="button"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.18 }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={handleSubmit}
-                    disabled={submitting}
-                    className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-full bg-lime-400 text-black font-bold text-sm hover:bg-lime-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    <AnimatePresence mode="wait">
-                      {submitting ? (
-                        <motion.span
-                          key="loading"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="flex items-center gap-2"
-                        >
-                          <div className="w-4 h-4 border-2 border-black/40 border-t-black rounded-full animate-spin" />
-                          Se postează...
-                        </motion.span>
-                      ) : (
-                        <motion.span
-                          key="idle"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="flex items-center gap-2 font-[800] tracking-wide"
-                        >
-                          <FaWineBottle className="w-4 h-4" />
-                          Recash It!
-                        </motion.span>
-                      )}
-                    </AnimatePresence>
-                  </motion.button>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
         </div>
-      </ActivePostGuard>
-    </>
+      </div>
+    </ActivePostGuard>
   );
 }

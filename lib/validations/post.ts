@@ -96,7 +96,19 @@ export const createPostSchema = z.object({
     .optional()
     .default([]),
 
-  expiresInHours: z.number().int().min(1).max(168).default(48),
+  expiresInHours: z.number().int().min(1).max(8760).nullable().default(168),
+  availabilitySchedule: z
+    .array(
+      z.object({
+        day: z.number().int().min(0).max(6),
+        start: z.string().regex(/^\d{2}:\d{2}$/),
+        end: z.string().regex(/^\d{2}:\d{2}$/),
+      }),
+    )
+    .max(7)
+    .nullable()
+    .optional()
+    .default(null),
 });
 
 export type CreatePostInput = z.infer<typeof createPostSchema>;

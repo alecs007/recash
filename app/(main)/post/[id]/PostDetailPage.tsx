@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { FaWineBottle } from "react-icons/fa";
 import { LuSendHorizontal } from "react-icons/lu";
+import { TbCancel } from "react-icons/tb";
 import { PostStatus, Post } from "@/types";
 import type { Map as LeafletMap } from "leaflet";
 import { CollectConfirmModal } from "@/app/components/UI/CollectConfirmModal";
@@ -37,6 +38,8 @@ import { EmailOptinPopup } from "@/app/components/UI/EmailOptinPopup";
 import { showToast } from "@/lib/toast";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, Variants } from "framer-motion";
+import { isCurrentlyAvailable, getNextAvailableText } from "@/lib/availability";
+import type { DaySchedule } from "@/lib/availability";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -910,7 +913,26 @@ function DetailPanel({
     chatOpen,
   );
 
-  const statusCfg = STATUS_CONFIG[post.status];
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!post.availabilitySchedule) return;
+    const timer = setInterval(() => setTick((t) => t + 1), 30_000);
+    return () => clearInterval(timer);
+  }, [post.availabilitySchedule]);
+
+  const schedule = post.availabilitySchedule as unknown as DaySchedule[] | null;
+  const isUnavailableNow =
+    post.status === "OPEN" &&
+    !!schedule?.length &&
+    !isCurrentlyAvailable(schedule);
+
+  const isNonParticipant = !isAuthor && !isCollector;
+
+  const statusCfg = isUnavailableNow
+    ? { label: "Indisponibil", className: "bg-orange-100 text-orange-700" }
+    : post.status === "COMPLETED" && isNonParticipant
+      ? { label: "Finalizat", className: "bg-slate-100 text-slate-500" }
+      : STATUS_CONFIG[post.status];
   const posterPct = 100 - post.collectorSharePercent;
   const collectorEarning =
     Math.round(((post.estimatedValue * post.collectorSharePercent) / 100) * 2) /
@@ -1075,7 +1097,7 @@ function DetailPanel({
             </Link>
             <AnimatePresence mode="wait">
               <motion.span
-                key={post.status}
+                key={isUnavailableNow ? "unavailable" : post.status}
                 initial={{ opacity: 0, scale: 0.85 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.85 }}
@@ -1633,7 +1655,7 @@ function DetailPanel({
                     </div>
                   </div>
 
-                  <div className="h-px bg-slate-100 mb-7 mt-7" />
+                  <div className="h-px bg-slate-100 my-7" />
                 </motion.div>
               )}
 
@@ -1723,7 +1745,7 @@ function DetailPanel({
                           )}
                         </div>
                       )}
-                      <div className="h-px bg-slate-100 mb-7 mt-2" />
+                      <div className="h-px bg-slate-100 my-7" />
                     </>
                   )}
                 </motion.div>
@@ -1760,8 +1782,11 @@ function DetailPanel({
                 <span className="text-sm">{post.locationName}</span>
               </div>
             )}
+
+            <div className="h-px bg-slate-100 my-7" />
+
             {post.description && (
-              <p className="text-sm text-slate-600 mt-4 whitespace-pre-wrap">
+              <p className="text-sm text-slate-600 whitespace-pre-wrap">
                 {post.description}
               </p>
             )}
@@ -1791,6 +1816,38 @@ function DetailPanel({
                 </span>
               )}
             </div>
+
+            {schedule?.length ? (
+              <div className="flex flex-wrap gap-2 mt-4">
+                {schedule
+                  .slice()
+                  .sort(
+                    (a, b) =>
+                      [1, 2, 3, 4, 5, 6, 0].indexOf(a.day) -
+                      [1, 2, 3, 4, 5, 6, 0].indexOf(b.day),
+                  )
+                  .map((s) => {
+                    const d = [
+                      { v: 1, s: "Lun" },
+                      { v: 2, s: "Mar" },
+                      { v: 3, s: "Mie" },
+                      { v: 4, s: "Joi" },
+                      { v: 5, s: "Vin" },
+                      { v: 6, s: "Sâm" },
+                      { v: 0, s: "Dum" },
+                    ].find((x) => x.v === s.day);
+                    return (
+                      <span
+                        key={s.day}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 text-xs font-semibold text-slate-700"
+                      >
+                        <span className="text-slate-400">{d?.s}</span>
+                        {s.start}–{s.end}
+                      </span>
+                    );
+                  })}
+              </div>
+            ) : null}
           </motion.div>
 
           {/* Collect CTA for non-participants on OPEN posts */}
@@ -1819,14 +1876,28 @@ function DetailPanel({
                 )}
               </AnimatePresence>
               <motion.button
-                onClick={handleClaimClick}
-                whileTap={{ scale: 0.97 }}
-                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all cursor-pointer shadow-sm mb-7"
+                onClick={isUnavailableNow ? undefined : handleClaimClick}
+                disabled={isUnavailableNow}
+                whileTap={isUnavailableNow ? {} : { scale: 0.97 }}
+                className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition-all mb-7 ${
+                  isUnavailableNow
+                    ? "bg-slate-200 text-slate-500 cursor-not-allowed"
+                    : "bg-[#123424] text-white hover:bg-[#1a4d36] cursor-pointer"
+                }`}
               >
-                <FaWineBottle className="w-4 h-4 text-lime-400" />
-                {isLoggedIn
-                  ? "Colectează sticlele"
-                  : "Conectează-te și colectează!"}
+                {isUnavailableNow ? (
+                  <>
+                    <TbCancel className="w-4 h-4" />
+                    Indisponibil momentan
+                  </>
+                ) : (
+                  <>
+                    <FaWineBottle className="w-4 h-4 text-lime-400" />
+                    {isLoggedIn
+                      ? "Colectează sticlele"
+                      : "Conectează-te și colectează!"}
+                  </>
+                )}
               </motion.button>
             </>
           )}

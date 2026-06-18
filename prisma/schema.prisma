@@ -163,6 +163,7 @@ model Post {
   claimedAt   DateTime?
   completedAt DateTime?
   expiresAt   DateTime?
+  availabilitySchedule Json?
 
   author      User       @relation("PostAuthor", fields: [authorId], references: [id], onDelete: Cascade)
   collector   User?      @relation("PostCollector", fields: [collectorId], references: [id], onDelete: SetNull)

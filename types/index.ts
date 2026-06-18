@@ -42,6 +42,12 @@ export type ProfileSummary = {
   reviews: ProfileReview[];
 };
 
+export interface DaySchedule {
+  day: number;
+  start: string;
+  end: string;
+}
+
 export type PostStatus =
   | "OPEN"
   | "CLAIMED"
@@ -64,6 +70,7 @@ export interface Post {
   images: string[];
   createdAt: string;
   expiresAt: string | null;
+  availabilitySchedule: DaySchedule[] | null;
   claimedAt: string | null;
   completedAt: string | null;
   isAuthor?: boolean;

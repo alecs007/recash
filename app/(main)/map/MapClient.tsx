@@ -30,6 +30,7 @@ type Post = {
   images: string[];
   createdAt: string;
   expiresAt: string | null;
+  availabilitySchedule: { day: number; start: string; end: string }[] | null;
   author: {
     id: string;
     name: string | null;
@@ -850,6 +851,12 @@ export default function MapPage() {
   );
   const [showCollectModal, setShowCollectModal] = useState(false);
 
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setTick((t) => t + 1), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+
   useEffect(() => {
     const el = topbarRef.current;
     if (!el) return;
@@ -901,6 +908,17 @@ export default function MapPage() {
             !p.author.name?.toLowerCase().includes(q)
           )
             return false;
+        }
+        if (p.availabilitySchedule?.length) {
+          const now = new Date();
+          const mins = now.getHours() * 60 + now.getMinutes();
+          const today = p.availabilitySchedule.find(
+            (s) => s.day === now.getDay(),
+          );
+          if (!today) return false;
+          const [sh, sm] = today.start.split(":").map(Number);
+          const [eh, em] = today.end.split(":").map(Number);
+          if (mins < sh * 60 + sm || mins > eh * 60 + em) return false;
         }
         return true;
       }),

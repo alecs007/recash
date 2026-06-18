@@ -5,6 +5,8 @@ import { rateLimit, RL } from "@/lib/rate-limit";
 import { notifyPostClaimed, createNotification } from "@/lib/notifications";
 import { publishPostStatus } from "@/lib/pubsub";
 import { maybeEmailCollectorRequest } from "@/lib/email-optin";
+import { isCurrentlyAvailable } from "@/lib/availability";
+import type { DaySchedule } from "@/lib/availability";
 
 export async function POST(
   _req: Request,
@@ -32,6 +34,19 @@ export async function POST(
         { error: "Anunțul nu mai este disponibil" },
         { status: 409 },
       );
+    }
+
+    if (post.availabilitySchedule) {
+      const schedule = post.availabilitySchedule as unknown as DaySchedule[];
+      if (!isCurrentlyAvailable(schedule)) {
+        return NextResponse.json(
+          {
+            error:
+              "Anunțul nu este disponibil acum. Verifică orele de disponibilitate.",
+          },
+          { status: 409 },
+        );
+      }
     }
 
     if (post.authorId === session.user.id) {

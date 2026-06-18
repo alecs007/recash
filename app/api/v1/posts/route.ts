@@ -22,7 +22,7 @@ export async function GET(req: Request) {
     const posts = await prisma.post.findMany({
       where: {
         status: "OPEN",
-        expiresAt: { gt: new Date() },
+        OR: [{ expiresAt: { gt: new Date() } }, { expiresAt: null }],
       },
       orderBy: { createdAt: "desc" },
       take: limit,
@@ -39,6 +39,7 @@ export async function GET(req: Request) {
         images: true,
         createdAt: true,
         expiresAt: true,
+        availabilitySchedule: true,
         author: {
           select: {
             id: true,
@@ -96,6 +97,7 @@ export async function POST(req: Request) {
     address,
     images,
     expiresInHours,
+    availabilitySchedule,
   } = body as Record<string, unknown>;
 
   if (typeof description !== "string" || description.trim().length > 500) {
@@ -184,12 +186,14 @@ export async function POST(req: Request) {
   }
 
   const safeExpiresInHours =
-    typeof expiresInHours === "number" &&
-    Number.isInteger(expiresInHours) &&
-    expiresInHours >= 1 &&
-    expiresInHours <= 168
-      ? expiresInHours
-      : 48;
+    expiresInHours === null
+      ? null
+      : typeof expiresInHours === "number" &&
+          Number.isInteger(expiresInHours) &&
+          expiresInHours >= 1 &&
+          expiresInHours <= 8760
+        ? expiresInHours
+        : 168;
 
   const existingActive = await prisma.post.findFirst({
     where: {
@@ -210,6 +214,26 @@ export async function POST(req: Request) {
     );
   }
 
+  type AvailabilitySchedule = { day: number; start: string; end: string }[];
+
+  let safeSchedule: AvailabilitySchedule | null = null;
+  if (Array.isArray(availabilitySchedule) && availabilitySchedule.length <= 7) {
+    const valid = (availabilitySchedule as unknown[]).every((s) => {
+      if (typeof s !== "object" || !s) return false;
+      const item = s as Record<string, unknown>;
+      return (
+        typeof item.day === "number" &&
+        item.day >= 0 &&
+        item.day <= 6 &&
+        typeof item.start === "string" &&
+        /^\d{2}:\d{2}$/.test(item.start) &&
+        typeof item.end === "string" &&
+        /^\d{2}:\d{2}$/.test(item.end)
+      );
+    });
+    if (valid) safeSchedule = availabilitySchedule as AvailabilitySchedule;
+  }
+
   try {
     const post = await prisma.post.create({
       data: {
@@ -224,7 +248,11 @@ export async function POST(req: Request) {
           typeof locationName === "string" ? locationName.trim() || null : null,
         address: typeof address === "string" ? address.trim() || null : null,
         images: safeImages,
-        expiresAt: new Date(Date.now() + safeExpiresInHours * 60 * 60 * 1000),
+        expiresAt:
+          safeExpiresInHours === null
+            ? null
+            : new Date(Date.now() + safeExpiresInHours * 60 * 60 * 1000),
+        availabilitySchedule: safeSchedule,
       },
       select: { id: true, status: true, createdAt: true },
     });
