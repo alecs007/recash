@@ -65,7 +65,7 @@ export function PostsSection({
               href="/profil/postari"
               className="sm:hidden flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-slate-100 bg-white text-sm font-semibold text-slate-500 hover:border-lime-200 hover:text-lime-700 transition-all"
             >
-              Toate postările <ChevronRight className="w-4 h-4" />
+              Vezi toate postările <ChevronRight className="w-4 h-4" />
             </Link>
           )}
         </div>
