@@ -84,7 +84,7 @@ export function ProfilePage({ summary }: { summary: ExtendedSummary }) {
             </div>
 
             <div className="flex-1 min-w-0">
-              <h1 className="text-lg sm:text-3xl font-extrabold text-white tracking-tight truncate mb-0.5 flex items-center gap-2">
+              <h1 className="text-lg sm:text-3xl font-extrabold text-white tracking-tight truncate mb-0.5 flex items-center gap-1">
                 {user.name ?? "Utilizator"}
                 {user.certified && (
                   <VerifiedBadge className="w-5 h-5 sm:w-7 sm:h-7 shrink-0" />
