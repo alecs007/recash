@@ -185,7 +185,7 @@ export async function LeaderboardSection() {
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-slate-900 truncate group-hover:text-slate-700 flex items-center gap-1">
+                      <p className="text-sm font-bold text-slate-900 truncate group-hover:text-slate-700 flex items-center gap-0.5">
                         {entry.name ?? "Utilizator"}
                         {entry.certified && (
                           <VerifiedBadge className="w-4 h-4 shrink-0" />

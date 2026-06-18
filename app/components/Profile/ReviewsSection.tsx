@@ -148,7 +148,7 @@ function ReviewCard({
               {canLink ? (
                 <Link
                   href={`/user/${reviewer.id}`}
-                  className="font-semibold text-sm text-slate-900 hover:text-lime-700 transition-colors flex items-center gap-1"
+                  className="font-semibold text-sm text-slate-900 hover:text-lime-700 transition-colors flex items-center gap-0.5"
                 >
                   {reviewer.name ?? "Utilizator"}{" "}
                   {reviewer.certified && (
@@ -156,7 +156,7 @@ function ReviewCard({
                   )}
                 </Link>
               ) : (
-                <span className="font-semibold text-sm text-slate-900 flex items-center gap-1">
+                <span className="font-semibold text-sm text-slate-900 flex items-center gap-0.5">
                   {reviewer.name ?? "Utilizator"}{" "}
                   {reviewer.certified && (
                     <VerifiedBadge className="w-4 h-4 shrink-0" />

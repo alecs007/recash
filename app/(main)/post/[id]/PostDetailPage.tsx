@@ -674,7 +674,7 @@ function PersonRow({
         <div className="flex items-center gap-2">
           <Link
             href={`/user/${user.id}`}
-            className="text-sm font-semibold text-slate-900 hover:text-lime-700 transition-colors truncate flex items-center gap-1"
+            className="text-sm font-semibold text-slate-900 hover:text-lime-700 transition-colors truncate flex items-center gap-0.5"
           >
             {user.name ?? "Utilizator"}
             {user.certified && <VerifiedBadge className="w-4 h-4 shrink-0" />}
@@ -1178,7 +1178,7 @@ function DetailPanel({
                     <div className="flex items-center gap-2">
                       <Link
                         href={`/user/${post.collector.id}`}
-                        className="text-sm font-bold text-slate-900 truncate hover:text-lime-700 transition-colors flex items-center gap-1"
+                        className="text-sm font-bold text-slate-900 truncate hover:text-lime-700 transition-colors flex items-center gap-0.5"
                       >
                         {post.collector.name ?? "Colector"}
                         {post.collector.certified && (
