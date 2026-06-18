@@ -1122,8 +1122,9 @@ function DetailPanel({
                 className="mb-7 space-y-3"
               >
                 <p className="text-sm text-slate-600 leading-relaxed">
-                  Anunțul tău este vizibil pe hartă. Vei fi notificat imediat ce
-                  un colector face o cerere.
+                  {isUnavailableNow
+                    ? "Anunțul tău nu este vizibil colectorilor în acest moment, deoarece se află în afara intervalului de disponibilitate setat."
+                    : "Anunțul tău este vizibil pe hartă. Vei fi notificat imediat ce un colector face o cerere."}
                 </p>
                 <motion.button
                   onClick={() => setShowCancel(true)}

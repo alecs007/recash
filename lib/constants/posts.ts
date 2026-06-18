@@ -1,7 +1,8 @@
 import {
-  AlertCircle,
   CheckCircle,
+  Ban,
   Clock,
+  AlarmClock,
   Loader2,
   XCircle,
 } from "lucide-react";
@@ -14,7 +15,7 @@ export const POST_STATUS_CONFIG: Record<
   OPEN: {
     label: "Activ",
     color: "text-emerald-600 bg-emerald-50 border-emerald-200",
-    Icon: AlertCircle,
+    Icon: AlarmClock,
   },
   CLAIMED: {
     label: "Revendicat",
@@ -39,6 +40,6 @@ export const POST_STATUS_CONFIG: Record<
   EXPIRED: {
     label: "Expirat",
     color: "text-slate-500 bg-slate-50 border-slate-200",
-    Icon: Clock,
+    Icon: Ban,
   },
 };

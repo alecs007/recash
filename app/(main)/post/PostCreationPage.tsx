@@ -1490,8 +1490,15 @@ function ActivePostGuard({ children }: { children: React.ReactNode }) {
   if (data?.activePost) {
     return (
       <div className="max-w-lg mx-auto px-4 py-12">
-        <div className="bg-amber-50 rounded-3xl p-8 text-center">
-          <AlertTriangle className="w-12 h-12 text-amber-600 mb-4 mx-auto" />
+        <div className="bg-slate-50 rounded-3xl p-8 flex flex-col items-center text-center">
+          <Image
+            src="/images/bottle-angry.svg"
+            alt="Anunț activ"
+            width={160}
+            height={160}
+            priority
+            draggable={false}
+          />
 
           <h2 className="text-lg font-extrabold text-slate-900 mb-2">
             Ai deja un anunț activ
