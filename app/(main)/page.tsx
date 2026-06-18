@@ -2,6 +2,7 @@ import { Hero } from "../components/Home/Hero";
 import { Steps } from "../components/Home/Steps";
 import { CTA } from "../components/Home/CTA";
 import { LeaderboardSection } from "../components/Home/Leaderboard";
+import { FAQ } from "../components/Home/FAQ";
 import { Footer } from "../components/Layout/Footer";
 
 export const revalidate = 3600;
@@ -13,6 +14,7 @@ export default function Homepage() {
         <Steps />
         <LeaderboardSection />
         <CTA />
+        <FAQ />
       </div>
       <Footer />
     </div>
