@@ -4,12 +4,14 @@ import { Star } from "lucide-react";
 import { FaWineBottle, FaMedal, FaArrowRight } from "react-icons/fa";
 import { GrTrophy } from "react-icons/gr";
 import { prisma } from "@/lib/prisma";
+import { VerifiedBadge } from "@/app/components/UI/VerifiedBadge";
 
 interface LeaderboardEntry {
   rank: number;
   id: string;
   name: string | null;
   image: string | null;
+  certified: boolean;
   totalBottles: number;
   reputationScore: number;
   ratingCount: number;
@@ -22,6 +24,7 @@ async function getLeaderboard(): Promise<LeaderboardEntry[]> {
         id: true,
         name: true,
         image: true,
+        certified: true,
         totalBottlesGiven: true,
         totalBottlesCollected: true,
         reputationScore: true,
@@ -42,6 +45,7 @@ async function getLeaderboard(): Promise<LeaderboardEntry[]> {
       id: u.id,
       name: u.name,
       image: u.image,
+      certified: u.certified,
       totalBottles: u.totalBottlesGiven + u.totalBottlesCollected,
       reputationScore: u.reputationScore,
       ratingCount: u.ratingCount,
@@ -113,14 +117,12 @@ export async function LeaderboardSection() {
     <section>
       <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent mb-12 lg:mb-24" />
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 items-start">
-        {/* ── Left: heading + CTA + image ── */}
         <div className="lg:w-[420px] shrink-0 text-center lg:text-left flex flex-col items-center gap-8">
           <h2 className="font-sans font-extrabold text-slate-900 text-[2.5rem] lg:text-[3.3rem] mb-4 gap-0 leading-[1.15] tracking-tight">
             Topul celor mai activi{" "}
             <span className="text-lime-500 italic">utilizatori</span>
           </h2>
 
-          {/* Image fills the remaining left-side space on desktop */}
           <div className="hidden lg:block relative w-full aspect-square max-w-[400px]">
             <Image
               src="/images/champion.jpg"
@@ -132,7 +134,6 @@ export async function LeaderboardSection() {
             />
           </div>
 
-          {/* Desktop CTA */}
           <Link
             href="/leaderboard"
             className="hidden lg:flex items-center justify-center gap-3 text-[#14532d] font-extrabold py-4 px-10 rounded-full text-lg hover:bg-lime-50 hover:-translate-y-0.5 transition-all border-2 border-lime-600/30 group"
@@ -146,7 +147,6 @@ export async function LeaderboardSection() {
           </Link>
         </div>
 
-        {/* ── Right: leaderboard list ── */}
         <div className="flex-1 w-full min-w-0">
           {entries.length === 0 ? (
             <div className="text-slate-400 text-sm py-8 text-center">
@@ -185,8 +185,11 @@ export async function LeaderboardSection() {
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-slate-900 truncate group-hover:text-slate-700">
+                      <p className="text-sm font-bold text-slate-900 truncate group-hover:text-slate-700 flex items-center gap-1">
                         {entry.name ?? "Utilizator"}
+                        {entry.certified && (
+                          <VerifiedBadge className="w-4 h-4 shrink-0" />
+                        )}
                       </p>
                       <p className="text-xs text-slate-400 flex items-center gap-1">
                         <Star className="w-2.5 h-2.5 text-[#FFDF00] fill-[#FFDF00]" />
@@ -209,7 +212,6 @@ export async function LeaderboardSection() {
                 );
               })}
 
-              {/* Mobile CTA — appears below the list, full width */}
               <Link
                 href="/leaderboard"
                 className="lg:hidden flex items-center justify-center gap-3 w-full text-[#14532d] font-extrabold py-4 px-6 rounded-2xl text-base hover:bg-lime-50 active:scale-[0.98] transition-all border border-lime-600/20 group"
@@ -224,7 +226,7 @@ export async function LeaderboardSection() {
             </div>
           )}
         </div>
-      </div>{" "}
+      </div>
       <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent mt-12 lg:mt-24" />
     </section>
   );

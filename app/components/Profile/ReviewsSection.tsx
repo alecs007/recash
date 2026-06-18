@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
+import { VerifiedBadge } from "../UI/VerifiedBadge";
 
 export interface ProfileReview {
   id: string;
@@ -13,6 +14,7 @@ export interface ProfileReview {
     id: string | undefined;
     name: string | null | undefined;
     image: string | null | undefined;
+    certified: boolean | undefined;
   };
   role: "poster" | "collector";
   bottleCount: number;
@@ -146,13 +148,19 @@ function ReviewCard({
               {canLink ? (
                 <Link
                   href={`/user/${reviewer.id}`}
-                  className="font-semibold text-sm text-slate-900 hover:text-lime-700 transition-colors"
+                  className="font-semibold text-sm text-slate-900 hover:text-lime-700 transition-colors flex items-center gap-1"
                 >
-                  {reviewer.name ?? "Utilizator"}
+                  {reviewer.name ?? "Utilizator"}{" "}
+                  {reviewer.certified && (
+                    <VerifiedBadge className="w-4 h-4 shrink-0" />
+                  )}
                 </Link>
               ) : (
-                <span className="font-semibold text-sm text-slate-900">
-                  {reviewer.name ?? "Utilizator"}
+                <span className="font-semibold text-sm text-slate-900 flex items-center gap-1">
+                  {reviewer.name ?? "Utilizator"}{" "}
+                  {reviewer.certified && (
+                    <VerifiedBadge className="w-4 h-4 shrink-0" />
+                  )}
                 </span>
               )}
               <div className="flex items-center gap-1.5 mt-0.5">

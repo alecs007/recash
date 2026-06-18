@@ -50,7 +50,12 @@ export async function GET() {
                 estimatedValue: true,
                 locationName: true,
                 collector: {
-                  select: { id: true, name: true, image: true },
+                  select: {
+                    id: true,
+                    name: true,
+                    image: true,
+                    certified: true,
+                  },
                 },
                 transaction: {
                   select: {

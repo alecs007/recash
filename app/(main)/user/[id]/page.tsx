@@ -14,6 +14,7 @@ export async function generateMetadata({
     where: { id },
     select: {
       name: true,
+      certified: true,
       reputationScore: true,
       totalBottlesGiven: true,
       totalBottlesCollected: true,
@@ -31,7 +32,7 @@ export async function generateMetadata({
 
   return {
     title: `${user.name ?? "Utilizator"} | Recash`,
-    description: `Profil public ${user.name ?? "utilizator"} pe Recash. Rating: ${user.reputationScore.toFixed(1)}/5 • ${totalBottles} sticle reciclate.`,
+    description: `Profilul public al utilizatorului ${user.name ?? "utilizator"} pe Recash. Rating: ${user.reputationScore.toFixed(1)}/5 • ${totalBottles} sticle reciclate.`,
   };
 }
 

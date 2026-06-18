@@ -36,6 +36,7 @@ export async function GET(req: Request) {
           id: true,
           name: true,
           image: true,
+          certified: true,
           totalBottlesGiven: true,
           totalBottlesCollected: true,
           createdAt: true,
@@ -63,6 +64,7 @@ export async function GET(req: Request) {
         select: {
           totalBottlesGiven: true,
           totalBottlesCollected: true,
+          certified: true,
           createdAt: true,
         },
       });
@@ -80,7 +82,12 @@ export async function GET(req: Request) {
       const payload = {
         rank: userRank,
         totalBottles,
-        user: { id: user.id, name: user.name, image: user.image },
+        user: {
+          id: user.id,
+          name: user.name,
+          image: user.image,
+          certified: user.certified,
+        },
       };
 
       await redis
@@ -95,6 +102,7 @@ export async function GET(req: Request) {
           id: true,
           name: true,
           image: true,
+          certified: true,
           totalBottlesGiven: true,
           totalBottlesCollected: true,
           createdAt: true,
@@ -117,6 +125,7 @@ export async function GET(req: Request) {
       id: u.id,
       name: u.name,
       image: u.image,
+      certified: u.certified,
       totalBottles: u.totalBottlesGiven + u.totalBottlesCollected,
       reputationScore: u.reputationScore,
       ratingCount: u.ratingCount,

@@ -112,6 +112,7 @@ model User {
   emailVerified DateTime?
   image         String?
   role          UserRole  @default(BOTH)
+  certified Boolean @default(false)
   bio           String?
   phone         String?
   createdAt     DateTime  @default(now())

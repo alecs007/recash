@@ -34,6 +34,7 @@ export async function GET(
         id: true,
         name: true,
         image: true,
+        certified: true,
         createdAt: true,
         totalBottlesGiven: true,
         totalBottlesCollected: true,
@@ -85,8 +86,12 @@ export async function GET(
         posterId: true,
         collectorId: true,
         postId: true,
-        poster: { select: { id: true, name: true, image: true } },
-        collector: { select: { id: true, name: true, image: true } },
+        poster: {
+          select: { id: true, name: true, image: true, certified: true },
+        },
+        collector: {
+          select: { id: true, name: true, image: true, certified: true },
+        },
       },
     });
 
@@ -119,6 +124,7 @@ export async function GET(
             id: reviewer?.id,
             name: reviewer?.name,
             image: reviewer?.image,
+            certified: reviewer?.certified,
           },
           role: isThisUserPoster ? "poster" : "collector",
           bottleCount: t.bottleCount,
@@ -133,6 +139,7 @@ export async function GET(
         id: user.id,
         name: user.name,
         image: user.image,
+        certified: user.certified,
         createdAt: user.createdAt,
         totalBottlesGiven: user.totalBottlesGiven,
         totalBottlesCollected: user.totalBottlesCollected,

@@ -4,6 +4,7 @@ export type UserProfile = {
   email: string | null;
   image: string | null;
   phone: string | null;
+  certified: boolean;
   createdAt: Date;
   totalBottlesGiven: number;
   totalBottlesCollected: number;
@@ -24,6 +25,7 @@ export type ProfileReview = {
     id: string | undefined;
     name: string | null | undefined;
     image: string | null | undefined;
+    certified: boolean | undefined;
   };
   role: "poster" | "collector";
   bottleCount: number;
@@ -79,6 +81,7 @@ export interface Post {
     id: string;
     name: string | null;
     image: string | null;
+    certified: boolean;
     reputationScore: number;
     ratingCount: number;
     phone: string | null;
@@ -87,6 +90,7 @@ export interface Post {
     id: string;
     name: string | null;
     image: string | null;
+    certified: boolean;
     reputationScore: number;
     ratingCount: number;
     phone: string | null;
@@ -117,8 +121,18 @@ export type Transaction = {
   completedAt: string;
   posterId: string;
   post: { id: string; description: string; locationName: string | null };
-  poster: { id: string; name: string | null; image: string | null };
-  collector: { id: string; name: string | null; image: string | null };
+  poster: {
+    id: string;
+    name: string | null;
+    image: string | null;
+    certified: boolean | undefined;
+  };
+  collector: {
+    id: string;
+    name: string | null;
+    image: string | null;
+    certified: boolean | undefined;
+  };
 };
 
 export type Badge = {

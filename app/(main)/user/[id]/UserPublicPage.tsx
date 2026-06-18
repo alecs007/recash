@@ -17,6 +17,7 @@ import { FaWineBottle, FaBan } from "react-icons/fa";
 import { ProfileRankBadge } from "@/app/components/Profile/RankBadge";
 import { BadgeCard } from "@/app/components/UI/BadgeCard";
 import { BADGE_CONFIG } from "@/lib/constants/badges";
+import { VerifiedBadge } from "@/app/components/UI/VerifiedBadge";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -26,6 +27,7 @@ interface PublicUser {
   id: string;
   name: string | null;
   image: string | null;
+  certified: boolean;
   createdAt: string;
   totalBottlesGiven: number;
   totalBottlesCollected: number;
@@ -52,6 +54,7 @@ interface Review {
     id: string | undefined;
     name: string | null | undefined;
     image: string | null | undefined;
+    certified: boolean | undefined;
   };
   role: "poster" | "collector";
   bottleCount: number;
@@ -161,7 +164,7 @@ function ReviewCard({
                 />
               ) : (
                 <span className="text-sm font-bold text-lime-700">
-                  {reviewer.name?.[0] ?? "?"}
+                  {reviewer.name?.[0] ?? "?"}{" "}
                 </span>
               )}
             </div>
@@ -191,13 +194,19 @@ function ReviewCard({
               {canLink ? (
                 <Link
                   href={`/user/${reviewer.id}`}
-                  className="font-semibold text-sm text-slate-900 hover:text-lime-700 transition-colors"
+                  className="font-semibold text-sm text-slate-900 hover:text-lime-700 transition-colors flex items-center gap-1"
                 >
-                  {reviewer.name ?? "Utilizator"}
+                  {reviewer.name ?? "Utilizator"}{" "}
+                  {reviewer.certified && (
+                    <VerifiedBadge className="w-4 h-4 shrink-0" />
+                  )}
                 </Link>
               ) : (
-                <span className="font-semibold text-sm text-slate-900">
-                  {reviewer.name ?? "Utilizator"}
+                <span className="font-semibold text-sm text-slate-900 flex items-center gap-1">
+                  {reviewer.name ?? "Utilizator"}{" "}
+                  {reviewer.certified && (
+                    <VerifiedBadge className="w-4 h-4 shrink-0" />
+                  )}
                 </span>
               )}
               <div className="flex items-center gap-1.5 mt-0.5">
@@ -529,8 +538,11 @@ export default function UserPublicPage({ userId }: { userId: string }) {
           </div>
 
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg sm:text-3xl font-extrabold text-white tracking-tight truncate mb-0.5">
+            <h1 className="text-lg sm:text-3xl font-extrabold text-white tracking-tight truncate mb-0.5 flex items-center gap-2">
               {user.name ?? "Utilizator"}
+              {user.certified && (
+                <VerifiedBadge className="w-5 h-5 sm:w-7 sm:h-7 shrink-0" />
+              )}
             </h1>
 
             <div className="flex flex-wrap items-center gap-1.5 mb-2 sm:mb-3">

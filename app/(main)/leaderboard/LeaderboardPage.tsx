@@ -8,6 +8,7 @@ import { FaWineBottle, FaMedal } from "react-icons/fa";
 import { ArrowLeft, Star } from "lucide-react";
 import { Pagination } from "@/app/components/UI/Pagination";
 import { PageTransition } from "@/app/components/UI/PageTransition";
+import { VerifiedBadge } from "@/app/components/UI/VerifiedBadge";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -16,6 +17,7 @@ interface LeaderboardEntry {
   id: string;
   name: string | null;
   image: string | null;
+  certified: boolean;
   totalBottles: number;
   reputationScore: number;
   ratingCount: number;
@@ -106,8 +108,9 @@ function EntryRow({ entry }: { entry: LeaderboardEntry }) {
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold text-slate-900 truncate group-hover:text-slate-700">
+        <p className="text-sm font-bold text-slate-900 truncate group-hover:text-slate-700 flex items-center gap-1">
           {entry.name ?? "Utilizator"}
+          {entry.certified && <VerifiedBadge className="w-4 h-4 shrink-0" />}
         </p>
         <p className="text-xs text-slate-400 flex items-center gap-1">
           <Star className="w-2.5 h-2.5 text-[#FFDF00] fill-[#FFDF00]" />

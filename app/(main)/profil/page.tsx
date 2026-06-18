@@ -29,8 +29,12 @@ async function getSafeTransactions(userId: string, take: number) {
       completedAt: true,
       posterId: true,
       postId: true,
-      poster: { select: { id: true, name: true, image: true } },
-      collector: { select: { id: true, name: true, image: true } },
+      poster: {
+        select: { id: true, name: true, image: true },
+      },
+      collector: {
+        select: { id: true, name: true, image: true },
+      },
     },
   });
 
@@ -72,8 +76,12 @@ async function getSafeReviews(
       posterId: true,
       collectorId: true,
       postId: true,
-      poster: { select: { id: true, name: true, image: true } },
-      collector: { select: { id: true, name: true, image: true } },
+      poster: {
+        select: { id: true, name: true, image: true, certified: true },
+      },
+      collector: {
+        select: { id: true, name: true, image: true, certified: true },
+      },
     },
   });
 
@@ -106,6 +114,7 @@ async function getSafeReviews(
         id: reviewer?.id,
         name: reviewer?.name,
         image: reviewer?.image,
+        certified: reviewer?.certified,
       },
       role: isThisUserPoster ? "poster" : "collector",
       bottleCount: t.bottleCount,
@@ -169,6 +178,7 @@ async function getProfileSummary(userId: string) {
         name: true,
         email: true,
         image: true,
+        certified: true,
         role: true,
         bio: true,
         phone: true,
@@ -200,7 +210,9 @@ async function getProfileSummary(userId: string) {
         collectorSharePercent: true,
         locationName: true,
         createdAt: true,
-        collector: { select: { id: true, name: true, image: true } },
+        collector: {
+          select: { id: true, name: true, image: true, certified: true },
+        },
         transaction: {
           select: { actualValue: true, posterEarning: true },
         },

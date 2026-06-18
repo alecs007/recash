@@ -73,7 +73,7 @@ export function PostCard({ post }: { post: Post }) {
             )}
           </div>
           <span className="text-xs text-slate-500">
-            Colectat de{" "}
+            {post.status === "CLAIMED" ? "Revendicat de " : "Colectat de "}
             <span className="font-semibold text-slate-700">
               {post.collector.name}
             </span>
