@@ -16,7 +16,7 @@ export const SectionDivider = ({ variant = 0 }: { variant?: number }) => {
   const items = Array.from({ length: 20 });
 
   return (
-    <div className="my-16 lg:my-24 py-3 overflow-hidden">
+    <div className="my-12 lg:my-24 py-3 overflow-hidden">
       <style>{`
         @keyframes scroll-left {
           0% { transform: translateX(0); }
