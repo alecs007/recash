@@ -5,5 +5,21 @@ export function VerifiedBadge({
 }: {
   className?: string;
 }) {
-  return <HiBadgeCheck className={className} style={{ color: "#1D9BF0" }} />;
+  return (
+    <div className={`relative flex items-center justify-center ${className}`}>
+      <div
+        className="absolute bg-white rounded-full"
+        style={{
+          width: "50%",
+          height: "50%",
+          zIndex: 0,
+        }}
+      />
+
+      <HiBadgeCheck
+        className="w-full h-full relative"
+        style={{ color: "#1D9BF0", zIndex: 1 }}
+      />
+    </div>
+  );
 }

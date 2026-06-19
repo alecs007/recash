@@ -1921,8 +1921,8 @@ function DetailPanel({
                 pct >= 67
                   ? { bar: "bg-lime-400", text: "text-lime-600" }
                   : pct >= 34
-                    ? { bar: "bg-lime-700", text: "text-lime-700" }
-                    : { bar: "bg-[#123424]", text: "text-[#123424]" };
+                    ? { bar: "bg-lime-600", text: "text-lime-600" }
+                    : { bar: "bg-lime-700", text: "text-lime-700" };
 
               const viewAsCollector = !isAuthor;
               const myPct = isAuthor ? posterPct : post.collectorSharePercent;

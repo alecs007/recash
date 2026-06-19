@@ -114,13 +114,13 @@ export function ProfilePage({ summary }: { summary: ExtendedSummary }) {
                   <span className="mr-1">Membru din</span>
                   <span className="font-bold text-white">{memberSince}</span>
                 </div>
-                <div className="flex items-center text-white/80 text-sm">
+                {/* <div className="flex items-center text-white/80 text-sm">
                   <FaWineBottle className="w-4 h-4 text-lime-400 mr-1.5" />
                   <span className="font-bold text-white mr-1">
                     {totalBottles}
-                  </span>{" "}
+                  </span>
                   sticle reciclate
-                </div>
+                </div> */}
               </div>
             </div>
           </div>
