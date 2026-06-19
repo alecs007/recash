@@ -115,7 +115,6 @@ export async function LeaderboardSection() {
 
   return (
     <section>
-      <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent mb-12 lg:mb-24" />
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 items-start">
         <div className="lg:w-[420px] shrink-0 text-center lg:text-left flex flex-col items-center gap-8">
           <h2 className="font-sans font-extrabold text-slate-900 text-[2.5rem] lg:text-[3.3rem] mb-4 gap-0 leading-[1.15] tracking-tight">
@@ -227,7 +226,6 @@ export async function LeaderboardSection() {
           )}
         </div>
       </div>
-      <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent mt-12 lg:mt-24" />
     </section>
   );
 }

@@ -33,8 +33,6 @@ export const FAQ = () => {
 
   return (
     <section>
-      <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent mb-12 lg:mb-24" />
-
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 items-start mb-16">
         <div className="flex-1 min-w-0">
           <h2 className="font-sans font-extrabold text-slate-900 text-[2.3rem] lg:text-[3.2rem] leading-[1.15] tracking-tight mb-8 text-center lg:text-left">
@@ -108,8 +106,6 @@ export const FAQ = () => {
           />
         </div>
       </div>
-
-      <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent mt-12 lg:mt-24" />
     </section>
   );
 };

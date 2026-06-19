@@ -4,7 +4,7 @@ import { LuBike, LuMousePointerClick } from "react-icons/lu";
 
 export const Hero = () => {
   return (
-    <section className="relative bg-white">
+    <section className="relative bg-white mb-12 lg:mb-20">
       <div className="bg-gradient-to-br from-[#123524] to-[#1a4d36] rounded-[2rem] lg:rounded-[3rem] px-8 lg:px-14 py-8 lg:py-10 relative overflow-hidden">
         <div className="absolute -top-16 -right-12 w-56 h-56 rounded-full bg-lime-400/30 blur-3xl" />
         <div className="absolute -bottom-16 -left-12 w-48 h-48 rounded-full bg-emerald-500/20 blur-3xl" />
