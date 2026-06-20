@@ -29,7 +29,7 @@ export const SectionDivider = ({ variant = 0 }: { variant?: number }) => {
   const items = Array.from({ length: 20 });
 
   return (
-    <div className="my-12 lg:my-24 py-3 overflow-hidden">
+    <div className="my-12 lg:my-22 py-3 overflow-hidden">
       <style>{`
         @keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         @keyframes scroll-right { 0% { transform: translateX(-50%); } 100% { transform: translateX(0); } }
@@ -50,8 +50,8 @@ export const SectionDivider = ({ variant = 0 }: { variant?: number }) => {
               style={{
                 transform: `translateY(${i % 2 === 0 ? "-5px" : "5px"})`,
                 opacity: i % 2 === 0 ? 0.9 : 0.35,
-                width: "28px",
-                height: "28px",
+                width: "32px",
+                height: "32px",
               }}
             />
           );
