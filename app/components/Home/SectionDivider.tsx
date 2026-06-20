@@ -23,19 +23,30 @@ interface SectionDividerProps {
 /**
  * SectionDivider – homepage section break that doubles as a sponsor ad slot.
  *
- * Usage (with a live ad):
- *   <SectionDivider
- *     ad={{
- *       id: "returo-2024",
- *       imageSrc: "/ads/returo-banner.jpg",
- *       imageAlt: "RetuRO – Reciclează cu noi",
- *       href: "https://returo.ro",
- *       label: "Partener oficial Recash",
- *     }}
- *   />
+ * Usage (with a live Lidl ad):
+ * <SectionDivider
+ * ad={{
+ * id: "lidl-2024",
+ * imageSrc: "https://dummyimage.com/1200x200/0050AA/ffffff.png&text=Lidl+Romania",
+ * imageAlt: "Lidl – Meriți să fii surprins",
+ * href: "https://www.lidl.ro",
+ * label: "Partener oficial: Lidl România",
+ * }}
+ * />
+ *
+ * Usage (with a live Kaufland ad):
+ * <SectionDivider
+ * ad={{
+ * id: "kaufland-2024",
+ * imageSrc: "https://dummyimage.com/1200x200/E3000F/ffffff.png&text=Kaufland+Romania",
+ * imageAlt: "Kaufland – Lucrurile bune vin ușor",
+ * href: "https://www.kaufland.ro",
+ * label: "Partener oficial: Kaufland România",
+ * }}
+ * />
  *
  * Usage (empty placeholder – shows "Ad" label so it's obvious where to plug in):
- *   <SectionDivider />
+ * <SectionDivider />
  */
 export const SectionDivider = ({ ad, variant = 0 }: SectionDividerProps) => {
   return (
@@ -76,29 +87,13 @@ export const SectionDivider = ({ ad, variant = 0 }: SectionDividerProps) => {
           )}
         </Link>
       ) : (
-        /* ── Empty placeholder (visible to admins / dev) ──────────────── */
-        <div className="w-full aspect-[6/1] rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-2 py-8 px-6 text-center select-none">
-          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
-            {/* simple image-placeholder icon */}
-            <svg
-              viewBox="0 0 24 24"
-              className="w-5 h-5 text-slate-400"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.5}
-            >
-              <rect x="3" y="5" width="18" height="14" rx="2" />
-              <circle cx="8.5" cy="10.5" r="1.5" />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M21 15l-5-5L5 19"
-              />
-            </svg>
-          </div>
-          <p className="text-sm font-bold text-slate-500">
-            Spațiu publicitar disponibil
-          </p>
+        <div className="relative w-full aspect-[6/2] lg:aspect-[6/1] rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center">
+          <Image
+            src="/images/ad-placeholder.avif"
+            alt="Spațiu publicitar disponibil"
+            fill
+            className="h-full object-contain opacity-30 grayscale contrast-100 py-4 lg:py-6"
+          />
         </div>
       )}
     </div>
