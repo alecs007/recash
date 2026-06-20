@@ -16,7 +16,6 @@ export interface OverheaderAdConfig {
 
 const DISMISS_PREFIX = "overheader-ad-dismissed:";
 const REVEAL_FLOOR = 48;
-const SCROLL_THRESHOLD = 5;
 
 export function OverheaderAd({ ad }: { ad?: OverheaderAdConfig }) {
   const [mounted, setMounted] = useState(false);
@@ -37,19 +36,22 @@ export function OverheaderAd({ ad }: { ad?: OverheaderAdConfig }) {
   useEffect(() => {
     if (closed) return;
 
-    let lastScrollY = window.scrollY;
+    let anchorScrollY = window.scrollY;
+    const DELTA_THRESHOLD = 6;
+
     let frame: number | null = null;
 
     const evaluate = () => {
       const currentScrollY = Math.max(0, window.scrollY);
+      const delta = currentScrollY - anchorScrollY;
 
-      if (currentScrollY !== lastScrollY) {
-        if (currentScrollY > REVEAL_FLOOR) {
-          setHiddenByScroll(currentScrollY > lastScrollY);
-        } else {
+      if (Math.abs(delta) >= DELTA_THRESHOLD) {
+        if (currentScrollY <= REVEAL_FLOOR) {
           setHiddenByScroll(false);
+        } else {
+          setHiddenByScroll(delta > 0);
         }
-        lastScrollY = currentScrollY;
+        anchorScrollY = currentScrollY;
       }
 
       frame = null;
