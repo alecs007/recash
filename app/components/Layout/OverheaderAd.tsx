@@ -15,11 +15,8 @@ export interface OverheaderAdConfig {
 }
 
 const DISMISS_PREFIX = "overheader-ad-dismissed:";
-// always show while within this many px of the top
 const REVEAL_FLOOR = 48;
-// net px scrolled in one direction (since the last decision) before reacting
-const HIDE_AFTER = 3;
-const SHOW_AFTER = 3;
+const SCROLL_THRESHOLD = 5;
 
 export function OverheaderAd({ ad }: { ad?: OverheaderAdConfig }) {
   const [mounted, setMounted] = useState(false);
@@ -40,41 +37,33 @@ export function OverheaderAd({ ad }: { ad?: OverheaderAdConfig }) {
   useEffect(() => {
     if (closed) return;
 
-    let referenceY = Math.max(0, window.scrollY);
+    let lastScrollY = window.scrollY;
     let frame: number | null = null;
 
     const evaluate = () => {
+      const currentScrollY = Math.max(0, window.scrollY);
+
+      if (currentScrollY !== lastScrollY) {
+        if (currentScrollY > REVEAL_FLOOR) {
+          setHiddenByScroll(currentScrollY > lastScrollY);
+        } else {
+          setHiddenByScroll(false);
+        }
+        lastScrollY = currentScrollY;
+      }
+
       frame = null;
-      const y = Math.max(0, window.scrollY);
-
-      if (y <= REVEAL_FLOOR) {
-        setHiddenByScroll(false);
-        referenceY = y;
-        return;
-      }
-
-      const delta = y - referenceY;
-
-      if (delta > HIDE_AFTER) {
-        setHiddenByScroll(true);
-        referenceY = y;
-      } else if (delta < -SHOW_AFTER) {
-        setHiddenByScroll(false);
-        referenceY = y;
-      }
     };
 
     const onScroll = () => {
-      if (frame !== null) return;
-      frame = requestAnimationFrame(evaluate);
+      if (frame === null) {
+        frame = requestAnimationFrame(evaluate);
+      }
     };
 
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("touchmove", onScroll, { passive: true });
-
     return () => {
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("touchmove", onScroll);
       if (frame !== null) cancelAnimationFrame(frame);
     };
   }, [closed]);
@@ -101,6 +90,7 @@ export function OverheaderAd({ ad }: { ad?: OverheaderAdConfig }) {
           animate={{ height: "auto", opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
           transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+          style={{ willChange: "height" }}
           className="overflow-hidden bg-slate-50 border-b border-slate-100"
         >
           <div className="max-w-7xl mx-auto px-3 sm:px-4 flex items-center gap-2 h-9 sm:h-10">
