@@ -230,8 +230,9 @@ export default function Header({ children }: { children: React.ReactNode }) {
       <header
         ref={headerRef}
         className="fixed inset-x-0 top-0 z-[1001] bg-white"
+        style={{ willChange: "transform" }}
       >
-        <OverheaderAd />
+        <OverheaderAd headerRef={headerRef} />
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <Image

@@ -2,8 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { X } from "lucide-react";
 
 export interface OverheaderAdConfig {
@@ -15,121 +14,135 @@ export interface OverheaderAdConfig {
 }
 
 const DISMISS_PREFIX = "overheader-ad-dismissed:";
-const REVEAL_FLOOR = 48;
 
-export function OverheaderAd({ ad }: { ad?: OverheaderAdConfig }) {
+export function OverheaderAd({
+  ad,
+  headerRef,
+}: {
+  ad?: OverheaderAdConfig;
+  headerRef: React.RefObject<HTMLElement>;
+}) {
   const [mounted, setMounted] = useState(false);
   const [closed, setClosed] = useState(false);
-  const [hiddenByScroll, setHiddenByScroll] = useState(false);
+  const adRef = useRef<HTMLDivElement>(null);
+  const progress = useRef(0);
 
   const dismissKey = `${DISMISS_PREFIX}${ad?.id ?? "default"}`;
 
   useEffect(() => {
     setMounted(true);
     try {
-      setClosed(!!sessionStorage.getItem(dismissKey));
+      const val = sessionStorage.getItem(dismissKey);
+      setClosed(!!val);
     } catch {
       setClosed(false);
     }
   }, [dismissKey]);
 
   useEffect(() => {
-    if (closed) return;
+    if (closed || !adRef.current || !headerRef.current) return;
 
-    let lastScrollY = window.scrollY;
+    const adEl = adRef.current;
+    const headerEl = headerRef.current;
+    const adHeight = adEl.offsetHeight;
+
+    let lastY = window.scrollY;
+    let touchY = 0;
+
+    const update = (delta: number) => {
+      progress.current = Math.min(
+        1,
+        Math.max(0, progress.current + delta / adHeight),
+      );
+      headerEl.style.transform = `translateY(${-progress.current * adHeight}px)`;
+    };
 
     const onScroll = () => {
       const y = window.scrollY;
-      if (y < 10) setHiddenByScroll(false);
-      else if (y > lastScrollY) setHiddenByScroll(true);
-      else setHiddenByScroll(false);
-      lastScrollY = y;
+      update(y - lastY);
+      lastY = y;
     };
 
     const onTouchStart = (e: TouchEvent) => {
-      lastScrollY = window.scrollY;
+      touchY = e.touches[0].clientY;
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      const delta = touchY - e.touches[0].clientY;
+      touchY = e.touches[0].clientY;
+      update(delta);
     };
 
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
 
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+      headerEl.style.transform = "";
     };
-  }, [closed]);
+  }, [closed, mounted, headerRef]);
 
   const handleClose = useCallback(() => {
     setClosed(true);
     try {
       sessionStorage.setItem(dismissKey, "1");
-    } catch {
-      /* non-fatal */
-    }
+    } catch {}
   }, [dismissKey]);
 
-  if (!mounted) return null;
-
-  const visible = !closed && !hiddenByScroll;
+  if (closed) return null;
 
   return (
-    <AnimatePresence initial={false}>
-      {visible && (
-        <motion.div
-          key="overheader-ad"
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: "auto", opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
-          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-          style={{ willChange: "height" }}
-          className="overflow-hidden bg-slate-50 border-b border-slate-100"
+    <div
+      ref={adRef}
+      className={`bg-slate-50 border-b border-slate-100 ${!mounted ? "invisible" : ""}`}
+    >
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 flex items-center gap-2 h-9 sm:h-10">
+        <button
+          onClick={handleClose}
+          aria-label="Închide reclama"
+          className="shrink-0 w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors cursor-pointer"
         >
-          <div className="max-w-7xl mx-auto px-3 sm:px-4 flex items-center gap-2 h-9 sm:h-10">
-            <button
-              onClick={handleClose}
-              aria-label="Închide reclama"
-              className="shrink-0 w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors cursor-pointer"
-            >
-              <X className="w-3 h-3 text-slate-500" />
-            </button>
+          <X className="w-3 h-3 text-slate-500" />
+        </button>
 
-            {ad ? (
-              <Link
-                href={ad.href}
-                target="_blank"
-                rel="noopener noreferrer sponsored"
-                aria-label={ad.label ?? ad.imageAlt}
-                className="flex-1 min-w-0 h-full flex items-center justify-center gap-2 group"
-              >
-                <span className="relative w-[110px] h-6 sm:w-[150px] sm:h-7 shrink-0">
-                  <Image
-                    src={ad.imageSrc}
-                    alt={ad.imageAlt}
-                    fill
-                    sizes="150px"
-                    draggable={false}
-                    className="object-contain transition-transform duration-300 group-hover:scale-[1.03]"
-                  />
-                </span>
-                {ad.label && (
-                  <span className="hidden sm:inline text-xs font-semibold text-slate-500 truncate">
-                    {ad.label}
-                  </span>
-                )}
-              </Link>
-            ) : (
-              <div className="flex-1 min-w-0 flex items-center justify-center gap-2">
-                <span className="text-[10px] font-black tracking-widest uppercase text-slate-300 border border-slate-200 rounded px-1.5 py-0.5">
-                  Ad
-                </span>
-                <span className="text-xs text-slate-400 truncate">
-                  Spațiu publicitar disponibil
-                </span>
-              </div>
+        {ad ? (
+          <Link
+            href={ad.href}
+            target="_blank"
+            rel="noopener noreferrer sponsored"
+            aria-label={ad.label ?? ad.imageAlt}
+            className="flex-1 min-w-0 h-full flex items-center justify-center gap-2 group"
+          >
+            <span className="relative w-[110px] h-6 sm:w-[150px] sm:h-7 shrink-0">
+              <Image
+                src={ad.imageSrc}
+                alt={ad.imageAlt}
+                fill
+                sizes="150px"
+                draggable={false}
+                className="object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+              />
+            </span>
+            {ad.label && (
+              <span className="hidden sm:inline text-xs font-semibold text-slate-500 truncate">
+                {ad.label}
+              </span>
             )}
+          </Link>
+        ) : (
+          <div className="flex-1 min-w-0 flex items-center justify-center gap-2">
+            <span className="text-[10px] font-black tracking-widest uppercase text-slate-300 border border-slate-200 rounded px-1.5 py-0.5">
+              Ad
+            </span>
+            <span className="text-xs text-slate-400 truncate">
+              Spațiu publicitar disponibil
+            </span>
           </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </div>
+    </div>
   );
 }
