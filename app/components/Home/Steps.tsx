@@ -27,7 +27,7 @@ export const Steps = () => {
 
   return (
     <section>
-      <h2 className="font-sans font-extrabold text-slate-900 text-[2.5rem] lg:text-[3.3rem] leading-[1.15] tracking-tight mb-16 text-center">
+      <h2 className="font-sans font-extrabold text-slate-900 text-[2.5rem] lg:text-[3.3rem] leading-[1.15] tracking-tight mb-12 sm:mb-16 text-center">
         Este mai simplu{" "}
         <span className="text-lime-500 italic">decât ai crede</span>
       </h2>
