@@ -37,22 +37,21 @@ export function OverheaderAd({ ad }: { ad?: OverheaderAdConfig }) {
     if (closed) return;
 
     let touchStartY = 0;
-    let isTouching = false;
     let lastScrollY = window.scrollY;
+    let isTouching = false;
 
     const onTouchStart = (e: TouchEvent) => {
       isTouching = true;
       touchStartY = e.touches[0].clientY;
     };
 
-    const onTouchMove = (e: TouchEvent) => {
-      const delta = touchStartY - e.touches[0].clientY;
-      delta > 0 ? setHiddenByScroll(true) : setHiddenByScroll(false);
-    };
-
-    const onTouchEnd = () => {
+    const onTouchEnd = (e: TouchEvent) => {
       isTouching = false;
+      const endY = e.changedTouches[0].clientY;
+      const delta = touchStartY - endY;
       lastScrollY = window.scrollY;
+      if (delta === 0) return;
+      setHiddenByScroll(delta > 0);
     };
 
     const onScroll = () => {
@@ -64,13 +63,11 @@ export function OverheaderAd({ ad }: { ad?: OverheaderAdConfig }) {
     };
 
     window.addEventListener("touchstart", onTouchStart, { passive: true });
-    window.addEventListener("touchmove", onTouchMove, { passive: true });
     window.addEventListener("touchend", onTouchEnd, { passive: true });
     window.addEventListener("scroll", onScroll, { passive: true });
 
     return () => {
       window.removeEventListener("touchstart", onTouchStart);
-      window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("touchend", onTouchEnd);
       window.removeEventListener("scroll", onScroll);
     };
