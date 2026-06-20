@@ -13,6 +13,7 @@ export default function Homepage() {
     <div className="w-full pt-4 md:pt-8">
       <div className="px-4 sm:px-6 lg:px-8 space-y-0">
         <Hero />
+        <SectionDivider variant={0} />
         <Steps />
         <SectionDivider variant={1} />
         <LeaderboardSection />

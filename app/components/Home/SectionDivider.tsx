@@ -47,7 +47,7 @@ export const SectionDivider = ({ variant = 0 }: { variant?: number }) => {
               style={{
                 transform: `translateY(${i % 2 === 0 ? "-5px" : "5px"})`,
                 opacity: i % 2 === 0 ? 0.9 : 0.35,
-                color: "#E2E8F0",
+                color: "#CBD5E1",
                 marginLeft: "12px",
                 marginRight: "12px",
                 flexShrink: 0,
