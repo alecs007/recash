@@ -20,7 +20,7 @@ export function OverheaderAd({
   headerRef,
 }: {
   ad?: OverheaderAdConfig;
-  headerRef: React.RefObject<HTMLElement>;
+  headerRef: React.RefObject<HTMLElement | null>;
 }) {
   const [mounted, setMounted] = useState(false);
   const [closed, setClosed] = useState(false);
