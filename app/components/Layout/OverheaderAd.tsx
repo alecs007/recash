@@ -36,31 +36,26 @@ export function OverheaderAd({ ad }: { ad?: OverheaderAdConfig }) {
   useEffect(() => {
     if (closed) return;
 
-    let touchStartY = 0;
     let lastScrollY = window.scrollY;
 
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (y < 10) setHiddenByScroll(false);
+      else if (y > lastScrollY) setHiddenByScroll(true);
+      else setHiddenByScroll(false);
+      lastScrollY = y;
+    };
+
     const onTouchStart = (e: TouchEvent) => {
-      touchStartY = e.touches[0].clientY;
+      lastScrollY = window.scrollY;
     };
 
-    const onTouchEnd = (e: TouchEvent) => {
-      const diff = touchStartY - e.changedTouches[0].clientY;
-      if (diff === 0) return;
-      setHiddenByScroll(diff > 0);
-    };
-
-    const onWheel = (e: WheelEvent) => {
-      setHiddenByScroll(e.deltaY > 0);
-    };
-
+    window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("touchstart", onTouchStart, { passive: true });
-    window.addEventListener("touchend", onTouchEnd, { passive: true });
-    window.addEventListener("wheel", onWheel, { passive: true });
 
     return () => {
+      window.removeEventListener("scroll", onScroll);
       window.removeEventListener("touchstart", onTouchStart);
-      window.removeEventListener("touchend", onTouchEnd);
-      window.removeEventListener("wheel", onWheel);
     };
   }, [closed]);
 
