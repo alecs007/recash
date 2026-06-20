@@ -184,12 +184,12 @@ export async function LeaderboardSection() {
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-slate-900 truncate group-hover:text-slate-700 flex items-center gap-0.5">
+                      <div className="text-sm font-bold text-slate-900 truncate group-hover:text-slate-700 flex items-center gap-0.5">
                         {entry.name ?? "Utilizator"}
                         {entry.certified && (
                           <VerifiedBadge className="w-4 h-4 shrink-0" />
                         )}
-                      </p>
+                      </div>
                       <p className="text-xs text-slate-400 flex items-center gap-1">
                         <Star className="w-2.5 h-2.5 text-[#FFDF00] fill-[#FFDF00]" />
                         {entry.reputationScore.toFixed(1)}
