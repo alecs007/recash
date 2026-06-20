@@ -13,7 +13,7 @@ import {
   ShieldCheck,
   ChevronDown,
 } from "lucide-react";
-import { FaWineBottle, FaBan } from "react-icons/fa";
+import { FaBan } from "react-icons/fa";
 import { ProfileRankBadge } from "@/app/components/Profile/RankBadge";
 import { BadgeCard } from "@/app/components/UI/BadgeCard";
 import { BADGE_CONFIG } from "@/lib/constants/badges";

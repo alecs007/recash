@@ -5,11 +5,26 @@ import { LuBike, LuMousePointerClick } from "react-icons/lu";
 export const Hero = () => {
   return (
     <section className="relative bg-white">
-      <div className="bg-gradient-to-br from-[#123524] to-[#1a4d36] rounded-[2rem] lg:rounded-[3rem] px-8 lg:px-14 py-8 lg:py-10 relative overflow-hidden">
-        <div className="absolute -top-16 -right-12 w-56 h-56 rounded-full bg-lime-400/30 blur-3xl" />
-        <div className="absolute -bottom-16 -left-12 w-48 h-48 rounded-full bg-emerald-500/20 blur-3xl" />
+      {/* 3D shadow layers */}
+      <div
+        className="absolute inset-0 rounded-[2rem] lg:rounded-[3rem] bg-lime-400/30"
+        style={{ transform: "translate(5px, 5px)" }}
+      />
+      <div
+        className="absolute inset-0 rounded-[2rem] lg:rounded-[3rem] bg-lime-400/15"
+        style={{ transform: "translate(10px, 10px)" }}
+      />
 
-        <div className="relative flex flex-col lg:flex-row items-center justify-between">
+      {/* Main card */}
+      <div className="relative bg-gradient-to-br from-[#123524] to-[#1a4d36] rounded-[2rem] lg:rounded-[3rem] px-8 lg:px-14 py-8 lg:py-10 overflow-hidden">
+        <div className="absolute -top-16 -right-12 w-52 h-52 rounded-full bg-lime-400/30 blur-3xl" />
+        <div className="absolute -bottom-16 -left-12 w-44 h-44 rounded-full bg-emerald-500/20 blur-3xl" />
+
+        {/* Counter-rotate content so text stays straight */}
+        <div
+          className="relative flex flex-col lg:flex-row items-center justify-between"
+          style={{ transform: "rotate(1deg)" }}
+        >
           <div className="max-w-2xl">
             <div className="flex items-center gap-2.5 text-white/90 text-[0.9em] font-semibold tracking-wide mb-4">
               <Image
@@ -23,11 +38,28 @@ export const Hero = () => {
               />
               <span>Be smart & earn with RetuRO</span>
             </div>
-
-            <h1 className="font-sans font-extrabold text-white text-5xl sm:text-6xl lg:text-7xl leading-[1.05] tracking-tight sm:text-nowrap">
+            <h1
+              className="font-sans font-extrabold text-white text-5xl sm:text-6xl lg:text-7xl leading-[1.05] tracking-tight sm:text-nowrap"
+              style={{
+                // Tighter, punchier shadow using only 2 layers for a crisp "pressed" look
+                textShadow: `
+      2px 2px 0px #0a2016,
+      3px 3px 0px #04100a
+    `,
+              }}
+            >
               Reciclează.
               <br />
-              <span className="text-lime-400 italic">
+              <span
+                className="text-lime-400 italic"
+                style={{
+                  // Tighter shadow for the lime text to keep it legible against the dark background
+                  textShadow: `
+        2px 2px 0px #2a4708,
+        3px 3px 0px #152204
+      `,
+                }}
+              >
                 <span className="text-[0.9em] sm:text-[0.95em]">Î</span>
                 ncasează.
               </span>{" "}
@@ -38,16 +70,24 @@ export const Hero = () => {
               sticlele, un colector le preia, banii ajung la tine.
             </p>
 
-            <div className="flex flex-wrap gap-4 mt-8">
+            <div className="flex flex-wrap gap-6 mt-8">
               <Link
                 href="/post"
-                className="inline-flex items-center justify-center gap-2 bg-lime-400 text-black font-bold py-4 px-8 w-full sm:w-auto rounded-full text-lg shadow-lg hover:scale-105 transition-transform"
+                className="inline-flex items-center justify-center gap-2 bg-lime-400 text-black font-bold py-4 px-8 w-full sm:w-auto rounded-full text-lg transition-all active:translate-y-[4px] active:shadow-none"
+                style={{
+                  boxShadow: "4px 4px 0px #365a0a",
+                }}
               >
                 <LuMousePointerClick className="w-6 h-6" /> Creează un anunț
               </Link>
+
               <Link
                 href="/map"
-                className="inline-flex items-center justify-center gap-2 bg-white/10 text-white border border-white/20 font-bold py-4 px-8 w-full sm:w-auto rounded-full text-lg backdrop-blur hover:bg-white/20 transition-colors"
+                className="inline-flex items-center justify-center gap-2 bg-white/10 text-white border border-white/20 font-bold py-4 px-8 w-full sm:w-auto rounded-full text-lg backdrop-blur transition-all active:translate-y-[4px] active:shadow-none"
+                style={{
+                  // Using a semi-transparent dark emerald instead of pure dark
+                  boxShadow: "4px 4px 0px rgba(12, 53, 36, 0.8)",
+                }}
               >
                 <LuBike className="w-5 h-5" /> Colectează sticle
               </Link>

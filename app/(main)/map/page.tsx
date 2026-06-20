@@ -2,8 +2,8 @@ import { Metadata } from "next";
 import dynamic from "next/dynamic";
 
 export const metadata: Metadata = {
-  title: "Hartă colectare | Recash",
-  description: "Găsește postări de sticle din zona ta.",
+  title: "Harta sticlelor | Recash",
+  description: "Găsește sticle gata de reciclat în zona ta.",
 };
 
 const MapClient = dynamic(() => import("./MapClient"), {

@@ -135,9 +135,11 @@ export async function LeaderboardSection() {
 
           <Link
             href="/leaderboard"
-            className="hidden lg:flex items-center justify-center gap-3 text-[#14532d] font-extrabold py-4 px-10 rounded-full text-lg hover:bg-lime-50 hover:-translate-y-0.5 transition-all border-2 border-lime-600/30 group"
+            className="hidden lg:flex items-center justify-center gap-3 font-extrabold py-4 px-10 rounded-full text-lg transition-all active:translate-y-[4px] active:shadow-none border-2 border-lime-600/30 group"
             style={{
               background: "#fafaf5",
+              color: "#14532d",
+              boxShadow: "3px 3px 0px #d9e6d0",
             }}
           >
             <GrTrophy className="w-5 h-5 text-lime-500 shrink-0" />
@@ -213,9 +215,11 @@ export async function LeaderboardSection() {
 
               <Link
                 href="/leaderboard"
-                className="lg:hidden flex items-center justify-center gap-3 w-full text-[#14532d] font-extrabold py-4 px-6 rounded-2xl text-base hover:bg-lime-50 active:scale-[0.98] transition-all border border-lime-600/20 group"
+                className="lg:hidden flex items-center justify-center gap-3 w-full font-extrabold py-4 px-6 rounded-2xl text-base transition-all active:translate-y-[4px] active:shadow-none border border-lime-600/20 group"
                 style={{
                   background: "#fafaf5",
+                  color: "#14532d",
+                  boxShadow: "3px 3px 0px #d9e6d0",
                 }}
               >
                 <GrTrophy className="w-5 h-5 text-lime-500 shrink-0" />

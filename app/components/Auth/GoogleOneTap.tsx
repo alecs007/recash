@@ -1,25 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useSession, signIn } from "next-auth/react";
 
 export function GoogleOneTap() {
   const { status } = useSession();
-  const [mounted, setMounted] = useState(false);
+  const mountedRef = useRef(false);
 
   useEffect(() => {
-    setMounted(true);
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
 
   useEffect(() => {
-    if (!mounted || status !== "unauthenticated") return;
+    if (!mountedRef.current || status !== "unauthenticated") return;
 
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-
-    if (!clientId) {
-      console.warn("Google One Tap: Missing NEXT_PUBLIC_GOOGLE_CLIENT_ID");
-      return;
-    }
+    if (!clientId) return;
 
     const script = document.createElement("script");
     script.src = "https://accounts.google.com/gsi/client";
@@ -31,7 +30,7 @@ export function GoogleOneTap() {
       window.google?.accounts.id.initialize({
         client_id: clientId,
         callback: async (response: { credential: string }) => {
-          await signIn("google", {
+          await signIn("googleonetap", {
             credential: response.credential,
             redirect: false,
           });
@@ -39,19 +38,16 @@ export function GoogleOneTap() {
         ux_mode: "popup",
         auto_select: true,
         cancel_on_tap_outside: false,
-        context: "signin",
+        use_fedcm_for_prompt: false,
       });
       window.google?.accounts.id.prompt();
     };
 
     return () => {
       window.google?.accounts.id.cancel();
-
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
+      if (document.body.contains(script)) document.body.removeChild(script);
     };
-  }, [status, mounted]);
+  }, [status]);
 
   return null;
 }

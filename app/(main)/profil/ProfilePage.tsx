@@ -1,6 +1,5 @@
 import Image from "next/image";
 import { User, Trophy, Calendar } from "lucide-react";
-import { FaWineBottle } from "react-icons/fa";
 import { ProfileSummary } from "@/types";
 import { StarRating } from "@/app/components/Profile/StarRating";
 import { StatsGrid } from "@/app/components/Profile/StatsGrid";
