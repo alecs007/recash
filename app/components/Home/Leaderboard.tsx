@@ -72,7 +72,7 @@ const MEDAL_COLORS: Record<
     border: "border-amber-200",
     icon: "text-amber-500",
     rowBg: "bg-amber-50",
-    rowBorder: "border-amber-200",
+    rowBorder: "border-slate-100",
   },
   2: {
     bg: "bg-slate-100",
@@ -80,7 +80,7 @@ const MEDAL_COLORS: Record<
     border: "border-slate-200",
     icon: "text-slate-400",
     rowBg: "bg-slate-50",
-    rowBorder: "border-slate-200",
+    rowBorder: "border-slate-100",
   },
   3: {
     bg: "bg-orange-50",
@@ -88,7 +88,7 @@ const MEDAL_COLORS: Record<
     border: "border-orange-200",
     icon: "text-orange-400",
     rowBg: "bg-orange-50",
-    rowBorder: "border-orange-200",
+    rowBorder: "border-slate-100",
   },
 };
 

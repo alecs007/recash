@@ -3,11 +3,24 @@ import { LuBadgeDollarSign } from "react-icons/lu";
 import { GrTrophy } from "react-icons/gr";
 import { ElementType } from "react";
 
-const ICON_SETS: ElementType[][] = [
-  [FaWineBottle, LuBadgeDollarSign, FaRecycle, FaLeaf, GrTrophy],
-  [FaLeaf, FaWineBottle, GrTrophy, LuBadgeDollarSign, FaRecycle],
-  [GrTrophy, FaRecycle, FaWineBottle, FaLeaf, LuBadgeDollarSign],
-  [LuBadgeDollarSign, FaLeaf, GrTrophy, FaRecycle, FaWineBottle],
+type StyledIcon = {
+  Component: ElementType;
+  color: string;
+};
+
+const ICON_MAP: StyledIcon[] = [
+  { Component: FaWineBottle, color: "text-blue-400" },
+  { Component: LuBadgeDollarSign, color: "text-lime-400" },
+  { Component: FaRecycle, color: "text-green-500" },
+  { Component: FaLeaf, color: "text-green-600" },
+  { Component: GrTrophy, color: "text-amber-400" },
+];
+
+const ICON_SETS = [
+  [ICON_MAP[0], ICON_MAP[1], ICON_MAP[2], ICON_MAP[3], ICON_MAP[4]],
+  [ICON_MAP[3], ICON_MAP[0], ICON_MAP[4], ICON_MAP[1], ICON_MAP[2]],
+  [ICON_MAP[4], ICON_MAP[2], ICON_MAP[0], ICON_MAP[3], ICON_MAP[1]],
+  [ICON_MAP[1], ICON_MAP[3], ICON_MAP[4], ICON_MAP[2], ICON_MAP[0]],
 ];
 
 export const SectionDivider = ({ variant = 0 }: { variant?: number }) => {
@@ -18,39 +31,23 @@ export const SectionDivider = ({ variant = 0 }: { variant?: number }) => {
   return (
     <div className="my-12 lg:my-24 py-3 overflow-hidden">
       <style>{`
-        @keyframes scroll-left {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        @keyframes scroll-right {
-          0% { transform: translateX(-50%); }
-          100% { transform: translateX(0); }
-        }
-        .divider-track {
-          display: flex;
-          align-items: center;
-          width: max-content;
-        }
-        .divider-track.scroll-left {
-          animation: scroll-left 45s linear infinite;
-        }
-        .divider-track.scroll-right {
-          animation: scroll-right 45s linear infinite;
-        }
+        @keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        @keyframes scroll-right { 0% { transform: translateX(-50%); } 100% { transform: translateX(0); } }
+        .divider-track { display: flex; align-items: center; width: max-content; }
+        .divider-track.scroll-left { animation: scroll-left 45s linear infinite; }
+        .divider-track.scroll-right { animation: scroll-right 45s linear infinite; }
       `}</style>
+
       <div className={`divider-track ${direction}`}>
         {[...items, ...items].map((_, i) => {
-          const Icon = icons[i % icons.length];
+          const { Component, color } = icons[i % icons.length];
           return (
-            <Icon
+            <Component
               key={i}
+              className={`${color} flex-shrink-0 mx-3`}
               style={{
                 transform: `translateY(${i % 2 === 0 ? "-5px" : "5px"})`,
                 opacity: i % 2 === 0 ? 0.9 : 0.35,
-                color: "#CBD5E1",
-                marginLeft: "12px",
-                marginRight: "12px",
-                flexShrink: 0,
                 width: "28px",
                 height: "28px",
               }}
