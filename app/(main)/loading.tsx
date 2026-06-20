@@ -92,7 +92,7 @@ function _ensureOverlay(): HTMLDivElement {
   const div = document.createElement("div");
   Object.assign(div.style, {
     position: "fixed",
-    top: "64px",
+    top: "var(--header-height)",
     left: "0",
     right: "0",
     bottom: "0",

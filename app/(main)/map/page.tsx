@@ -10,7 +10,7 @@ const MapClient = dynamic(() => import("./MapClient"), {
   loading: () => (
     <div
       className="flex items-center justify-center bg-slate-50"
-      style={{ height: "calc(100vh - 64px)" }}
+      style={{ height: "calc(100vh - var(--header-height))" }}
     >
       <div className="flex flex-col items-center gap-3">
         <div className="w-8 h-8 border-3 border-lime-500 border-t-transparent rounded-full animate-spin" />

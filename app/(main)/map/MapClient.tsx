@@ -1050,8 +1050,11 @@ export default function MapPage() {
 
   return (
     <div
-      className="flex flex-col max-w-7xl mx-auto fixed inset-0 bottom-0 top-16"
-      style={{ top: 64 }}
+      className="flex flex-col max-w-7xl mx-auto fixed inset-0 bottom-0"
+      style={{
+        top: "var(--header-height)",
+        transition: "top 0.28s cubic-bezier(0.22,1,0.36,1)",
+      }}
     >
       <div
         ref={topbarRef}

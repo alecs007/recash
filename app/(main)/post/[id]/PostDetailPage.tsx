@@ -856,13 +856,16 @@ function SkeletonPanel() {
 function Skeleton() {
   return (
     <>
-      <div className="lg:hidden flex flex-col min-h-[calc(100vh-64px)]">
+      <div className="lg:hidden flex flex-col min-h-[calc(100vh-var(--header-height))]">
         <div className="h-[260px] shrink-0 bg-slate-100 animate-pulse" />
         <div className="flex-1 bg-white">
           <SkeletonPanel />
         </div>
       </div>
-      <div className="hidden lg:flex" style={{ height: "calc(100vh - 64px)" }}>
+      <div
+        className="hidden lg:flex"
+        style={{ height: "calc(100vh - var(--header-height))" }}
+      >
         <div className="w-[55%] shrink-0 bg-slate-100 animate-pulse" />
         <div className="flex-1 bg-white border-l border-slate-100 overflow-hidden">
           <SkeletonPanel />
@@ -2223,7 +2226,7 @@ export default function PostDetailClient({
 
   return (
     <>
-      <div className="lg:hidden flex flex-col items-center min-h-[calc(100vh-64px)]">
+      <div className="lg:hidden flex flex-col min-h-[calc(100vh-var(--header-height))]">
         <div className="relative h-[260px] w-full shrink-0">
           <PostMap
             lat={post.latitude}
@@ -2244,7 +2247,10 @@ export default function PostDetailClient({
         </div>
       </div>
 
-      <div className="hidden lg:flex" style={{ height: "calc(100vh - 64px)" }}>
+      <div
+        className="hidden lg:flex"
+        style={{ height: "calc(100vh - var(--header-height))" }}
+      >
         <div className="w-[55%] relative shrink-0">
           <PostMap
             lat={post.latitude}

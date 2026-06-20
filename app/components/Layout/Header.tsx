@@ -15,6 +15,7 @@ import { LuBike } from "react-icons/lu";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNotificationBell } from "@/hooks/useNotificationBell";
 import { useActiveCounts } from "@/hooks/useActiveCounts";
+import { OverheaderAd } from "./OverheaderAd";
 
 function ActiveIndicator({
   activePosts,
@@ -178,6 +179,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
   const { show } = useLoading();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
 
   const isAuthenticated = status === "authenticated" && !!session?.user;
   const isLoading = status === "loading";
@@ -199,6 +201,21 @@ export default function Header({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const updateVar = () => {
+      document.documentElement.style.setProperty(
+        "--header-height",
+        `${el.offsetHeight}px`,
+      );
+    };
+    updateVar();
+    const ro = new ResizeObserver(updateVar);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   if (pathname?.startsWith("/auth")) return <>{children}</>;
 
   const initials = session?.user?.name
@@ -210,7 +227,11 @@ export default function Header({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <header className="fixed inset-x-0 top-0 z-[1001] bg-white">
+      <header
+        ref={headerRef}
+        className="fixed inset-x-0 top-0 z-[1001] bg-white"
+      >
+        <OverheaderAd />
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <Image
@@ -380,7 +401,15 @@ export default function Header({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="flex-1 pt-15">{children}</main>
+      <main
+        className="flex-1"
+        style={{
+          paddingTop: "var(--header-height, 64px)",
+          transition: "padding-top 0.28s cubic-bezier(0.22,1,0.36,1)",
+        }}
+      >
+        {children}
+      </main>
     </div>
   );
 }
