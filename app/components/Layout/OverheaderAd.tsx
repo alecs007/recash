@@ -18,8 +18,8 @@ const DISMISS_PREFIX = "overheader-ad-dismissed:";
 // always show while within this many px of the top
 const REVEAL_FLOOR = 48;
 // net px scrolled in one direction (since the last decision) before reacting
-const HIDE_AFTER = 8;
-const SHOW_AFTER = 8;
+const HIDE_AFTER = 3;
+const SHOW_AFTER = 3;
 
 export function OverheaderAd({ ad }: { ad?: OverheaderAdConfig }) {
   const [mounted, setMounted] = useState(false);
