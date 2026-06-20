@@ -1,14 +1,25 @@
 "use client";
 
-import { useEffect } from "react";
-import { useSession } from "next-auth/react";
-import { signIn } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { useSession, signIn } from "next-auth/react";
 
 export function GoogleOneTap() {
   const { status } = useSession();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (status !== "unauthenticated") return;
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || status !== "unauthenticated") return;
+
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
+    if (!clientId) {
+      console.warn("Google One Tap: Missing NEXT_PUBLIC_GOOGLE_CLIENT_ID");
+      return;
+    }
 
     const script = document.createElement("script");
     script.src = "https://accounts.google.com/gsi/client";
@@ -18,7 +29,7 @@ export function GoogleOneTap() {
 
     script.onload = () => {
       window.google?.accounts.id.initialize({
-        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
+        client_id: clientId,
         callback: async (response: { credential: string }) => {
           await signIn("google", {
             credential: response.credential,
@@ -34,9 +45,12 @@ export function GoogleOneTap() {
 
     return () => {
       window.google?.accounts.id.cancel();
-      document.body.removeChild(script);
+
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
     };
-  }, [status]);
+  }, [status, mounted]);
 
   return null;
 }
