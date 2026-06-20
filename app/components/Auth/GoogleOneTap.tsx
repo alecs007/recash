@@ -5,29 +5,19 @@ import { useSession, signIn } from "next-auth/react";
 
 export function GoogleOneTap() {
   const { status } = useSession();
-  const mountedRef = useRef(false);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!mountedRef.current || status !== "unauthenticated") return;
+    if (status !== "unauthenticated" || initializedRef.current) return;
 
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     if (!clientId) return;
 
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
-    document.body.appendChild(script);
+    const init = () => {
+      if (initializedRef.current || !window.google) return;
+      initializedRef.current = true;
 
-    script.onload = () => {
-      window.google?.accounts.id.initialize({
+      window.google.accounts.id.initialize({
         client_id: clientId,
         callback: async (response: { credential: string }) => {
           await signIn("googleonetap", {
@@ -38,15 +28,24 @@ export function GoogleOneTap() {
         ux_mode: "popup",
         auto_select: true,
         cancel_on_tap_outside: false,
-        use_fedcm_for_prompt: false,
+        use_fedcm_for_prompt: true,
       });
-      window.google?.accounts.id.prompt();
+      window.google.accounts.id.prompt();
     };
 
-    return () => {
-      window.google?.accounts.id.cancel();
-      if (document.body.contains(script)) document.body.removeChild(script);
-    };
+    if (window.google?.accounts?.id) {
+      init();
+      return;
+    }
+
+    if (!document.querySelector('script[src*="gsi/client"]')) {
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.onload = init;
+      document.body.appendChild(script);
+    }
   }, [status]);
 
   return null;
