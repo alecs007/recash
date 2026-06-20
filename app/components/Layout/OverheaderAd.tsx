@@ -36,12 +36,9 @@ export function OverheaderAd({ ad }: { ad?: OverheaderAdConfig }) {
   useEffect(() => {
     if (closed) return;
 
-    let lastY = window.scrollY;
     let touchStartY = 0;
     let isTouching = false;
-
-    const hide = () => setHiddenByScroll(true);
-    const show = () => setHiddenByScroll(false);
+    let lastScrollY = window.scrollY;
 
     const onTouchStart = (e: TouchEvent) => {
       isTouching = true;
@@ -50,26 +47,20 @@ export function OverheaderAd({ ad }: { ad?: OverheaderAdConfig }) {
 
     const onTouchMove = (e: TouchEvent) => {
       const delta = touchStartY - e.touches[0].clientY;
-      if (Math.abs(delta) < 2) return;
-      delta > 0 ? hide() : show();
+      delta > 0 ? setHiddenByScroll(true) : setHiddenByScroll(false);
     };
 
     const onTouchEnd = () => {
       isTouching = false;
-      lastY = window.scrollY;
+      lastScrollY = window.scrollY;
     };
 
     const onScroll = () => {
       if (isTouching) return;
       const y = window.scrollY;
-      const delta = y - lastY;
-      if (Math.abs(delta) < 2) return;
-      if (y <= REVEAL_FLOOR) {
-        show();
-      } else {
-        delta > 0 ? hide() : show();
-      }
-      lastY = y;
+      if (y <= REVEAL_FLOOR) setHiddenByScroll(false);
+      else setHiddenByScroll(y > lastScrollY);
+      lastScrollY = y;
     };
 
     window.addEventListener("touchstart", onTouchStart, { passive: true });
