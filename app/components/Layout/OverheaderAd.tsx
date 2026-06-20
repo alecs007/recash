@@ -37,9 +37,9 @@ export function OverheaderAd({ ad }: { ad?: OverheaderAdConfig }) {
     if (closed) return;
 
     let anchorScrollY = window.scrollY;
-    const DELTA_THRESHOLD = 6;
-
     let frame: number | null = null;
+    let scrollEndTimer: ReturnType<typeof setTimeout> | null = null;
+    const DELTA_THRESHOLD = 3;
 
     const evaluate = () => {
       const currentScrollY = Math.max(0, window.scrollY);
@@ -58,15 +58,19 @@ export function OverheaderAd({ ad }: { ad?: OverheaderAdConfig }) {
     };
 
     const onScroll = () => {
-      if (frame === null) {
-        frame = requestAnimationFrame(evaluate);
-      }
+      if (frame === null) frame = requestAnimationFrame(evaluate);
+
+      if (scrollEndTimer) clearTimeout(scrollEndTimer);
+      scrollEndTimer = setTimeout(() => {
+        anchorScrollY = Math.max(0, window.scrollY);
+      }, 150);
     };
 
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
       if (frame !== null) cancelAnimationFrame(frame);
+      if (scrollEndTimer) clearTimeout(scrollEndTimer);
     };
   }, [closed]);
 
