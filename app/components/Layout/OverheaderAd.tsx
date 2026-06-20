@@ -50,29 +50,54 @@ export function OverheaderAd({ ad }: { ad?: OverheaderAdConfig }) {
 
     const onTouchEnd = () => {
       const delta = touchStartY - lastTouchY;
-
       if (Math.abs(delta) < 2) return;
-
-      const currentScrollY = Math.max(0, window.scrollY);
-
-      if (currentScrollY <= REVEAL_FLOOR && delta < 0) {
-        setHiddenByScroll(false);
-        return;
-      }
-
       setHiddenByScroll(delta > 0);
+    };
+
+    let lastScrollY = window.scrollY;
+    let frame: number | null = null;
+
+    const onScroll = () => {
+      if (frame !== null) return;
+      frame = requestAnimationFrame(() => {
+        const currentScrollY = Math.max(0, window.scrollY);
+        const delta = currentScrollY - lastScrollY;
+
+        if (Math.abs(delta) > 1) {
+          if (currentScrollY <= REVEAL_FLOOR) {
+            setHiddenByScroll(false);
+          } else {
+            setHiddenByScroll(delta > 0);
+          }
+          lastScrollY = currentScrollY;
+        }
+
+        frame = null;
+      });
     };
 
     window.addEventListener("touchstart", onTouchStart, { passive: true });
     window.addEventListener("touchmove", onTouchMove, { passive: true });
     window.addEventListener("touchend", onTouchEnd, { passive: true });
+    window.addEventListener("scroll", onScroll, { passive: true });
 
     return () => {
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("touchend", onTouchEnd);
+      window.removeEventListener("scroll", onScroll);
+      if (frame !== null) cancelAnimationFrame(frame);
     };
   }, [closed]);
+
+  const handleClose = useCallback(() => {
+    setClosed(true);
+    try {
+      sessionStorage.setItem(dismissKey, "1");
+    } catch {
+      /* non-fatal */
+    }
+  }, [dismissKey]);
 
   if (!mounted) return null;
 
