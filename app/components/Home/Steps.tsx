@@ -27,14 +27,19 @@ export const Steps = () => {
 
   return (
     <section>
+      <h2 className="font-sans font-extrabold text-slate-900 text-[2.5rem] lg:text-[3.3rem] leading-[1.15] tracking-tight mb-16 text-center">
+        Este mai simplu{" "}
+        <span className="text-lime-500 italic">decât ai crede</span>
+      </h2>
+
       <div className="grid lg:grid-cols-3 gap-20 md:gap-12 px-3 md:px-0">
         {steps.map((step) => (
           <div key={step.number} className="group">
             <div className="flex items-center gap-3 mb-3">
-              <span className="text-3xl font-black text-lime-500">
+              <span className="text-[1.7rem] font-black text-lime-500">
                 {step.number.replace(/^0/, "")}.
               </span>
-              <h3 className="font-bold text-3xl text-slate-900 tracking-tight text-nowrap">
+              <h3 className="font-bold text-[1.7rem] text-slate-900 tracking-tight text-nowrap">
                 {step.title}
               </h3>
             </div>
