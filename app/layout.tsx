@@ -6,6 +6,7 @@ import { SessionProvider } from "./components/Providers/SessionProvider";
 import { LoadingProvider } from "@/context/LoadingContext";
 import { AuthModalProvider } from "@/context/AuthModalContext";
 import { AuthModal } from "./components/Auth/AuthModal";
+import { GoogleOneTap } from "./components/Auth/GoogleOneTap";
 import { Suspense } from "react";
 import SmoothScroll from "./components/UX/SmoothScroll";
 import { NavigationProgress } from "./components/UX/NavigationProgress";
@@ -55,6 +56,7 @@ export default async function RootLayout({
                 <NavigationProgress />
                 <SmoothScroll>{children}</SmoothScroll>
                 <AuthModal />
+                <GoogleOneTap />
               </LoadingProvider>
             </AuthModalProvider>
           </Suspense>

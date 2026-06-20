@@ -61,21 +61,21 @@ export const SectionDivider = ({ ad, variant = 0 }: SectionDividerProps) => {
           href={ad.href}
           target="_blank"
           rel="noopener noreferrer sponsored"
-          className="group block w-full rounded-2xl overflow-hidden border border-slate-100 hover:border-lime-300 transition-colors shadow-sm hover:shadow-md"
+          className="group block w-full rounded-2xl overflow-hidden border border-slate-100 hover:border-lime-300 transition-colors"
           aria-label={`Sponsor: ${ad.imageAlt}`}
         >
-          <div className="relative w-full" style={{ aspectRatio: "6 / 1" }}>
+          <div className="relative w-full aspect-[6/2] lg:aspect-[6/1]">
             <Image
               src={ad.imageSrc}
               alt={ad.imageAlt}
               fill
               sizes="(max-width: 768px) 100vw, 1280px"
-              className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.015]"
+              className="object-cover object-center"
               priority={false}
             />
           </div>
 
-          {ad.label && (
+          {/* {ad.label && (
             <div className="bg-white border-t border-slate-100 px-4 py-2 flex items-center justify-between">
               <span className="text-xs font-semibold text-slate-500">
                 {ad.label}
@@ -84,7 +84,7 @@ export const SectionDivider = ({ ad, variant = 0 }: SectionDividerProps) => {
                 Sponsor
               </span>
             </div>
-          )}
+          )} */}
         </Link>
       ) : (
         <div className="relative w-full aspect-[6/2] lg:aspect-[6/1] rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center">
