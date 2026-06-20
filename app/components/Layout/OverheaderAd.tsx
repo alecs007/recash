@@ -38,38 +38,29 @@ export function OverheaderAd({ ad }: { ad?: OverheaderAdConfig }) {
 
     let touchStartY = 0;
     let lastScrollY = window.scrollY;
-    let isTouching = false;
 
     const onTouchStart = (e: TouchEvent) => {
-      isTouching = true;
       touchStartY = e.touches[0].clientY;
     };
 
     const onTouchEnd = (e: TouchEvent) => {
-      isTouching = false;
-      const endY = e.changedTouches[0].clientY;
-      const delta = touchStartY - endY;
-      lastScrollY = window.scrollY;
-      if (delta === 0) return;
-      setHiddenByScroll(delta > 0);
+      const diff = touchStartY - e.changedTouches[0].clientY;
+      if (diff === 0) return;
+      setHiddenByScroll(diff > 0);
     };
 
-    const onScroll = () => {
-      if (isTouching) return;
-      const y = window.scrollY;
-      if (y <= REVEAL_FLOOR) setHiddenByScroll(false);
-      else setHiddenByScroll(y > lastScrollY);
-      lastScrollY = y;
+    const onWheel = (e: WheelEvent) => {
+      setHiddenByScroll(e.deltaY > 0);
     };
 
     window.addEventListener("touchstart", onTouchStart, { passive: true });
     window.addEventListener("touchend", onTouchEnd, { passive: true });
-    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("wheel", onWheel, { passive: true });
 
     return () => {
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchend", onTouchEnd);
-      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("wheel", onWheel);
     };
   }, [closed]);
 
