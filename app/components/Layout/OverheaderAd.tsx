@@ -48,13 +48,26 @@ export function OverheaderAd({
 
     let lastY = window.scrollY;
     let touchY = 0;
+    let target = 0;
+    let current = 0;
+    let rafId: number;
+
+    const spring = () => {
+      current += (target - current) * 0.12;
+      if (Math.abs(target - current) < 0.1) current = target;
+      headerEl.style.transform = `translateY(${-current}px)`;
+      rafId = requestAnimationFrame(spring);
+    };
+    rafId = requestAnimationFrame(spring);
 
     const update = (delta: number) => {
-      progress.current = Math.min(
-        1,
-        Math.max(0, progress.current + delta / adHeight),
-      );
-      headerEl.style.transform = `translateY(${-progress.current * adHeight}px)`;
+      const y = window.scrollY;
+      if (y <= 0) {
+        target = 0;
+        return;
+      }
+      const raw = target / adHeight + delta / adHeight;
+      target = Math.min(1, Math.max(0, raw)) * adHeight;
     };
 
     const onScroll = () => {
@@ -78,12 +91,13 @@ export function OverheaderAd({
     window.addEventListener("touchmove", onTouchMove, { passive: true });
 
     return () => {
+      cancelAnimationFrame(rafId);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchmove", onTouchMove);
       headerEl.style.transform = "";
     };
-  }, [closed, mounted, headerRef]);
+  }, [closed, headerRef, mounted]);
 
   const handleClose = useCallback(() => {
     setClosed(true);
