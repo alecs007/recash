@@ -43,8 +43,8 @@ export const Hero = () => {
               style={{
                 // Tighter, punchier shadow using only 2 layers for a crisp "pressed" look
                 textShadow: `
-      2px 2px 0px #0a2016,
-      3px 3px 0px #04100a
+      1px 1px 0px #0a2016,
+      2px 2px 0px #04100a
     `,
               }}
             >
@@ -55,8 +55,8 @@ export const Hero = () => {
                 style={{
                   // Tighter shadow for the lime text to keep it legible against the dark background
                   textShadow: `
-        2px 2px 0px #2a4708,
-        3px 3px 0px #152204
+        1px 1px 0px #2a4708,
+        2px 2px 0px #152204
       `,
                 }}
               >
@@ -86,7 +86,7 @@ export const Hero = () => {
                 className="inline-flex items-center justify-center gap-2 bg-white/10 text-white border border-white/20 font-bold py-4 px-8 w-full sm:w-auto rounded-full text-lg backdrop-blur transition-all active:translate-y-[4px] active:shadow-none"
                 style={{
                   // Using a semi-transparent dark emerald instead of pure dark
-                  boxShadow: "4px 4px 0px rgba(12, 53, 36, 0.8)",
+                  boxShadow: "4px 4px 0px rgba(12, 53, 36, 0.5)",
                 }}
               >
                 <LuBike className="w-5 h-5" /> Colectează sticle
