@@ -2,12 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 
 export interface OverheaderAdConfig {
-  /** Unique key — used to remember dismissal across the session */
   id: string;
   imageSrc: string;
   imageAlt: string;
@@ -16,38 +15,16 @@ export interface OverheaderAdConfig {
 }
 
 const DISMISS_PREFIX = "overheader-ad-dismissed:";
-// don't start hiding on scroll-down until the user is this far from the top
-const REVEAL_THRESHOLD = 56;
-// ignore tiny scroll jitter (trackpad/iOS bounce)
-const SCROLL_DELTA_IGNORE = 6;
+// always show while within this many px of the top
+const REVEAL_FLOOR = 48;
+// net px scrolled in one direction (since the last decision) before reacting
+const HIDE_AFTER = 8;
+const SHOW_AFTER = 8;
 
-/**
- * Slim ad strip rendered above the main nav bar.
- *
- * - Closable (X on the left). Dismissal is remembered for the browser session.
- * - Collapses out of view on scroll-down, reappears on scroll-up. The nav bar
- *   itself stays put — only this strip animates, so there's never a gap.
- *
- * Usage (live ad):
- * <OverheaderAd
- *   ad={{
- *     id: "lidl-overheader-2024",
- *     imageSrc: "https://dummyimage.com/300x60/0050AA/ffffff.png&text=Lidl",
- *     imageAlt: "Lidl – Meriți să fii surprins",
- *     href: "https://www.lidl.ro",
- *   }}
- * />
- *
- * Usage (placeholder, shows muted "Ad" text, no link):
- * <OverheaderAd />
- */
 export function OverheaderAd({ ad }: { ad?: OverheaderAdConfig }) {
   const [mounted, setMounted] = useState(false);
   const [closed, setClosed] = useState(false);
   const [hiddenByScroll, setHiddenByScroll] = useState(false);
-
-  const lastYRef = useRef(0);
-  const tickingRef = useRef(false);
 
   const dismissKey = `${DISMISS_PREFIX}${ad?.id ?? "default"}`;
 
@@ -58,33 +35,48 @@ export function OverheaderAd({ ad }: { ad?: OverheaderAdConfig }) {
     } catch {
       setClosed(false);
     }
-    lastYRef.current = window.scrollY;
   }, [dismissKey]);
 
   useEffect(() => {
     if (closed) return;
 
-    const onScroll = () => {
-      if (tickingRef.current) return;
-      tickingRef.current = true;
-      requestAnimationFrame(() => {
-        const y = window.scrollY;
-        const delta = y - lastYRef.current;
+    let referenceY = Math.max(0, window.scrollY);
+    let frame: number | null = null;
 
-        if (Math.abs(delta) > SCROLL_DELTA_IGNORE) {
-          if (delta > 0 && y > REVEAL_THRESHOLD) {
-            setHiddenByScroll(true);
-          } else if (delta < 0) {
-            setHiddenByScroll(false);
-          }
-          lastYRef.current = y;
-        }
-        tickingRef.current = false;
-      });
+    const evaluate = () => {
+      frame = null;
+      const y = Math.max(0, window.scrollY);
+
+      if (y <= REVEAL_FLOOR) {
+        setHiddenByScroll(false);
+        referenceY = y;
+        return;
+      }
+
+      const delta = y - referenceY;
+
+      if (delta > HIDE_AFTER) {
+        setHiddenByScroll(true);
+        referenceY = y;
+      } else if (delta < -SHOW_AFTER) {
+        setHiddenByScroll(false);
+        referenceY = y;
+      }
+    };
+
+    const onScroll = () => {
+      if (frame !== null) return;
+      frame = requestAnimationFrame(evaluate);
     };
 
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    window.addEventListener("touchmove", onScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("touchmove", onScroll);
+      if (frame !== null) cancelAnimationFrame(frame);
+    };
   }, [closed]);
 
   const handleClose = useCallback(() => {
