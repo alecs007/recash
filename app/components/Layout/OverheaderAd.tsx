@@ -36,44 +36,40 @@ export function OverheaderAd({ ad }: { ad?: OverheaderAdConfig }) {
   useEffect(() => {
     if (closed) return;
 
+    let lastY = window.scrollY;
     let touchStartY = 0;
-    let lastTouchY = 0;
+    let isTouching = false;
+
+    const hide = () => setHiddenByScroll(true);
+    const show = () => setHiddenByScroll(false);
 
     const onTouchStart = (e: TouchEvent) => {
+      isTouching = true;
       touchStartY = e.touches[0].clientY;
-      lastTouchY = e.touches[0].clientY;
     };
 
     const onTouchMove = (e: TouchEvent) => {
-      lastTouchY = e.touches[0].clientY;
+      const delta = touchStartY - e.touches[0].clientY;
+      if (Math.abs(delta) < 2) return;
+      delta > 0 ? hide() : show();
     };
 
     const onTouchEnd = () => {
-      const delta = touchStartY - lastTouchY;
-      if (Math.abs(delta) < 2) return;
-      setHiddenByScroll(delta > 0);
+      isTouching = false;
+      lastY = window.scrollY;
     };
 
-    let lastScrollY = window.scrollY;
-    let frame: number | null = null;
-
     const onScroll = () => {
-      if (frame !== null) return;
-      frame = requestAnimationFrame(() => {
-        const currentScrollY = Math.max(0, window.scrollY);
-        const delta = currentScrollY - lastScrollY;
-
-        if (Math.abs(delta) > 1) {
-          if (currentScrollY <= REVEAL_FLOOR) {
-            setHiddenByScroll(false);
-          } else {
-            setHiddenByScroll(delta > 0);
-          }
-          lastScrollY = currentScrollY;
-        }
-
-        frame = null;
-      });
+      if (isTouching) return;
+      const y = window.scrollY;
+      const delta = y - lastY;
+      if (Math.abs(delta) < 2) return;
+      if (y <= REVEAL_FLOOR) {
+        show();
+      } else {
+        delta > 0 ? hide() : show();
+      }
+      lastY = y;
     };
 
     window.addEventListener("touchstart", onTouchStart, { passive: true });
@@ -86,7 +82,6 @@ export function OverheaderAd({ ad }: { ad?: OverheaderAdConfig }) {
       window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("touchend", onTouchEnd);
       window.removeEventListener("scroll", onScroll);
-      if (frame !== null) cancelAnimationFrame(frame);
     };
   }, [closed]);
 
