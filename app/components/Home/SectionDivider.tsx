@@ -36,6 +36,8 @@ export const SectionDivider = ({ variant = 0 }: { variant?: number }) => {
         .divider-track { display: flex; align-items: center; width: max-content; }
         .divider-track.scroll-left { animation: scroll-left 45s linear infinite; }
         .divider-track.scroll-right { animation: scroll-right 45s linear infinite; }
+        .divider-track.scroll-left { animation: scroll-left 60s linear infinite; }
+        .divider-track.scroll-right { animation: scroll-right 60s linear infinite; }
       `}</style>
 
       <div className={`divider-track ${direction}`}>
