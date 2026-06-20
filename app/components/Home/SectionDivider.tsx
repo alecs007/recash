@@ -9,11 +9,11 @@ type StyledIcon = {
 };
 
 const ICON_MAP: StyledIcon[] = [
-  { Component: FaWineBottle, color: "text-blue-400" },
-  { Component: LuBadgeDollarSign, color: "text-lime-400" },
-  { Component: FaRecycle, color: "text-green-500" },
-  { Component: FaLeaf, color: "text-green-600" },
-  { Component: GrTrophy, color: "text-amber-400" },
+  { Component: FaWineBottle, color: "text-slate-300" },
+  { Component: LuBadgeDollarSign, color: "text-slate-300" },
+  { Component: FaRecycle, color: "text-slate-300" },
+  { Component: FaLeaf, color: "text-slate-300" },
+  { Component: GrTrophy, color: "text-slate-300" },
 ];
 
 const ICON_SETS = [
