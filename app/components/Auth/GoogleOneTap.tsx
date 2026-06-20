@@ -36,6 +36,7 @@ export function GoogleOneTap() {
             redirect: false,
           });
         },
+        ux_mode: "popup",
         auto_select: true,
         cancel_on_tap_outside: false,
         context: "signin",
