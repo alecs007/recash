@@ -37,42 +37,42 @@ export function OverheaderAd({ ad }: { ad?: OverheaderAdConfig }) {
     if (closed) return;
 
     let touchStartY = 0;
+    let lastTouchY = 0;
 
     const onTouchStart = (e: TouchEvent) => {
       touchStartY = e.touches[0].clientY;
+      lastTouchY = e.touches[0].clientY;
     };
 
-    const onTouchEnd = (e: TouchEvent) => {
-      const delta = touchStartY - e.changedTouches[0].clientY;
+    const onTouchMove = (e: TouchEvent) => {
+      lastTouchY = e.touches[0].clientY;
+    };
+
+    const onTouchEnd = () => {
+      const delta = touchStartY - lastTouchY;
+
+      if (Math.abs(delta) < 2) return;
+
       const currentScrollY = Math.max(0, window.scrollY);
 
-      if (currentScrollY <= REVEAL_FLOOR) {
+      if (currentScrollY <= REVEAL_FLOOR && delta < 0) {
         setHiddenByScroll(false);
         return;
       }
 
-      if (Math.abs(delta) > 2) {
-        setHiddenByScroll(delta > 0);
-      }
+      setHiddenByScroll(delta > 0);
     };
 
     window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
     window.addEventListener("touchend", onTouchEnd, { passive: true });
 
     return () => {
       window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("touchend", onTouchEnd);
     };
   }, [closed]);
-
-  const handleClose = useCallback(() => {
-    setClosed(true);
-    try {
-      sessionStorage.setItem(dismissKey, "1");
-    } catch {
-      /* non-fatal */
-    }
-  }, [dismissKey]);
 
   if (!mounted) return null;
 
