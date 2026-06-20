@@ -36,41 +36,32 @@ export function OverheaderAd({ ad }: { ad?: OverheaderAdConfig }) {
   useEffect(() => {
     if (closed) return;
 
-    let anchorScrollY = window.scrollY;
-    let frame: number | null = null;
-    let scrollEndTimer: ReturnType<typeof setTimeout> | null = null;
-    const DELTA_THRESHOLD = 3;
+    let touchStartY = 0;
 
-    const evaluate = () => {
+    const onTouchStart = (e: TouchEvent) => {
+      touchStartY = e.touches[0].clientY;
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      const delta = touchStartY - e.changedTouches[0].clientY;
       const currentScrollY = Math.max(0, window.scrollY);
-      const delta = currentScrollY - anchorScrollY;
 
-      if (Math.abs(delta) >= DELTA_THRESHOLD) {
-        if (currentScrollY <= REVEAL_FLOOR) {
-          setHiddenByScroll(false);
-        } else {
-          setHiddenByScroll(delta > 0);
-        }
-        anchorScrollY = currentScrollY;
+      if (currentScrollY <= REVEAL_FLOOR) {
+        setHiddenByScroll(false);
+        return;
       }
 
-      frame = null;
+      if (Math.abs(delta) > 2) {
+        setHiddenByScroll(delta > 0);
+      }
     };
 
-    const onScroll = () => {
-      if (frame === null) frame = requestAnimationFrame(evaluate);
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchend", onTouchEnd, { passive: true });
 
-      if (scrollEndTimer) clearTimeout(scrollEndTimer);
-      scrollEndTimer = setTimeout(() => {
-        anchorScrollY = Math.max(0, window.scrollY);
-      }, 150);
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      if (frame !== null) cancelAnimationFrame(frame);
-      if (scrollEndTimer) clearTimeout(scrollEndTimer);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchend", onTouchEnd);
     };
   }, [closed]);
 
