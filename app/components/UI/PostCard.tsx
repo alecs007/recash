@@ -32,8 +32,8 @@ export function PostCard({ post }: { post: Post }) {
           </p>
           {post.locationName && (
             <div className="flex items-center gap-1 mt-1">
-              <MapPin className="w-3 h-3 text-slate-400" />
-              <span className="text-xs text-slate-500">
+              <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+              <span className="text-xs text-slate-500 truncate">
                 {post.locationName}
               </span>
             </div>
@@ -56,8 +56,8 @@ export function PostCard({ post }: { post: Post }) {
         </div>
       </Link>
       {post.collector && (
-        <div className="border-t border-slate-50 flex items-center gap-2 py-3 px-4">
-          <div className="w-6 h-6 rounded-full bg-lime-100 flex items-center justify-center overflow-hidden border border-lime-200">
+        <div className="border-t border-slate-50 flex items-center gap-2 py-3 px-4 min-w-0">
+          <div className="w-6 h-6 rounded-full bg-lime-100 flex items-center justify-center overflow-hidden border border-lime-200 shrink-0">
             {post.collector.image ? (
               <Image
                 src={post.collector.image}
@@ -72,7 +72,8 @@ export function PostCard({ post }: { post: Post }) {
               </span>
             )}
           </div>
-          <span className="text-xs text-slate-500">
+
+          <span className="text-xs text-slate-500 truncate">
             {post.status === "CLAIMED" ? "Revendicat de " : "Colectat de "}
             <span className="font-semibold text-slate-700">
               {post.collector.name}

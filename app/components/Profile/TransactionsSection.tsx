@@ -64,7 +64,8 @@ export function TransactionsSection({
               className="block bg-white rounded-2xl border border-slate-100 p-4 hover:border-lime-200 hover:shadow-sm transition-all"
             >
               <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
+                {/* 1. Added min-w-0 and flex-1 to the left container so it can shrink */}
+                <div className="flex items-center gap-3 flex-1 min-w-0">
                   <div className="w-10 h-10 rounded-full bg-lime-50 border border-lime-200 flex items-center justify-center overflow-hidden shrink-0">
                     {other?.image ? (
                       <Image
@@ -80,14 +81,19 @@ export function TransactionsSection({
                       </span>
                     )}
                   </div>
-                  <div>
-                    <div className="font-semibold text-sm text-slate-900">
+
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-sm text-slate-900 truncate">
                       {other?.name ?? "Utilizator necunoscut"}
                     </div>
+
                     <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                      <MapPin className="w-3 h-3" />
-                      {t.post.locationName ?? "Locație necunoscută"}
+                      <MapPin className="w-3 h-3 shrink-0" />
+                      <span className="truncate">
+                        {t.post.locationName ?? "Locație necunoscută"}
+                      </span>
                     </div>
+
                     <div className="text-xs text-slate-400 mt-0.5">
                       {new Date(t.completedAt).toLocaleDateString("ro-RO", {
                         day: "numeric",
