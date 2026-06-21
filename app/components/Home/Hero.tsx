@@ -42,8 +42,7 @@ export const Hero = () => {
               className="font-sans font-extrabold text-white text-5xl sm:text-6xl lg:text-7xl leading-[1.05] tracking-tight sm:text-nowrap"
               style={{
                 textShadow: `
-      1px 1px 0px #65a30d,
-      3px 3px 0px #365a0a
+      1px 1px 0px #4d7c0f
     `,
               }}
             >
@@ -53,8 +52,8 @@ export const Hero = () => {
                 className="text-lime-400 italic"
                 style={{
                   textShadow: `
-        1px 1px 0px #15803d,
-        3px 3px 0px #0f3d2a
+        1px 1px 0px #166534,
+        2px 2px 0px #0f3d2a
       `,
                 }}
               >
