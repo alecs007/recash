@@ -41,10 +41,9 @@ export const Hero = () => {
             <h1
               className="font-sans font-extrabold text-white text-5xl sm:text-6xl lg:text-7xl leading-[1.05] tracking-tight sm:text-nowrap"
               style={{
-                // Tighter, punchier shadow using only 2 layers for a crisp "pressed" look
                 textShadow: `
-      1px 1px 0px #0a2016,
-      2px 2px 0px #04100a
+      1px 1px 0px #65a30d,
+      4px 4px 0px #365a0a
     `,
               }}
             >
@@ -53,10 +52,9 @@ export const Hero = () => {
               <span
                 className="text-lime-400 italic"
                 style={{
-                  // Tighter shadow for the lime text to keep it legible against the dark background
                   textShadow: `
-        1px 1px 0px #2a4708,
-        2px 2px 0px #152204
+        1px 1px 0px #15803d,
+        4px 4px 0px #0f3d2a
       `,
                 }}
               >

@@ -14,6 +14,7 @@ import { FaListUl } from "react-icons/fa6";
 import { FaWineBottle, FaRegCompass } from "react-icons/fa";
 import useSWR from "swr";
 import { useSetActiveCounts } from "@/hooks/useActiveCounts";
+import { isCurrentlyAvailable } from "@/lib/availability";
 
 const API = process.env.NEXT_PUBLIC_API_VERSION ?? "v1";
 
@@ -244,12 +245,19 @@ function useVirtualList<T>(items: T[]) {
   };
 }
 
-function computeHoursLeft(expiresAt: string | null): number | null {
+function computeTimeLeft(
+  expiresAt: string | null,
+): { minutes: number; label: string } | null {
   if (!expiresAt) return null;
-  return Math.max(
+  const totalMinutes = Math.max(
     0,
-    Math.floor((new Date(expiresAt).getTime() - Date.now()) / 3_600_000),
+    Math.floor((new Date(expiresAt).getTime() - Date.now()) / 60_000),
   );
+  const label =
+    totalMinutes < 60
+      ? `${totalMinutes} min`
+      : `${Math.floor(totalMinutes / 60)}h`;
+  return { minutes: totalMinutes, label };
 }
 
 function PostCard({
@@ -274,11 +282,11 @@ function PostCard({
   const collectorEarning =
     Math.round(((post.estimatedValue * post.collectorSharePercent) / 100) * 2) /
     2;
-  const hoursLeft = useMemo(
-    () => computeHoursLeft(post.expiresAt),
+  const timeLeft = useMemo(
+    () => computeTimeLeft(post.expiresAt),
     [post.expiresAt],
   );
-  const urgent = hoursLeft !== null && hoursLeft < 6;
+  const urgent = timeLeft !== null && timeLeft.minutes < 360;
 
   const buttonDisabled =
     isLoggedIn && (isOwnPost || !canClaim || claiming === post.id);
@@ -367,9 +375,9 @@ function PostCard({
             <span className="text-slate-400"> pentru tine</span>
           </div>
           <div className="flex items-center gap-1.5">
-            {urgent && (
+            {urgent && timeLeft && (
               <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
-                {hoursLeft}h rămase
+                {timeLeft.label} rămase
               </span>
             )}
             <span className="text-xs font-black text-lime-700">
@@ -426,11 +434,11 @@ function SelectedPostOverlay({
   const collectorEarning =
     Math.round(((post.estimatedValue * post.collectorSharePercent) / 100) * 2) /
     2;
-  const hoursLeft = useMemo(
-    () => computeHoursLeft(post.expiresAt),
+  const timeLeft = useMemo(
+    () => computeTimeLeft(post.expiresAt),
     [post.expiresAt],
   );
-  const urgent = hoursLeft !== null && hoursLeft < 6;
+  const urgent = timeLeft !== null && timeLeft.minutes < 360; // < 6h
 
   const buttonDisabled =
     isLoggedIn && (isOwnPost || !canClaim || claiming === post.id);
@@ -520,9 +528,9 @@ function SelectedPostOverlay({
               <span className="text-slate-400"> pentru tine</span>
             </div>
             <div className="flex items-center gap-1.5">
-              {urgent && (
+              {urgent && timeLeft && (
                 <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
-                  {hoursLeft}h rămase
+                  {timeLeft.label} rămase
                 </span>
               )}
               <span className="text-xs font-black text-lime-700">
@@ -909,16 +917,11 @@ export default function MapPage() {
           )
             return false;
         }
-        if (p.availabilitySchedule?.length) {
-          const now = new Date();
-          const mins = now.getHours() * 60 + now.getMinutes();
-          const today = p.availabilitySchedule.find(
-            (s) => s.day === now.getDay(),
-          );
-          if (!today) return false;
-          const [sh, sm] = today.start.split(":").map(Number);
-          const [eh, em] = today.end.split(":").map(Number);
-          if (mins < sh * 60 + sm || mins > eh * 60 + em) return false;
+        if (
+          p.availabilitySchedule?.length &&
+          !isCurrentlyAvailable(p.availabilitySchedule)
+        ) {
+          return false;
         }
         return true;
       }),

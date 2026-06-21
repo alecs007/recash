@@ -62,7 +62,7 @@ export const SectionDivider = ({ ad, variant = 0 }: SectionDividerProps) => {
               href={ad.href}
               target="_blank"
               rel="noopener noreferrer sponsored"
-              className="group block w-full rounded-2xl overflow-hidden border border-slate-200 bg-white hover:border-lime-300 transition-colors"
+              className="group block w-full rounded-xl lg:rounded-2xl overflow-hidden border border-slate-200 bg-white"
               aria-label={`Sponsor: ${ad.imageAlt}`}
             >
               <div className="relative w-full aspect-[6/2] lg:aspect-[6/1]">

@@ -14,13 +14,47 @@ export const DAYS_RO = [
   { value: 0, short: "D", long: "Duminică" },
 ];
 
+const SCHEDULE_TIMEZONE = "Europe/Bucharest";
+
+const WEEKDAY_MAP: Record<string, number> = {
+  Sun: 0,
+  Mon: 1,
+  Tue: 2,
+  Wed: 3,
+  Thu: 4,
+  Fri: 5,
+  Sat: 6,
+};
+
+function getScheduleClock(date: Date): { day: number; minutes: number } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: SCHEDULE_TIMEZONE,
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+
+  let day = 0;
+  let hour = 0;
+  let minute = 0;
+
+  for (const part of parts) {
+    if (part.type === "weekday") day = WEEKDAY_MAP[part.value] ?? 0;
+    if (part.type === "hour") hour = parseInt(part.value, 10) % 24;
+    if (part.type === "minute") minute = parseInt(part.value, 10);
+  }
+
+  return { day, minutes: hour * 60 + minute };
+}
+
 export function isCurrentlyAvailable(
   schedule: DaySchedule[] | null | undefined,
 ): boolean {
   if (!schedule || schedule.length === 0) return true;
-  const now = new Date();
-  const currentDay = now.getDay();
-  const currentMins = now.getHours() * 60 + now.getMinutes();
+  const { day: currentDay, minutes: currentMins } = getScheduleClock(
+    new Date(),
+  );
   const todaySchedule = schedule.find((s) => s.day === currentDay);
   if (!todaySchedule) return false;
   const [sh, sm] = todaySchedule.start.split(":").map(Number);
@@ -32,9 +66,9 @@ export function getNextAvailableText(
   schedule: DaySchedule[] | null | undefined,
 ): string | null {
   if (!schedule || schedule.length === 0) return null;
-  const now = new Date();
-  const currentDay = now.getDay();
-  const currentMins = now.getHours() * 60 + now.getMinutes();
+  const { day: currentDay, minutes: currentMins } = getScheduleClock(
+    new Date(),
+  );
   for (let offset = 0; offset < 7; offset++) {
     const checkDay = (currentDay + offset) % 7;
     const ds = schedule.find((s) => s.day === checkDay);

@@ -458,7 +458,7 @@ function StepBottles({
         <button
           type="button"
           onClick={() => setShowAi(true)}
-          className="w-full flex items-center justify-center gap-1 py-2.5 rounded-xl border-2 border-slate-100 text-slate-500 text-xs font-semibold hover:border-[#123424]/30 hover:text-[#123424] hover:bg-slate-50 transition-all cursor-pointer"
+          className="w-full flex items-center justify-center gap-1 py-2.5 rounded-xl border-2 border-slate-100 text-slate-500 text-xs font-semibold hover:text-[#123424] hover:bg-slate-50 transition-all cursor-pointer"
         >
           <svg
             viewBox="0 0 24 24"

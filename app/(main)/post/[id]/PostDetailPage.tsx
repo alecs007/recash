@@ -23,7 +23,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { FaWineBottle } from "react-icons/fa";
-import { LuSendHorizontal } from "react-icons/lu";
+import { GrSend } from "react-icons/gr";
 import { TbCancel } from "react-icons/tb";
 import { PostStatus, Post } from "@/types";
 import type { Map as LeafletMap } from "leaflet";
@@ -553,7 +553,7 @@ function ReviewForm({
         className="w-full py-3 rounded-xl bg-lime-400 text-black font-bold text-sm hover:bg-lime-300 disabled:opacity-40 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:cursor-not-allowed"
       >
         {loading ? "Se trimite..." : "Trimite rating"}
-        {!loading && <LuSendHorizontal className="w-4 h-4" />}
+        {!loading && <GrSend className="w-4 h-4" />}
       </motion.button>
     </motion.div>
   );
