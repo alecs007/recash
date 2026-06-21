@@ -51,51 +51,43 @@ interface SectionDividerProps {
 export const SectionDivider = ({ ad, variant = 0 }: SectionDividerProps) => {
   return (
     <div
-      className="my-12 lg:my-20"
+      className="my-12 lg:my-20 -mx-[calc(50vw-50%)] bg-slate-50"
       aria-label={`Reclamă sponsor ${variant + 1}`}
       role="complementary"
     >
-      {ad ? (
-        /* ── Live sponsor ad ───────────────────────────────────────────── */
-        <Link
-          href={ad.href}
-          target="_blank"
-          rel="noopener noreferrer sponsored"
-          className="group block w-full rounded-2xl overflow-hidden border border-slate-100 hover:border-lime-300 transition-colors"
-          aria-label={`Sponsor: ${ad.imageAlt}`}
-        >
-          <div className="relative w-full aspect-[6/2] lg:aspect-[6/1]">
-            <Image
-              src={ad.imageSrc}
-              alt={ad.imageAlt}
-              fill
-              sizes="(max-width: 768px) 100vw, 1280px"
-              className="object-cover object-center"
-              priority={false}
-            />
-          </div>
-
-          {/* {ad.label && (
-            <div className="bg-white border-t border-slate-100 px-4 py-2 flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-500">
-                {ad.label}
-              </span>
-              <span className="text-[10px] font-black tracking-widest uppercase text-slate-300 border border-slate-100 rounded px-1.5 py-0.5">
-                Sponsor
-              </span>
+      <div className="py-3 lg:py-4 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto">
+          {ad ? (
+            <Link
+              href={ad.href}
+              target="_blank"
+              rel="noopener noreferrer sponsored"
+              className="group block w-full rounded-2xl overflow-hidden border border-slate-200 bg-white hover:border-lime-300 transition-colors"
+              aria-label={`Sponsor: ${ad.imageAlt}`}
+            >
+              <div className="relative w-full aspect-[6/2] lg:aspect-[6/1]">
+                <Image
+                  src={ad.imageSrc}
+                  alt={ad.imageAlt}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 1280px"
+                  className="object-cover object-center"
+                  priority={false}
+                />
+              </div>
+            </Link>
+          ) : (
+            <div className="relative w-full aspect-[6/2] lg:aspect-[6/1] rounded-2xl overflow-hidden border border-slate-200 bg-white flex items-center justify-center">
+              <Image
+                src="/images/ad-placeholder.avif"
+                alt="Spațiu publicitar disponibil"
+                fill
+                className="h-full object-contain opacity-30 grayscale contrast-100 py-4 lg:py-6"
+              />
             </div>
-          )} */}
-        </Link>
-      ) : (
-        <div className="relative w-full aspect-[6/2] lg:aspect-[6/1] rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center">
-          <Image
-            src="/images/ad-placeholder.avif"
-            alt="Spațiu publicitar disponibil"
-            fill
-            className="h-full object-contain opacity-30 grayscale contrast-100 py-4 lg:py-6"
-          />
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };
