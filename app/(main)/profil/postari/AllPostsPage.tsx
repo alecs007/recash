@@ -20,6 +20,24 @@ const STATUS_FILTERS = [
   { value: "EXPIRED", label: "Expirate" },
 ];
 
+function getStatusLabel(filter: string, count: number) {
+  const isSingular = count === 1;
+
+  switch (filter) {
+    case "active":
+      return isSingular ? "postare activă" : "postări active";
+    case "COMPLETED":
+      return isSingular ? "postare finalizată" : "postări finalizate";
+    case "CANCELLED":
+      return isSingular ? "postare anulată" : "postări anulate";
+    case "EXPIRED":
+      return isSingular ? "postare expirată" : "postări expirate";
+    case "all":
+    default:
+      return isSingular ? "postare" : "postări";
+  }
+}
+
 function Skeleton() {
   return (
     <div className="space-y-3 animate-pulse">
@@ -139,7 +157,7 @@ export default function AllPostsPage() {
         ) : (
           <div className="space-y-3">
             <p className="text-xs text-slate-400 font-medium px-1">
-              {total} {total === 1 ? "postare găsită" : "postari găsite"}
+              {total} {getStatusLabel(statusFilter, total)}
             </p>
             {posts.map((post) => (
               <PostCard key={post.id} post={post} />

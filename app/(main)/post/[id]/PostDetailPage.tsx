@@ -1127,7 +1127,7 @@ function DetailPanel({
               >
                 <p className="text-sm text-slate-600 leading-relaxed">
                   {isUnavailableNow
-                    ? "Anunțul tău nu este vizibil colectorilor în acest moment, deoarece se află în afara intervalului de disponibilitate setat."
+                    ? "Anunțul tău se află în afara intervalului de disponibilitate și nu este vizibil colectorilor în acest moment."
                     : "Anunțul tău este vizibil pe hartă. Vei fi notificat imediat ce un colector face o cerere."}
                 </p>
                 <motion.button

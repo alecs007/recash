@@ -24,7 +24,7 @@ export function PostsSection({
               href="/profil/postari"
               className="hidden sm:flex items-center gap-1 text-sm font-semibold text-lime-700 hover:text-lime-800 transition-colors"
             >
-              Toate ({totalPosts})<ChevronRight className="w-4 h-4" />
+              Vezi toate ({totalPosts})<ChevronRight className="w-4 h-4" />
             </Link>
           )}
           <Link
