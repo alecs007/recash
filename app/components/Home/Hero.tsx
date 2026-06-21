@@ -43,7 +43,7 @@ export const Hero = () => {
               style={{
                 textShadow: `
       1px 1px 0px #65a30d,
-      4px 4px 0px #365a0a
+      3px 3px 0px #365a0a
     `,
               }}
             >
@@ -54,7 +54,7 @@ export const Hero = () => {
                 style={{
                   textShadow: `
         1px 1px 0px #15803d,
-        4px 4px 0px #0f3d2a
+        3px 3px 0px #0f3d2a
       `,
                 }}
               >
