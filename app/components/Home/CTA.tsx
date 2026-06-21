@@ -22,10 +22,7 @@ export const CTA = () => {
         <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4 px-4">
           <Link
             href="/post"
-            className="inline-flex items-center justify-center gap-2 bg-[#123524] text-white font-bold py-4 px-10 rounded-full text-lg shadow-lg hover:bg-[#1a4d36] hover:scale-105 transition-all w-full sm:w-auto"
-            style={{
-              boxShadow: "3px 3px 0px #75a08c",
-            }}
+            className="inline-flex items-center justify-center gap-2 bg-[#123524] text-white font-bold py-4 px-10 rounded-full text-lg transition-all shadow-[3px_3px_0px_#75a08c] active:translate-y-[3px] active:shadow-none w-full sm:w-auto"
           >
             <LuMousePointerClick className="w-6 h-6 text-lime-400" />
             Creează un anunț
@@ -33,10 +30,7 @@ export const CTA = () => {
 
           <Link
             href="/map"
-            className="inline-flex items-center justify-center gap-2 bg-lime-400/10 text-[#123524] border-2 border-[#123524]/20 font-bold py-4 px-10 rounded-full text-lg hover:bg-lime-100 hover:border-lime-300 transition-all w-full sm:w-auto"
-            style={{
-              boxShadow: "3px 3px 0px #cde8b8",
-            }}
+            className="inline-flex items-center justify-center gap-2 bg-lime-400/10 text-[#123524] border-2 border-[#123524]/20 font-bold py-4 px-10 rounded-full text-lg transition-all shadow-[3px_3px_0px_#cde8b8] active:translate-y-[3px] active:shadow-none w-full sm:w-auto"
           >
             <LuBike className="w-5 h-5" /> Colectează sticle
           </Link>

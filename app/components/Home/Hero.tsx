@@ -5,7 +5,6 @@ import { LuBike, LuMousePointerClick } from "react-icons/lu";
 export const Hero = () => {
   return (
     <section className="relative bg-white">
-      {/* 3D shadow layers */}
       <div
         className="absolute inset-0 rounded-[2rem] lg:rounded-[3rem] bg-lime-400/30"
         style={{ transform: "translate(5px, 5px)" }}
@@ -15,12 +14,10 @@ export const Hero = () => {
         style={{ transform: "translate(10px, 10px)" }}
       />
 
-      {/* Main card */}
       <div className="relative bg-gradient-to-br from-[#123524] to-[#1a4d36] rounded-[2rem] lg:rounded-[3rem] px-8 lg:px-14 py-8 lg:py-10 overflow-hidden">
         <div className="absolute -top-16 -right-12 w-52 h-52 rounded-full bg-lime-400/30 blur-3xl" />
         <div className="absolute -bottom-16 -left-12 w-44 h-44 rounded-full bg-emerald-500/20 blur-3xl" />
 
-        {/* Counter-rotate content so text stays straight */}
         <div
           className="relative flex flex-col lg:flex-row items-center justify-between"
           style={{ transform: "rotate(1deg)" }}
@@ -70,21 +67,14 @@ export const Hero = () => {
             <div className="flex flex-wrap gap-6 mt-8">
               <Link
                 href="/post"
-                className="inline-flex items-center justify-center gap-2 bg-lime-400 text-black font-bold py-4 px-8 w-full sm:w-auto rounded-full text-lg transition-all active:translate-y-[4px] active:shadow-none"
-                style={{
-                  boxShadow: "4px 4px 0px #365a0a",
-                }}
+                className="inline-flex items-center justify-center gap-2 bg-lime-400 text-black font-bold py-4 px-8 w-full sm:w-auto rounded-full text-lg transition-all shadow-[4px_4px_0px_#365a0a] active:translate-y-[4px] active:shadow-none"
               >
                 <LuMousePointerClick className="w-6 h-6" /> Creează un anunț
               </Link>
 
               <Link
                 href="/map"
-                className="inline-flex items-center justify-center gap-2 bg-white/10 text-white border border-white/20 font-bold py-4 px-8 w-full sm:w-auto rounded-full text-lg backdrop-blur transition-all active:translate-y-[4px] active:shadow-none"
-                style={{
-                  // Using a semi-transparent dark emerald instead of pure dark
-                  boxShadow: "4px 4px 0px rgba(12, 53, 36, 0.5)",
-                }}
+                className="inline-flex items-center justify-center gap-2 bg-white/10 text-white border border-white/20 font-bold py-4 px-8 w-full sm:w-auto rounded-full text-lg backdrop-blur transition-all shadow-[4px_4px_0px_rgba(12,53,36,0.5)] active:translate-y-[4px] active:shadow-none"
               >
                 <LuBike className="w-5 h-5" /> Colectează sticle
               </Link>

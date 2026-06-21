@@ -12,7 +12,7 @@ const FAQS = [
   },
   {
     q: "Cât primesc pentru sticlele mele?",
-    a: "Valoarea SGR este de 0,50 RON per sticlă sau doză. Tu decizi ce procent din această sumă îi oferi colectorului. Cu cât oferi mai mult, cu atât va veni mai repede.",
+    a: "Valoarea SGR este de 0,50 RON per sticlă sau doză. Tu decizi ce procent din valoarea totală a sticlelor îi oferi colectorului. Cu cât oferi mai mult, cu atât va veni mai repede.",
   },
   {
     q: "Este sigur? Cum știu că vine cineva serios?",
