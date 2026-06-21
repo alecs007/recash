@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { flushSync } from "react-dom";
 import { Pencil, Check, X, Loader2 } from "lucide-react";
 import { VerifiedBadge } from "../UI/VerifiedBadge";
 
@@ -14,17 +15,44 @@ export function EditableName({ initialName, certified }: Props) {
   const [name, setName] = useState(initialName ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
   const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleEditClick = () => {
+    flushSync(() => {
+      setEditing(true);
+    });
+
+    if (inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  };
+
+  const cancel = useCallback(() => {
+    setName(initialName ?? "");
+    setEditing(false);
+    setError("");
+  }, [initialName]);
 
   useEffect(() => {
-    if (editing) {
-      const t = setTimeout(() => {
-        inputRef.current?.focus();
-        inputRef.current?.select();
-      }, 10);
-      return () => clearTimeout(t);
-    }
-  }, [editing]);
+    if (!editing) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        cancel();
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [editing, cancel]);
 
   const save = async () => {
     const trimmed = name.trim();
@@ -53,15 +81,12 @@ export function EditableName({ initialName, certified }: Props) {
     }
   };
 
-  const cancel = () => {
-    setName(initialName ?? "");
-    setEditing(false);
-    setError("");
-  };
-
   if (editing) {
     return (
-      <div className="flex flex-col gap-1.5 mb-0.5 min-h-[40px] sm:min-h-[48px] justify-center">
+      <div
+        ref={containerRef}
+        className="flex flex-col gap-1.5 mb-0.5 min-h-[40px] sm:min-h-[48px] justify-center"
+      >
         <div className="flex items-center gap-2">
           <input
             ref={inputRef}
@@ -108,7 +133,7 @@ export function EditableName({ initialName, certified }: Props) {
         <VerifiedBadge className="w-5 h-5 sm:w-7 sm:h-7 shrink-0" />
       )}
       <button
-        onClick={() => setEditing(true)}
+        onClick={handleEditClick}
         title="Editează numele"
         aria-label="Editează numele"
         className="ml-1 shrink-0 w-7 h-7 rounded-lg bg-white/10 hover:bg-white/25 flex items-center justify-center cursor-pointer transition-all opacity-40 hover:opacity-100 group-hover/name:opacity-70 focus:opacity-100"
