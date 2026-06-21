@@ -9,7 +9,8 @@ import { BadgesSection } from "@/app/components/Profile/BadgesSection";
 import { ReviewsSection } from "@/app/components/Profile/ReviewsSection";
 import { RadarSection } from "@/app/components/Profile/RadarSection";
 import { ProfileRankBadge } from "@/app/components/Profile/RankBadge";
-import { VerifiedBadge } from "@/app/components/UI/VerifiedBadge";
+import { EditableName } from "@/app/components/Profile/EditableName";
+import { ProfileActions } from "@/app/components/Profile/ProfileActions";
 
 interface ExtendedSummary extends ProfileSummary {
   rank?: number;
@@ -83,12 +84,11 @@ export function ProfilePage({ summary }: { summary: ExtendedSummary }) {
             </div>
 
             <div className="flex-1 min-w-0">
-              <h1 className="text-lg sm:text-3xl font-extrabold text-white tracking-tight truncate mb-0.5 flex items-center gap-1">
-                {user.name ?? "Utilizator"}
-                {user.certified && (
-                  <VerifiedBadge className="w-5 h-5 sm:w-7 sm:h-7 shrink-0" />
-                )}
-              </h1>
+              <EditableName
+                initialName={user.name}
+                certified={user.certified}
+              />
+
               <p className="text-white/70 text-xs sm:text-sm mb-2 truncate">
                 {user.email}
               </p>
@@ -113,13 +113,6 @@ export function ProfilePage({ summary }: { summary: ExtendedSummary }) {
                   <span className="mr-1">Membru din</span>
                   <span className="font-bold text-white">{memberSince}</span>
                 </div>
-                {/* <div className="flex items-center text-white/80 text-sm">
-                  <FaWineBottle className="w-4 h-4 text-lime-400 mr-1.5" />
-                  <span className="font-bold text-white mr-1">
-                    {totalBottles}
-                  </span>
-                  sticle reciclate
-                </div> */}
               </div>
             </div>
           </div>
@@ -156,6 +149,8 @@ export function ProfilePage({ summary }: { summary: ExtendedSummary }) {
         totalTransactions={totalTransactions}
         userId={user.id}
       />
+
+      <ProfileActions />
     </div>
   );
 }
