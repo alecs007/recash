@@ -424,7 +424,7 @@ function CodeEntry({
         return;
       }
       setSuccess(true);
-      setTimeout(() => onComplete(), 1800);
+      setTimeout(() => onComplete(), 2800);
     } catch {
       setError("Eroare de rețea.");
       setLoading(false);
