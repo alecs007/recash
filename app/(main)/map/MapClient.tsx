@@ -585,7 +585,19 @@ function PostMap({
   const markersRef = useRef<Map<string, LeafletMarker>>(new Map());
   const userMarkerRef = useRef<LeafletMarker | null>(null);
   const onSelectRef = useRef(onSelectPost);
+  const circlesRef = useRef<Map<string, any>>(new Map());
   const leafletReady = useLeaflet();
+
+  function postOffset(id: string): [number, number] {
+    let h = 5381;
+    for (let i = 0; i < id.length; i++) h = ((h << 5) + h) ^ id.charCodeAt(i);
+    h = Math.abs(h);
+    const angle = (h % 628) / 100;
+    const meters = 50 + (h % 50);
+    const latDeg = meters / 111320;
+    const lngDeg = meters / (111320 * Math.cos((45.9 * Math.PI) / 180));
+    return [Math.sin(angle) * latDeg, Math.cos(angle) * lngDeg];
+  }
 
   useEffect(() => {
     onSelectRef.current = onSelectPost;
@@ -647,6 +659,7 @@ function PostMap({
     ro.observe(containerRef.current);
 
     const capturedMarkers = markersRef.current;
+    const capturedCircles = circlesRef.current;
 
     return () => {
       ro.disconnect();
@@ -654,6 +667,8 @@ function PostMap({
       mapRef.current = null;
       clusterGroupRef.current = null;
       capturedMarkers.clear();
+      capturedCircles.forEach((c: any) => c.remove());
+      capturedCircles.clear();
       userMarkerRef.current = null;
     };
   }, [leafletReady]);
@@ -666,10 +681,10 @@ function PostMap({
     const pulseIcon = L.divIcon({
       className: "",
       html: `<div style="
-        width:14px;height:14px;border-radius:50%;
-        background:#3b82f6;border:3px solid white;
-        box-shadow:0 0 0 6px rgba(59,130,246,0.2);
-      "></div>`,
+      width:14px;height:14px;border-radius:50%;
+      background:#3b82f6;border:3px solid white;
+      box-shadow:0 0 0 6px rgba(59,130,246,0.2);
+    "></div>`,
       iconSize: [14, 14],
       iconAnchor: [7, 7],
     });
@@ -692,12 +707,16 @@ function PostMap({
 
     const cluster = clusterGroupRef.current;
     const currentMarkers = markersRef.current;
+    const currentCircles = circlesRef.current;
 
+    // Remove stale markers AND circles
     const postIds = new Set(posts.map((p) => p.id));
     currentMarkers.forEach((marker, id) => {
       if (!postIds.has(id)) {
         cluster.removeLayer(marker);
         currentMarkers.delete(id);
+        currentCircles.get(id)?.remove();
+        currentCircles.delete(id);
       }
     });
 
@@ -718,25 +737,57 @@ function PostMap({
       const icon = L.divIcon({
         className: "",
         html: `<div style="
-          width:${size}px;height:${size}px;border-radius:50%;
-          background:${bg};border:2.5px solid ${border};
-          box-shadow:${shadow};
-          display:flex;align-items:center;justify-content:center;
-          font-weight:800;font-size:${fs}px;font-family:sans-serif;
-          color:${fg};cursor:pointer;
-          transform:scale(${scale});
-          transition:transform 0.15s, background 0.15s;
-        ">${label}</div>`,
+        width:${size}px;height:${size}px;border-radius:50%;
+        background:${bg};border:2.5px solid ${border};
+        box-shadow:${shadow};
+        display:flex;align-items:center;justify-content:center;
+        font-weight:800;font-size:${fs}px;font-family:sans-serif;
+        color:${fg};cursor:pointer;
+        transform:scale(${scale});
+        transition:transform 0.15s, background 0.15s;
+      ">${label}</div>`,
         iconSize: [size, size],
         iconAnchor: [size / 2, size / 2],
       });
+
+      let h = 5381;
+      for (let i = 0; i < post.id.length; i++)
+        h = ((h << 5) + h) ^ post.id.charCodeAt(i);
+      h = Math.abs(h);
+      const angle = (h % 628) / 100;
+
+      const offsetMeters = 30;
+      const radiusMeters = 45;
+      const latOffset = (offsetMeters / 111320) * Math.sin(angle);
+      const lngOffset =
+        (offsetMeters / (111320 * Math.cos((post.latitude * Math.PI) / 180))) *
+        Math.cos(angle);
+
+      const displayLat = post.latitude + latOffset;
+      const displayLng = post.longitude + lngOffset;
+
+      if (currentCircles.has(post.id)) {
+        // nothing to update
+      } else {
+        const circle = (L as any)
+          .circle([displayLat, displayLng], {
+            radius: radiusMeters,
+            color: "#64748b",
+            fillColor: "#94a3b8",
+            fillOpacity: 0.15,
+            weight: 1.5,
+            dashArray: "3 5",
+          })
+          .addTo(mapRef.current!);
+        currentCircles.set(post.id, circle);
+      }
 
       const existing = currentMarkers.get(post.id);
       if (existing) {
         existing.setIcon(icon);
       } else {
         const postId = post.id;
-        const marker = L.marker([post.latitude, post.longitude], { icon }).on(
+        const marker = L.marker([displayLat, displayLng], { icon }).on(
           "click",
           () => onSelectRef.current(postId),
         );
@@ -775,14 +826,27 @@ function PostMap({
       const zoom = Math.max(currentZoom, TARGET_ZOOM);
       const center = leafletMap.getCenter();
 
+      let h = 5381;
+      for (let i = 0; i < post.id.length; i++)
+        h = ((h << 5) + h) ^ post.id.charCodeAt(i);
+      h = Math.abs(h);
+      const angle = (h % 628) / 100;
+      const offsetMeters = 30;
+      const displayLat =
+        post.latitude + (offsetMeters / 111320) * Math.sin(angle);
+      const displayLng =
+        post.longitude +
+        (offsetMeters / (111320 * Math.cos((post.latitude * Math.PI) / 180))) *
+          Math.cos(angle);
+
       const dist = Math.sqrt(
-        Math.pow(center.lat - post.latitude, 2) +
-          Math.pow(center.lng - post.longitude, 2),
+        Math.pow(center.lat - displayLat, 2) +
+          Math.pow(center.lng - displayLng, 2),
       );
       const zoomDelta = Math.abs(currentZoom - zoom);
       const duration = Math.min(1.2, Math.max(0.4, dist * 8 + zoomDelta * 0.2));
 
-      leafletMap.flyTo([post.latitude, post.longitude], zoom, {
+      leafletMap.flyTo([displayLat, displayLng], zoom, {
         animate: true,
         duration,
         easeLinearity: 0.2,
