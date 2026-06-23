@@ -228,11 +228,6 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
                       </div>
                     </div>
                   </div>
-                  {t.post.description && t.post.description.length > 0 && (
-                    <p className="text-xs text-slate-500 italic truncate flex-1 mt-2 px-1">
-                      &quot;{t.post.description}&quot;
-                    </p>
-                  )}
                 </Link>
               );
             })}
