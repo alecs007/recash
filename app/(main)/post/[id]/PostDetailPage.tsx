@@ -22,7 +22,7 @@ import {
   LockKeyholeOpen,
   AlertTriangle,
 } from "lucide-react";
-import { FaWineBottle } from "react-icons/fa";
+import { FaWineBottle, FaInfoCircle } from "react-icons/fa";
 import { GrSend } from "react-icons/gr";
 import { TbCancel } from "react-icons/tb";
 import { PostStatus, Post } from "@/types";
@@ -88,7 +88,34 @@ const slideUpVariants: Variants = {
   exit: { opacity: 0, y: -8, transition: { duration: 0.18 } },
 };
 
-function MapQuickNav({ lat, lng }: { lat: number; lng: number }) {
+function MapQuickNav({
+  lat,
+  lng,
+  showExact,
+  isCollectorPending,
+  status,
+}: {
+  lat: number;
+  lng: number;
+  showExact: boolean;
+  isCollectorPending: boolean;
+  status: PostStatus;
+}) {
+  if (status === "CANCELLED" || status === "EXPIRED") return null;
+
+  if (!showExact) {
+    return (
+      <div className="absolute bottom-3 left-3 z-[1000]">
+        <div className="flex items-start max-w-xs gap-2.5 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-xl px-3.5 py-3 text-xs text-slate-500 font-medium shadow-sm">
+          <FaInfoCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-slate-400" />
+          {isCollectorPending
+            ? "Locația exactă va fi disponibilă după ce autorul îți aprobă cererea."
+            : "Locația exactă este vizibilă doar participanților după confirmarea colectării."}
+        </div>
+      </div>
+    );
+  }
+
   const links = [
     {
       label: "Google Maps",
@@ -142,10 +169,12 @@ function PostMap({
   lat,
   lng,
   locationName,
+  showExact = true,
 }: {
   lat: number;
   lng: number;
   locationName: string | null;
+  showExact?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
@@ -173,8 +202,25 @@ function PostMap({
   useEffect(() => {
     if (!ready || !ref.current || mapRef.current) return;
     const L = window.L;
+    let centerLat = lat;
+    let centerLng = lng;
+
+    if (!showExact) {
+      let h = 5381;
+      const id = `${lat}${lng}`;
+      for (let i = 0; i < id.length; i++) h = ((h << 5) + h) ^ id.charCodeAt(i);
+      h = Math.abs(h);
+      const angle = (h % 628) / 100;
+      const offsetMeters = 50;
+      centerLat = lat + (offsetMeters / 111320) * Math.sin(angle);
+      centerLng =
+        lng +
+        (offsetMeters / (111320 * Math.cos((lat * Math.PI) / 180))) *
+          Math.cos(angle);
+    }
+
     const map = L.map(ref.current, {
-      center: [lat, lng],
+      center: [centerLat, centerLng],
       zoom: 15,
       zoomControl: false,
       attributionControl: false,
@@ -189,9 +235,40 @@ function PostMap({
       iconSize: [32, 44],
       iconAnchor: [16, 44],
     });
-    L.marker([lat, lng], { icon })
-      .addTo(map)
-      .bindPopup(`<strong>${locationName ?? "Locația sticlelor"}</strong>`);
+
+    if (!showExact) {
+      let h = 5381;
+      const id = `${lat}${lng}`;
+      for (let i = 0; i < id.length; i++) h = ((h << 5) + h) ^ id.charCodeAt(i);
+      h = Math.abs(h);
+      const angle = (h % 628) / 100;
+      const offsetMeters = 50;
+      const radiusMeters = 90;
+      const displayLat = lat + (offsetMeters / 111320) * Math.sin(angle);
+      const displayLng =
+        lng +
+        (offsetMeters / (111320 * Math.cos((lat * Math.PI) / 180))) *
+          Math.cos(angle);
+
+      (L as any)
+        .circle([displayLat, displayLng], {
+          radius: radiusMeters,
+          color: "#64748b",
+          fillColor: "#94a3b8",
+          fillOpacity: 0.15,
+          weight: 1.5,
+          dashArray: "3 5",
+        })
+        .addTo(map);
+
+      L.marker([displayLat, displayLng], { icon })
+        .addTo(map)
+        .bindPopup("<strong>Locație aproximativă</strong>");
+    } else {
+      L.marker([lat, lng], { icon })
+        .addTo(map)
+        .bindPopup(`<strong>${locationName ?? "Locația sticlelor"}</strong>`);
+    }
     mapRef.current = map;
     return () => {
       map.remove();
@@ -347,7 +424,7 @@ function CodeEntry({
         return;
       }
       setSuccess(true);
-      setTimeout(() => onComplete(), 600);
+      setTimeout(() => onComplete(), 2800);
     } catch {
       setError("Eroare de rețea.");
       setLoading(false);
@@ -731,7 +808,16 @@ function ExpiryText({ expiresAt }: { expiresAt: string | null }) {
   return <span className="text-xs text-slate-400">{label}</span>;
 }
 
-function NavButtons({ lat, lng }: { lat: number; lng: number }) {
+function NavButtons({
+  lat,
+  lng,
+  showExact,
+}: {
+  lat: number;
+  lng: number;
+  showExact?: boolean;
+}) {
+  if (!showExact) return null;
   return (
     <div className="grid grid-cols-3 gap-2">
       {[
@@ -894,6 +980,8 @@ function DetailPanel({
   isCollector,
   mutate,
   onRedirect,
+  showExactLocation,
+  isCollectorPending,
 }: {
   post: Post;
   userId: string;
@@ -901,6 +989,8 @@ function DetailPanel({
   isCollector: boolean;
   mutate: () => void;
   onRedirect: (url: string) => void;
+  showExactLocation: boolean;
+  isCollectorPending: boolean;
 }) {
   const [showCancel, setShowCancel] = useState(false);
   const [showCode, setShowCode] = useState(false);
@@ -1953,7 +2043,7 @@ function DetailPanel({
                     : "Colectorul câștigă"
                 : isAuthor
                   ? post.status === "COMPLETED"
-                    ? "Ai primit"
+                    ? "aprimit"
                     : isTerminated
                       ? "Ai fi primit"
                       : "Primești"
@@ -2115,7 +2205,13 @@ function DetailPanel({
 
           {/* ── NAVIGATION ── */}
           <div className="mb-4">
-            <NavButtons lat={post.latitude} lng={post.longitude} />
+            {showExactLocation && (
+              <NavButtons
+                lat={post.latitude}
+                lng={post.longitude}
+                showExact={showExactLocation}
+              />
+            )}
           </div>
         </div>
 
@@ -2222,6 +2318,13 @@ export default function PostDetailClient({
 
   const isAuthor = post.isAuthor ?? post.author?.id === userId;
   const isCollector = post.isCollector ?? post.collector?.id === userId;
+  const showExactLocation =
+    isAuthor ||
+    (post.status !== "CANCELLED" &&
+      post.status !== "EXPIRED" &&
+      ((!!isCollector && post.status === "IN_PROGRESS") ||
+        post.status === "COMPLETED"));
+  const isCollectorPending = !!isCollector && post.status === "CLAIMED";
   const handleRedirect = (url: string) => router.push(url);
 
   return (
@@ -2229,11 +2332,19 @@ export default function PostDetailClient({
       <div className="lg:hidden flex flex-col min-h-[calc(100vh-var(--header-height))]">
         <div className="relative h-[260px] w-full shrink-0">
           <PostMap
+            key={`${showExactLocation}-${post.status}`}
             lat={post.latitude}
             lng={post.longitude}
             locationName={post.locationName}
+            showExact={showExactLocation}
           />
-          <MapQuickNav lat={post.latitude} lng={post.longitude} />
+          <MapQuickNav
+            lat={post.latitude}
+            lng={post.longitude}
+            showExact={showExactLocation}
+            isCollectorPending={isCollectorPending}
+            status={post.status}
+          />
         </div>
         <div className="flex-1 bg-white w-full">
           <DetailPanel
@@ -2243,6 +2354,8 @@ export default function PostDetailClient({
             isCollector={!!isCollector}
             mutate={mutate}
             onRedirect={handleRedirect}
+            showExactLocation={showExactLocation}
+            isCollectorPending={isCollectorPending}
           />
         </div>
       </div>
@@ -2253,11 +2366,19 @@ export default function PostDetailClient({
       >
         <div className="w-[55%] relative shrink-0">
           <PostMap
+            key={`${showExactLocation}-${post.status}`}
             lat={post.latitude}
             lng={post.longitude}
             locationName={post.locationName}
+            showExact={showExactLocation}
           />
-          <MapQuickNav lat={post.latitude} lng={post.longitude} />
+          <MapQuickNav
+            lat={post.latitude}
+            lng={post.longitude}
+            showExact={showExactLocation}
+            isCollectorPending={isCollectorPending}
+            status={post.status}
+          />
         </div>
         <div className="flex-1 bg-white border-l border-slate-100 overflow-hidden">
           <DetailPanel
@@ -2267,6 +2388,8 @@ export default function PostDetailClient({
             isCollector={!!isCollector}
             mutate={mutate}
             onRedirect={handleRedirect}
+            showExactLocation={showExactLocation}
+            isCollectorPending={isCollectorPending}
           />
         </div>
       </div>

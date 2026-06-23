@@ -91,7 +91,7 @@ export async function notifyClaimApproved(
     userId: collectorId,
     type: "POST_CLAIMED",
     title: "Cererea ta a fost aprobată! 🎉",
-    message: `${posterName} a aprobat cererea ta. Ai 30 de minute să ajungi la locație.`,
+    message: `${posterName} a aprobat cererea ta. Ai 60 de minute să ajungi la locație.`,
     link: `/post/${postId}`,
     metadata: { postId, action: "approved" },
   });
