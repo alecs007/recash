@@ -757,7 +757,7 @@ function PostMap({
       const angle = (h % 628) / 100;
 
       const offsetMeters = 30;
-      const radiusMeters = 45;
+      const radiusMeters = 90;
       const latOffset = (offsetMeters / 111320) * Math.sin(angle);
       const lngOffset =
         (offsetMeters / (111320 * Math.cos((post.latitude * Math.PI) / 180))) *
