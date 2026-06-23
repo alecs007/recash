@@ -93,12 +93,16 @@ function MapQuickNav({
   lng,
   showExact,
   isCollectorPending,
+  status,
 }: {
   lat: number;
   lng: number;
   showExact: boolean;
   isCollectorPending: boolean;
+  status: PostStatus;
 }) {
+  if (status === "CANCELLED" || status === "EXPIRED") return null;
+
   if (!showExact) {
     return (
       <div className="absolute bottom-3 left-3 z-[1000]">
@@ -2039,7 +2043,7 @@ function DetailPanel({
                     : "Colectorul câștigă"
                 : isAuthor
                   ? post.status === "COMPLETED"
-                    ? "Ai primit"
+                    ? "aprimit"
                     : isTerminated
                       ? "Ai fi primit"
                       : "Primești"
@@ -2315,9 +2319,11 @@ export default function PostDetailClient({
   const isAuthor = post.isAuthor ?? post.author?.id === userId;
   const isCollector = post.isCollector ?? post.collector?.id === userId;
   const showExactLocation =
-    isAuthor ||
-    (!!isCollector && post.status === "IN_PROGRESS") ||
-    post.status === "COMPLETED";
+    post.status !== "CANCELLED" &&
+    post.status !== "EXPIRED" &&
+    (isAuthor ||
+      (!!isCollector && post.status === "IN_PROGRESS") ||
+      post.status === "COMPLETED");
   const isCollectorPending = !!isCollector && post.status === "CLAIMED";
   const handleRedirect = (url: string) => router.push(url);
 
@@ -2326,6 +2332,7 @@ export default function PostDetailClient({
       <div className="lg:hidden flex flex-col min-h-[calc(100vh-var(--header-height))]">
         <div className="relative h-[260px] w-full shrink-0">
           <PostMap
+            key={`${showExactLocation}-${post.status}`}
             lat={post.latitude}
             lng={post.longitude}
             locationName={post.locationName}
@@ -2336,6 +2343,7 @@ export default function PostDetailClient({
             lng={post.longitude}
             showExact={showExactLocation}
             isCollectorPending={isCollectorPending}
+            status={post.status}
           />
         </div>
         <div className="flex-1 bg-white w-full">
@@ -2358,6 +2366,7 @@ export default function PostDetailClient({
       >
         <div className="w-[55%] relative shrink-0">
           <PostMap
+            key={`${showExactLocation}-${post.status}`}
             lat={post.latitude}
             lng={post.longitude}
             locationName={post.locationName}
@@ -2368,6 +2377,7 @@ export default function PostDetailClient({
             lng={post.longitude}
             showExact={showExactLocation}
             isCollectorPending={isCollectorPending}
+            status={post.status}
           />
         </div>
         <div className="flex-1 bg-white border-l border-slate-100 overflow-hidden">
