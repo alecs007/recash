@@ -211,7 +211,7 @@ function PostMap({
       for (let i = 0; i < id.length; i++) h = ((h << 5) + h) ^ id.charCodeAt(i);
       h = Math.abs(h);
       const angle = (h % 628) / 100;
-      const offsetMeters = 30;
+      const offsetMeters = 50;
       centerLat = lat + (offsetMeters / 111320) * Math.sin(angle);
       centerLng =
         lng +
@@ -242,7 +242,7 @@ function PostMap({
       for (let i = 0; i < id.length; i++) h = ((h << 5) + h) ^ id.charCodeAt(i);
       h = Math.abs(h);
       const angle = (h % 628) / 100;
-      const offsetMeters = 30;
+      const offsetMeters = 50;
       const radiusMeters = 90;
       const displayLat = lat + (offsetMeters / 111320) * Math.sin(angle);
       const displayLng =
@@ -424,7 +424,7 @@ function CodeEntry({
         return;
       }
       setSuccess(true);
-      setTimeout(() => onComplete(), 600);
+      setTimeout(() => onComplete(), 1800);
     } catch {
       setError("Eroare de rețea.");
       setLoading(false);
@@ -2319,11 +2319,11 @@ export default function PostDetailClient({
   const isAuthor = post.isAuthor ?? post.author?.id === userId;
   const isCollector = post.isCollector ?? post.collector?.id === userId;
   const showExactLocation =
-    post.status !== "CANCELLED" &&
-    post.status !== "EXPIRED" &&
-    (isAuthor ||
-      (!!isCollector && post.status === "IN_PROGRESS") ||
-      post.status === "COMPLETED");
+    isAuthor ||
+    (post.status !== "CANCELLED" &&
+      post.status !== "EXPIRED" &&
+      ((!!isCollector && post.status === "IN_PROGRESS") ||
+        post.status === "COMPLETED"));
   const isCollectorPending = !!isCollector && post.status === "CLAIMED";
   const handleRedirect = (url: string) => router.push(url);
 

@@ -756,7 +756,7 @@ function PostMap({
       h = Math.abs(h);
       const angle = (h % 628) / 100;
 
-      const offsetMeters = 30;
+      const offsetMeters = 50;
       const radiusMeters = 90;
       const latOffset = (offsetMeters / 111320) * Math.sin(angle);
       const lngOffset =
@@ -821,7 +821,16 @@ function PostMap({
 
       leafletMap.stop();
 
-      const TARGET_ZOOM = 15;
+      circlesRef.current.forEach((c: any) =>
+        c.setStyle({ opacity: 0, fillOpacity: 0 }),
+      );
+      (map as any).once("moveend", () => {
+        circlesRef.current.forEach((c: any) =>
+          c.setStyle({ opacity: 1, fillOpacity: 0.15 }),
+        );
+      });
+
+      const TARGET_ZOOM = 17;
       const currentZoom = leafletMap.getZoom();
       const zoom = Math.max(currentZoom, TARGET_ZOOM);
       const center = leafletMap.getCenter();
@@ -831,7 +840,7 @@ function PostMap({
         h = ((h << 5) + h) ^ post.id.charCodeAt(i);
       h = Math.abs(h);
       const angle = (h % 628) / 100;
-      const offsetMeters = 30;
+      const offsetMeters = 50;
       const displayLat =
         post.latitude + (offsetMeters / 111320) * Math.sin(angle);
       const displayLng =
