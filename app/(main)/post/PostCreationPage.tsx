@@ -1510,7 +1510,7 @@ function ActivePostGuard({ children }: { children: React.ReactNode }) {
           <div className="flex flex-col gap-2">
             <Link
               href={`/post/${data.activePost.id}`}
-              className="inline-flex items-center justify-center gap-2 bg-[#123424] text-white font-bold py-3 px-6 rounded-full hover:bg-[#1a4d36] transition-colors"
+              className="inline-flex items-center justify-center gap-2 bg-[#123424] text-white font-bold py-3 px-6 rounded-full hover:bg-[#1a4d36] transition-all shadow-[3px_3px_0px_#75a08c] active:translate-y-[3px] active:shadow-none"
             >
               <FaWineBottle className="w-4 h-4 text-lime-400" />
               Vezi anunțul activ
