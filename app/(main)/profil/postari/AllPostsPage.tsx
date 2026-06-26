@@ -38,6 +38,21 @@ function getStatusLabel(filter: string, count: number) {
   }
 }
 
+function getEmptyTitle(filter: string) {
+  switch (filter) {
+    case "active":
+      return "Nicio postare activă";
+    case "COMPLETED":
+      return "Nicio postare finalizată";
+    case "CANCELLED":
+      return "Nicio postare anulată";
+    case "EXPIRED":
+      return "Nicio postare expirată";
+    default:
+      return "Nicio postare găsită";
+  }
+}
+
 function Skeleton() {
   return (
     <div className="space-y-3 animate-pulse">
@@ -138,7 +153,7 @@ export default function AllPostsPage() {
               className="mx-auto h-24 w-24"
             />
             <p className="font-bold text-slate-900 text-lg mb-1">
-              Nicio postare găsită
+              {getEmptyTitle(statusFilter)}
             </p>
             <p className="text-sm text-slate-500">
               {statusFilter === "all"

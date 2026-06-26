@@ -31,6 +31,17 @@ const ROLE_FILTERS = [
   { value: "collector", label: "Drept colector" },
 ];
 
+function getEmptyTitle(filter: string) {
+  switch (filter) {
+    case "poster":
+      return "Nicio tranzacție drept autor";
+    case "collector":
+      return "Nicio tranzacție drept colector";
+    default:
+      return "Nicio tranzacție găsită";
+  }
+}
+
 function Stars({ rating }: { rating: number }) {
   return (
     <div className="flex items-center gap-0.5">
@@ -135,11 +146,14 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
               className="mx-auto h-24 w-24"
             />
             <p className="font-bold text-slate-900 text-lg mb-2">
-              Nicio tranzacție găsită
+              {getEmptyTitle(roleFilter)}
             </p>
             <p className="text-slate-500 text-sm">
-              {roleFilter === "all" &&
-                "Tranzacțiile vor apărea după finalizarea primului schimb."}
+              {roleFilter === "all"
+                ? "Tranzacțiile vor apărea după finalizarea primului schimb."
+                : roleFilter === "poster"
+                  ? "Nu ai finalizat niciun schimb drept autor."
+                  : "Nu ai finalizat niciun schimb drept colector."}
             </p>
           </div>
         ) : (

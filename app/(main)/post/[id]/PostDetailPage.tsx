@@ -2043,7 +2043,7 @@ function DetailPanel({
                     : "Colectorul câștigă"
                 : isAuthor
                   ? post.status === "COMPLETED"
-                    ? "aprimit"
+                    ? "ai primit"
                     : isTerminated
                       ? "Ai fi primit"
                       : "Primești"

@@ -85,7 +85,7 @@ export function EditableName({ initialName, certified }: Props) {
     return (
       <div
         ref={containerRef}
-        className="flex flex-col gap-1.5 mb-0.5 min-h-[40px] sm:min-h-[48px] justify-center"
+        className="flex flex-col gap-1.5 min-h-[35px] sm:min-h-[45px] justify-center"
       >
         <div className="flex items-center gap-2">
           <input
@@ -98,7 +98,7 @@ export function EditableName({ initialName, certified }: Props) {
             }}
             maxLength={100}
             placeholder="Numele tău"
-            className="text-base sm:text-lg font-extrabold text-white bg-white/10 border-2 border-lime-400/60 rounded-xl px-3 py-1 outline-none focus:border-lime-400 transition-all w-full max-w-[180px] sm:max-w-xs placeholder:text-white/40 min-w-0"
+            className="text-[0.9rem] sm:text-lg font-extrabold text-white bg-white/10 border-2 border-lime-400/60 rounded-xl px-3 py-1 outline-none focus:border-lime-400 transition-all w-full max-w-[180px] sm:max-w-xs placeholder:text-white/40 min-w-0"
           />
           <button
             onClick={() => void save()}
@@ -125,7 +125,7 @@ export function EditableName({ initialName, certified }: Props) {
   }
 
   return (
-    <div className="flex items-center gap-1 group/name mb-0.5 min-h-[40px] sm:min-h-[48px]">
+    <div className="flex items-center gap-1 group/name min-h-[35px] sm:min-h-[45px]">
       <h1 className="text-xl sm:text-3xl font-extrabold text-white tracking-tight truncate">
         {name || "Utilizator"}
       </h1>
