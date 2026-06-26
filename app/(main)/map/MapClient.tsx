@@ -728,7 +728,7 @@ function PostMap({
       const fg = isSelected ? "#123424" : "#ffffff";
       const border = isSelected ? "#ffffff" : "rgba(255,255,255,0.8)";
       const shadow = isSelected
-        ? "0 4px 12px rgba(0,0,0,0.28)"
+        ? "0 3px 8px rgba(0,0,0,0.28)"
         : "0 2px 6px rgba(0,0,0,0.28)";
       const scale = isSelected ? 1.18 : 1;
       const label = n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
@@ -855,13 +855,24 @@ function PostMap({
       const zoomDelta = Math.abs(currentZoom - zoom);
       const duration = Math.min(1.2, Math.max(0.4, dist * 8 + zoomDelta * 0.2));
 
-      leafletMap.flyTo([displayLat, displayLng], zoom, {
+      let targetLat = displayLat;
+      if (isMobile && containerRef.current) {
+        const mapHeight = containerRef.current.offsetHeight;
+
+        const pixelShift = mapHeight / 6;
+        const metersPerPixel =
+          (156543.03392 * Math.cos((post.latitude * Math.PI) / 180)) /
+          Math.pow(2, zoom);
+        const latDegShift = (pixelShift * metersPerPixel) / 111320;
+        targetLat = displayLat - latDegShift;
+      }
+
+      leafletMap.flyTo([targetLat, displayLng], zoom, {
         animate: true,
         duration,
         easeLinearity: 0.2,
         minZoom: Math.min(currentZoom, zoom),
         noMoveStart: true,
-        paddingBottomLeft: isMobile ? [0, 220] : [0, 0],
       });
     }, 50);
 
