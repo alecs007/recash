@@ -75,7 +75,7 @@ export const Hero = () => {
 
               <Link
                 href="/map"
-                className="inline-flex items-center justify-center gap-2 bg-white/10 text-white border border-white/20 font-bold py-4 px-8 w-full sm:w-auto rounded-full text-lg backdrop-blur transition-all shadow-[4px_4px_0px_rgba(12,53,36,0.5)] active:translate-y-[4px] active:shadow-none"
+                className="inline-flex items-center justify-center gap-2.5 bg-white/10 text-white border border-white/20 font-bold py-4 px-8 w-full sm:w-auto rounded-full text-lg backdrop-blur transition-all shadow-[4px_4px_0px_rgba(12,53,36,0.5)] active:translate-y-[4px] active:shadow-none"
               >
                 <FaSackDollar className="w-5 h-5" /> Colectează sticle
               </Link>

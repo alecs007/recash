@@ -31,7 +31,7 @@ export const CTA = () => {
 
           <Link
             href="/map"
-            className="inline-flex items-center justify-center gap-2 bg-lime-400/10 text-[#123524] border-2 border-[#123524]/20 font-bold py-4 px-10 rounded-full text-lg transition-all shadow-[3px_3px_0px_#cde8b8] active:translate-y-[3px] active:shadow-none w-full sm:w-auto"
+            className="inline-flex items-center justify-center gap-2.5 bg-lime-400/10 text-[#123524] border-2 border-[#123524]/20 font-bold py-4 px-10 rounded-full text-lg transition-all shadow-[3px_3px_0px_#cde8b8] active:translate-y-[3px] active:shadow-none w-full sm:w-auto"
           >
             <FaSackDollar className="w-5 h-5" /> Colectează sticle
           </Link>
