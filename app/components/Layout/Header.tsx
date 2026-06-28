@@ -8,10 +8,10 @@ import { useState, useRef, useEffect } from "react";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { useLoading } from "@/context/LoadingContext";
 import { FaWineBottle, FaRegUser, FaRegBell, FaRecycle } from "react-icons/fa";
+import { TbTruckDelivery } from "react-icons/tb";
 import { FiPlusSquare } from "react-icons/fi";
 import { IoChevronDown } from "react-icons/io5";
 import { MdLogout } from "react-icons/md";
-import { LuBike } from "react-icons/lu";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNotificationBell } from "@/hooks/useNotificationBell";
 import { useActiveCounts } from "@/hooks/useActiveCounts";
@@ -72,7 +72,7 @@ function ActiveIndicator({
               <FaWineBottle className="w-3.5 h-3.5 text-lime-600" />
             </div>
             <div className="absolute bottom-0 right-0 z-0 w-7 h-7 rounded-full bg-blue-50 border-2 border-blue-400 flex items-center justify-center">
-              <LuBike className="w-3.5 h-3.5 text-blue-600" />
+              <TbTruckDelivery className="w-3.5 h-3.5 text-blue-600" />
             </div>
           </button>
 
@@ -111,7 +111,7 @@ function ActiveIndicator({
                       animate={{ x: [-1, 1, -1] }}
                       transition={{ repeat: Infinity, duration: 1.5 }}
                     >
-                      <LuBike className="w-4 h-4 text-blue-600" />
+                      <TbTruckDelivery className="w-4 h-4 text-blue-600" />
                     </motion.div>
                   </div>
                   <span className="text-xs font-bold text-slate-700 pr-2 whitespace-nowrap">
@@ -154,7 +154,7 @@ function ActiveIndicator({
                 animate={{ x: [-1, 1, -1] }}
                 transition={{ repeat: Infinity, duration: 1.5 }}
               >
-                <LuBike className="w-5 h-5 text-blue-600" />
+                <TbTruckDelivery className="w-5 h-5 text-blue-600" />
               </motion.div>
             </Link>
           )}
@@ -340,7 +340,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                               onClick={() => setDropdownOpen(false)}
                               className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                             >
-                              <LuBike className="w-4 h-4 text-slate-600" />
+                              <TbTruckDelivery className="w-4 h-4 text-slate-600" />
                               Colectează sticle
                             </Link>
                           )}

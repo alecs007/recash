@@ -27,13 +27,15 @@ export function PostsSection({
               Vezi toate ({totalPosts})<ChevronRight className="w-4 h-4" />
             </Link>
           )}
-          <Link
-            href="/post"
-            className="flex items-center gap-1.5 text-sm font-semibold bg-[#123424] text-white px-3 py-1.5 rounded-xl hover:bg-[#1a4d36] transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Adaugă
-          </Link>
+          {posts.length > 0 && (
+            <Link
+              href="/post"
+              className="flex items-center gap-1.5 text-sm font-semibold bg-[#123424] text-white px-3 py-1.5 rounded-xl hover:bg-[#1a4d36] transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Adaugă
+            </Link>
+          )}
         </div>
       </div>
       {posts.length === 0 ? (

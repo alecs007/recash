@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { CollectConfirmModal } from "@/app/components/UI/CollectConfirmModal";
 import { MapPin, Search, Loader2, X, Star, ChevronRight } from "lucide-react";
+import { TbTruckDelivery } from "react-icons/tb";
 import { LuFilter } from "react-icons/lu";
 import { FiMap } from "react-icons/fi";
 import { FaListUl } from "react-icons/fa6";
@@ -397,15 +398,19 @@ function PostCard({
           isOwnPost
             ? "bg-slate-300 cursor-not-allowed opacity-70"
             : "bg-[#123424] hover:bg-[#1a4d36] disabled:opacity-40 disabled:cursor-not-allowed"
-        } ${buttonDisabled ? "pointer-events-none text-slate-600" : " text-white"}`}
+        } ${buttonDisabled ? "pointer-events-none text-slate-600 bg-slate-300 cursor-not-allowed" : "text-white"}`}
       >
         {claiming === post.id ? (
           <Loader2 className="w-4 h-4 animate-spin" />
         ) : (
           <>
-            <FaWineBottle
-              className={`w-4 h-4 ${buttonDisabled ? "text-slate-600" : "text-lime-400"}`}
-            />
+            {!canClaim ? (
+              <TbTruckDelivery className="w-4 h-4 text-slate-600" />
+            ) : (
+              <FaWineBottle
+                className={`w-4 h-4 ${buttonDisabled ? "text-slate-600" : "text-lime-400"}`}
+              />
+            )}
             {buttonText()}
           </>
         )}
@@ -550,15 +555,19 @@ function SelectedPostOverlay({
             isOwnPost
               ? "bg-slate-300 cursor-not-allowed opacity-70"
               : "bg-[#123424] hover:bg-[#1a4d36] disabled:opacity-40 disabled:cursor-not-allowed"
-          } ${buttonDisabled ? "pointer-events-none text-slate-600" : " text-white"}`}
+          } ${buttonDisabled ? "pointer-events-none text-slate-600 bg-slate-300 cursor-not-allowed" : " text-white"}`}
         >
           {claiming === post.id ? (
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
             <>
-              <FaWineBottle
-                className={`w-4 h-4 ${buttonDisabled ? "text-slate-600" : "text-lime-400"}`}
-              />
+              {!canClaim ? (
+                <TbTruckDelivery className="w-4 h-4 text-slate-600" />
+              ) : (
+                <FaWineBottle
+                  className={`w-4 h-4 ${buttonDisabled ? "text-slate-600" : "text-lime-400"}`}
+                />
+              )}
               {buttonText()}
             </>
           )}
@@ -727,9 +736,7 @@ function PostMap({
       const bg = isSelected ? "#a3e635" : "#123424";
       const fg = isSelected ? "#123424" : "#ffffff";
       const border = isSelected ? "#ffffff" : "rgba(255,255,255,0.8)";
-      const shadow = isSelected
-        ? "0 3px 8px rgba(0,0,0,0.28)"
-        : "0 2px 6px rgba(0,0,0,0.28)";
+      const shadow = "0 2px 6px rgba(0,0,0,0.28)";
       const scale = isSelected ? 1.18 : 1;
       const label = n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
       const fs = size <= 32 ? 10 : 12;
@@ -1269,12 +1276,12 @@ export default function MapPage() {
             href={`/post/${activeData.activeCollection.id}`}
             className="max-w-7xl mx-auto"
           >
-            <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mt-2">
+            <div className="flex items-center justify-between bg-amber-50 rounded-xl px-3 py-2 mt-2">
               <span className="text-xs font-semibold text-amber-700">
                 Ai o colectare în desfășurare
               </span>
               <div className="flex items-center gap-0.5 text-xs font-bold text-amber-700">
-                Vezi <ChevronRight className="w-4 h-4" />
+                Vezi live <ChevronRight className="w-4 h-4" />
               </div>
             </div>
           </Link>

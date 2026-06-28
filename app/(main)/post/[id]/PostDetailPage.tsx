@@ -110,7 +110,7 @@ function MapQuickNav({
           <FaInfoCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-slate-400" />
           {isCollectorPending
             ? "Locația exactă va fi disponibilă după ce autorul îți aprobă cererea."
-            : "Locația exactă este vizibilă doar participanților după confirmarea colectării."}
+            : "Locația exactă este vizibilă doar participanților la această colectare."}
         </div>
       </div>
     );
@@ -221,7 +221,7 @@ function PostMap({
 
     const map = L.map(ref.current, {
       center: [centerLat, centerLng],
-      zoom: 15,
+      zoom: 16,
       zoomControl: false,
       attributionControl: false,
     });
@@ -270,7 +270,18 @@ function PostMap({
         .bindPopup(`<strong>${locationName ?? "Locația sticlelor"}</strong>`);
     }
     mapRef.current = map;
+
+    let offsetRaf: number | null = null;
+    if (window.innerWidth < 1024) {
+      offsetRaf = requestAnimationFrame(() => {
+        if (!mapRef.current) return;
+        const h = map.getSize().y;
+        map.panBy([0, h / 20], { animate: false });
+      });
+    }
+
     return () => {
+      if (offsetRaf !== null) cancelAnimationFrame(offsetRaf);
       map.remove();
       mapRef.current = null;
     };

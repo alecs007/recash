@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLoading } from "@/context/LoadingContext";
 import {
   FileText,
+  Lock,
   Bug,
   HelpCircle,
   LogOut,
@@ -161,6 +162,16 @@ export function ProfileActions() {
             <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
           </Link>
 
+          <Link href="/confidentialitate" className={ROW_BASE}>
+            <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+              <Lock className="w-4 h-4 text-slate-600" />
+            </div>
+            <span className="text-sm font-semibold text-slate-700 flex-1">
+              Politica de confidențialitate
+            </span>
+            <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+          </Link>
+
           <a
             href="mailto:contact@recash.ro?subject=Raportare%20problem%C4%83"
             className={ROW_BASE}
@@ -182,7 +193,7 @@ export function ProfileActions() {
               <HelpCircle className="w-4 h-4 text-slate-600" />
             </div>
             <span className="text-sm font-semibold text-slate-700 flex-1">
-              Suport
+              Suport utilizatori
             </span>
             <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
           </a>

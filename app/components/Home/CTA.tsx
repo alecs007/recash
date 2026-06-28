@@ -1,12 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
-import { LuBike, LuMousePointerClick } from "react-icons/lu";
+import { LuMousePointerClick } from "react-icons/lu";
+import { FaSackDollar } from "react-icons/fa6";
 
 export const CTA = () => {
   return (
     <section className="relative bg-white rounded-[2rem] lg:rounded-[3rem] overflow-hidden mt-12 mb-12">
       <div className="relative z-10 max-w-6xl mx-auto text-center">
-        <h2 className="font-sans font-extrabold text-slate-900 text-[2.5rem] lg:text-6xl leading-tight tracking-tight sm:text-nowrap">
+        <h2 className="font-sans font-extrabold text-slate-900 text-[2.5rem] lg:text-[3.3rem] leading-tight tracking-tight sm:text-nowrap">
           <span className="text-nowrap">Bani din reciclare,</span>
           <br className="sm:hidden" />
           <span className="text-nowrap">
@@ -14,7 +15,7 @@ export const CTA = () => {
           </span>
         </h2>
 
-        <p className="text-slate-700 text-xl lg:text-2xl mt-4 max-w-4xl mx-auto leading-relaxed">
+        <p className="text-slate-700 text-xl lg:text-[1.2rem] mt-4 max-w-3xl mx-auto leading-relaxed">
           Uită de drumul la magazin printr-o simplă postare. Tu îți salvezi
           timpul, colectorul câștigă bani, mediul îți mulțumește.
         </p>
@@ -32,7 +33,7 @@ export const CTA = () => {
             href="/map"
             className="inline-flex items-center justify-center gap-2 bg-lime-400/10 text-[#123524] border-2 border-[#123524]/20 font-bold py-4 px-10 rounded-full text-lg transition-all shadow-[3px_3px_0px_#cde8b8] active:translate-y-[3px] active:shadow-none w-full sm:w-auto"
           >
-            <LuBike className="w-5 h-5" /> Colectează sticle
+            <FaSackDollar className="w-5 h-5" /> Colectează sticle
           </Link>
         </div>
       </div>
