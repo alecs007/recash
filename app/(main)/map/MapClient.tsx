@@ -405,7 +405,9 @@ function PostCard({
         ) : (
           <>
             {!canClaim ? (
-              <TbTruckDelivery className="w-4 h-4 text-slate-600" />
+              <TbTruckDelivery
+                className={`w-4 h-4 ${buttonDisabled ? "text-slate-600" : "text-lime-400"}`}
+              />
             ) : (
               <FaWineBottle
                 className={`w-4 h-4 ${buttonDisabled ? "text-slate-600" : "text-lime-400"}`}
@@ -562,7 +564,9 @@ function SelectedPostOverlay({
           ) : (
             <>
               {!canClaim ? (
-                <TbTruckDelivery className="w-4 h-4 text-slate-600" />
+                <TbTruckDelivery
+                  className={`w-4 h-4 ${buttonDisabled ? "text-slate-600" : "text-lime-400"}`}
+                />
               ) : (
                 <FaWineBottle
                   className={`w-4 h-4 ${buttonDisabled ? "text-slate-600" : "text-lime-400"}`}
