@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit, RL } from "@/lib/rate-limit";
+import { isValidObjectId } from "@/lib/validate";
 import { approveClaimSchema } from "@/lib/validations/post";
 import { notifyClaimApproved, notifyClaimDenied } from "@/lib/notifications";
 import { redis } from "@/lib/redis";
@@ -34,6 +35,10 @@ export async function POST(
   if (!rl.ok) return rl.response;
 
   const { id } = await params;
+
+  if (!isValidObjectId(id)) {
+    return NextResponse.json({ error: "Anunț negăsit" }, { status: 404 });
+  }
 
   let body: unknown;
   try {
@@ -97,12 +102,25 @@ export async function POST(
       );
       const code = generateCode();
       const ttlSeconds = COLLECTION_WINDOW_MINUTES * 60 + 300;
-      await redis.set(`code:${id}`, code, "EX", ttlSeconds);
 
-      await prisma.post.update({
-        where: { id },
-        data: { status: "IN_PROGRESS", expiresAt: collectionDeadline },
-      });
+      try {
+        await prisma.post.update({
+          where: { id, status: "CLAIMED", collectorId },
+          data: { status: "IN_PROGRESS", expiresAt: collectionDeadline },
+        });
+      } catch (e) {
+        if ((e as { code?: string }).code === "P2025") {
+          return NextResponse.json(
+            {
+              error: "Cererea nu mai este validă — a fost anulată între timp.",
+            },
+            { status: 409 },
+          );
+        }
+        throw e;
+      }
+
+      await redis.set(`code:${id}`, code, "EX", ttlSeconds);
 
       await notifyClaimApproved(collectorId, id, posterName);
 
@@ -116,7 +134,6 @@ export async function POST(
         [session.user.id, collectorId],
       );
 
-      // Send email to collector if they opted in (fire-and-forget)
       maybeEmailClaimApproved({
         collectorId,
         posterName,
@@ -130,10 +147,20 @@ export async function POST(
         deadline: collectionDeadline.toISOString(),
       });
     } else {
-      await prisma.post.update({
-        where: { id },
-        data: { status: "OPEN", collectorId: null, claimedAt: null },
-      });
+      try {
+        await prisma.post.update({
+          where: { id, status: "CLAIMED", collectorId },
+          data: { status: "OPEN", collectorId: null, claimedAt: null },
+        });
+      } catch (e) {
+        if ((e as { code?: string }).code === "P2025") {
+          return NextResponse.json(
+            { error: "Cererea nu mai este validă." },
+            { status: 409 },
+          );
+        }
+        throw e;
+      }
 
       await notifyClaimDenied(collectorId, id, posterName);
 
@@ -151,7 +178,6 @@ export async function POST(
         },
       });
 
-      // Send email to collector if they opted in (fire-and-forget)
       maybeEmailClaimDenied({
         collectorId,
         posterName,

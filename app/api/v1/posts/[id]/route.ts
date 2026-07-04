@@ -2,13 +2,26 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { maybeExpirePost } from "@/lib/expiry";
+import { rateLimit, RL, getClientIp } from "@/lib/rate-limit";
+import { isValidObjectId } from "@/lib/validate";
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { id } = await params;
   const session = await auth();
+
+  const rl = await rateLimit(
+    session?.user?.id ? session.user.id : `ip:post-detail:${getClientIp(req)}`,
+    session?.user?.id ? RL.read : RL.public,
+  );
+  if (!rl.ok) return rl.response;
+
+  const { id } = await params;
+
+  if (!isValidObjectId(id)) {
+    return NextResponse.json({ error: "Anunț negăsit" }, { status: 404 });
+  }
 
   try {
     const post = await prisma.post.findUnique({
@@ -87,7 +100,6 @@ export async function GET(
     const isCollector = userId === post.collectorId;
     const isParticipant = isAuthor || isCollector;
 
-    // Sanitize sensitive fields for non-participants
     if (!isParticipant) {
       return NextResponse.json({
         ...post,

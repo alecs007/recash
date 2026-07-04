@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit, RL } from "@/lib/rate-limit";
+import { isValidObjectId } from "@/lib/validate";
 import {
   notifyPostCancelled,
   notifyInProgressCancelled,
@@ -24,6 +25,10 @@ export async function POST(
   if (!rl.ok) return rl.response;
 
   const { id } = await params;
+
+  if (!isValidObjectId(id)) {
+    return NextResponse.json({ error: "Anunț negăsit" }, { status: 404 });
+  }
 
   try {
     const post = await prisma.post.findUnique({ where: { id } });
@@ -55,10 +60,20 @@ export async function POST(
       if (!isAuthor) {
         return NextResponse.json({ error: "Acces interzis" }, { status: 403 });
       }
-      await prisma.post.update({
-        where: { id },
-        data: { status: "CANCELLED" },
-      });
+      try {
+        await prisma.post.update({
+          where: { id, status: "OPEN" },
+          data: { status: "CANCELLED" },
+        });
+      } catch (e) {
+        if ((e as { code?: string }).code === "P2025") {
+          return NextResponse.json(
+            { error: "Anunțul nu se mai află în starea așteptată." },
+            { status: 409 },
+          );
+        }
+        throw e;
+      }
 
       publishPostStatus({ postId: id, status: "CANCELLED" }, [post.authorId]);
       publishPostCancelled(id, [post.authorId], {
@@ -72,10 +87,20 @@ export async function POST(
 
     if (post.status === "CLAIMED") {
       if (isAuthor) {
-        await prisma.post.update({
-          where: { id },
-          data: { status: "CANCELLED" },
-        });
+        try {
+          await prisma.post.update({
+            where: { id, status: "CLAIMED", collectorId: post.collectorId },
+            data: { status: "CANCELLED" },
+          });
+        } catch (e) {
+          if ((e as { code?: string }).code === "P2025") {
+            return NextResponse.json(
+              { error: "Cererea nu mai este validă." },
+              { status: 409 },
+            );
+          }
+          throw e;
+        }
         if (post.collectorId) {
           await notifyPostCancelled(post.collectorId, id, "poster");
         }
@@ -90,10 +115,20 @@ export async function POST(
         );
         return NextResponse.json({ success: true, status: "CANCELLED" });
       } else {
-        await prisma.post.update({
-          where: { id },
-          data: { status: "OPEN", collectorId: null, claimedAt: null },
-        });
+        try {
+          await prisma.post.update({
+            where: { id, status: "CLAIMED", collectorId: post.collectorId },
+            data: { status: "OPEN", collectorId: null, claimedAt: null },
+          });
+        } catch (e) {
+          if ((e as { code?: string }).code === "P2025") {
+            return NextResponse.json(
+              { error: "Cererea nu mai este validă." },
+              { status: 409 },
+            );
+          }
+          throw e;
+        }
         publishPostStatus({ postId: id, status: "OPEN", collectorId: null }, [
           post.authorId,
         ]);
@@ -109,7 +144,6 @@ export async function POST(
     if (post.status === "IN_PROGRESS") {
       const cancellerUserId = isAuthor ? post.authorId : post.collectorId!;
 
-      // Treating the cancellation as a 0 star rating for the person who bailed
       const canceller = await prisma.user.findUnique({
         where: { id: cancellerUserId },
         select: { reputationScore: true, ratingCount: true },
@@ -120,27 +154,44 @@ export async function POST(
       const newScore =
         Math.round(((currentScore * currentCount) / newCount) * 100) / 100;
 
-      await prisma.$transaction([
-        prisma.post.update({
-          where: { id },
-          data: isCollector
-            ? {
-                status: "OPEN",
-                collectorId: null,
-                claimedAt: null,
-                expiresAt: post.expiresAt,
-              }
-            : { status: "CANCELLED" },
-        }),
-        prisma.user.update({
-          where: { id: cancellerUserId },
-          data: {
-            cancelledCount: { increment: 1 },
-            reputationScore: newScore,
-            ratingCount: newCount,
-          },
-        }),
-      ]);
+      try {
+        await prisma.$transaction([
+          prisma.post.update({
+            where: {
+              id,
+              status: "IN_PROGRESS",
+              collectorId: post.collectorId!,
+            },
+            data: isCollector
+              ? {
+                  status: "OPEN",
+                  collectorId: null,
+                  claimedAt: null,
+                  expiresAt: post.expiresAt,
+                }
+              : { status: "CANCELLED" },
+          }),
+          prisma.user.update({
+            where: { id: cancellerUserId },
+            data: {
+              cancelledCount: { increment: 1 },
+              reputationScore: newScore,
+              ratingCount: newCount,
+            },
+          }),
+        ]);
+      } catch (e) {
+        if ((e as { code?: string }).code === "P2025") {
+          return NextResponse.json(
+            {
+              error:
+                "Colectarea a fost deja finalizată — nu mai poate fi anulată.",
+            },
+            { status: 409 },
+          );
+        }
+        throw e;
+      }
 
       await redis.del(`code:${id}`).catch(() => null);
 

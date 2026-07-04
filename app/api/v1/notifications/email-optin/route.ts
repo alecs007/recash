@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { rateLimit, RL } from "@/lib/rate-limit";
 import { redis } from "@/lib/redis";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -24,6 +25,19 @@ export async function POST(req: Request) {
   }
 
   const { optIn, context, postId } = body as Record<string, unknown>;
+
+  const post = await prisma.post.findUnique({
+    where: { id: postId as string },
+    select: { authorId: true, collectorId: true },
+  });
+  if (!post)
+    return NextResponse.json({ error: "Anunț negăsit" }, { status: 404 });
+  if (context === "author" && post.authorId !== session.user.id) {
+    return NextResponse.json({ error: "Acces interzis" }, { status: 403 });
+  }
+  if (context === "collector" && post.collectorId !== session.user.id) {
+    return NextResponse.json({ error: "Acces interzis" }, { status: 403 });
+  }
 
   if (typeof optIn !== "boolean") {
     return NextResponse.json(
@@ -67,6 +81,9 @@ export async function GET(req: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ answered: false, optedIn: false });
   }
+
+  const rl = await rateLimit(session.user.id, RL.read);
+  if (!rl.ok) return rl.response;
 
   const { searchParams } = new URL(req.url);
   const context = searchParams.get("context");

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redis } from "@/lib/redis";
+import { rateLimit, RL } from "@/lib/rate-limit";
+import { isValidObjectId } from "@/lib/validate";
 
 export async function GET(
   _req: Request,
@@ -12,7 +14,14 @@ export async function GET(
     return NextResponse.json({ error: "Neautentificat" }, { status: 401 });
   }
 
+  const rl = await rateLimit(session.user.id, RL.read);
+  if (!rl.ok) return rl.response;
+
   const { id } = await params;
+
+  if (!isValidObjectId(id)) {
+    return NextResponse.json({ error: "ID invalid" }, { status: 400 });
+  }
 
   try {
     const post = await prisma.post.findUnique({

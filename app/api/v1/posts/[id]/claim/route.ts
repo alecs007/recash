@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit, RL } from "@/lib/rate-limit";
+import { isValidObjectId } from "@/lib/validate";
 import { notifyPostClaimed, createNotification } from "@/lib/notifications";
 import { publishPostStatus } from "@/lib/pubsub";
 import { maybeEmailCollectorRequest } from "@/lib/email-optin";
@@ -21,6 +22,10 @@ export async function POST(
   if (!rl.ok) return rl.response;
 
   const { id } = await params;
+
+  if (!isValidObjectId(id)) {
+    return NextResponse.json({ error: "Anunț negăsit" }, { status: 404 });
+  }
 
   try {
     const post = await prisma.post.findUnique({ where: { id } });
@@ -95,7 +100,6 @@ export async function POST(
 
     const collectorName = collector?.name ?? "Un colector";
 
-    // Notify poster via DB + WS push
     await notifyPostClaimed(post.authorId, id, collectorName, post.bottleCount);
 
     await createNotification({
@@ -107,7 +111,6 @@ export async function POST(
       metadata: { postId: id },
     });
 
-    // Push post status update to everyone watching this post
     publishPostStatus(
       {
         postId: id,
@@ -118,7 +121,6 @@ export async function POST(
       [post.authorId],
     );
 
-    // Send email to author if they opted in (fire-and-forget)
     maybeEmailCollectorRequest({
       authorId: post.authorId,
       collectorName,

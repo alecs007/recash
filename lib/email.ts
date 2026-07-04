@@ -157,7 +157,7 @@ export async function sendCollectorRequestEmail({
         cele <strong>${bottleCount} sticle</strong> din anunțul tău.
       </p>
       <p style="margin:0 0 12px;font-size:15px;color:#334155;line-height:1.6;">
-        Intră pe website pentru a <strong>aproba sau refuza</strong> cererea.
+        Intră pe Recash pentru a <strong>aproba sau refuza</strong> cererea.
         Odată aprobat, colectorul are <strong>60 de minute</strong> la dispoziție să ajungă la tine.
       </p>
     `,

@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { redis } from "@/lib/redis";
+import { rateLimit, RL, getClientIp } from "@/lib/rate-limit";
 
 const CACHE_TTL = 60;
 const DEFAULT_LIMIT = 20;
 
 export async function GET(req: Request) {
+  const rl = await rateLimit(`ip:leaderboard:${getClientIp(req)}`, RL.public);
+  if (!rl.ok) return rl.response;
+
   const { searchParams } = new URL(req.url);
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1") || 1);
   const limit = Math.min(

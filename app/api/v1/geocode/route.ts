@@ -1,16 +1,21 @@
 import { NextResponse } from "next/server";
+import { rateLimit, RL, getClientIp } from "@/lib/rate-limit";
 
 const NOMINATIM = "https://nominatim.openstreetmap.org";
 const UA = "Recash/1.0 (contact@recash.ro)";
 
 export async function GET(req: Request) {
+  const rl = await rateLimit(`ip:geocode:${getClientIp(req)}`, RL.public);
+  if (!rl.ok) return rl.response;
+
   const { searchParams } = new URL(req.url);
   const type = searchParams.get("type");
 
   try {
     if (type === "search") {
-      const q = searchParams.get("q") ?? "";
-      if (!q.trim()) return NextResponse.json([]);
+      const q = (searchParams.get("q") ?? "").trim().slice(0, 200);
+      if (!q) return NextResponse.json([]);
+
       const res = await fetch(
         `${NOMINATIM}/search?q=${encodeURIComponent(q)}&format=json&limit=6&accept-language=ro&countrycodes=ro`,
         {
@@ -23,9 +28,23 @@ export async function GET(req: Request) {
     }
 
     if (type === "reverse") {
-      const lat = searchParams.get("lat");
-      const lon = searchParams.get("lon");
-      if (!lat || !lon) return NextResponse.json({}, { status: 400 });
+      const lat = parseFloat(searchParams.get("lat") ?? "");
+      const lon = parseFloat(searchParams.get("lon") ?? "");
+
+      if (
+        !Number.isFinite(lat) ||
+        !Number.isFinite(lon) ||
+        lat < -90 ||
+        lat > 90 ||
+        lon < -180 ||
+        lon > 180
+      ) {
+        return NextResponse.json(
+          { error: "Coordonate invalide" },
+          { status: 400 },
+        );
+      }
+
       const res = await fetch(
         `${NOMINATIM}/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=ro`,
         {

@@ -16,7 +16,23 @@ export async function POST(req: Request) {
   let ids: string[] | undefined;
   try {
     const body = await req.json().catch(() => ({}));
-    if (Array.isArray(body?.ids)) ids = body.ids as string[];
+    if (body?.ids !== undefined) {
+      if (
+        !Array.isArray(body.ids) ||
+        body.ids.length === 0 ||
+        body.ids.length > 100 ||
+        !body.ids.every(
+          (i: unknown) =>
+            typeof i === "string" && i.length > 0 && i.length <= 100,
+        )
+      ) {
+        return NextResponse.json(
+          { error: "ids trebuie să fie un array de string-uri (max 100)" },
+          { status: 400 },
+        );
+      }
+      ids = body.ids as string[];
+    }
   } catch {}
 
   try {

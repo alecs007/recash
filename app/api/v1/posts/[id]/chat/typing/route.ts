@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { redis } from "@/lib/redis";
 import { publishChatTyping } from "@/lib/pubsub";
 import { rateLimit } from "@/lib/rate-limit";
+import { isValidObjectId } from "@/lib/validate";
 
 const TYPING_RL = { limit: 30, windowSec: 60 };
 
@@ -19,6 +20,10 @@ export async function POST(
   if (!rl.ok) return rl.response;
 
   const { id: postId } = await params;
+
+  if (!isValidObjectId(postId)) {
+    return NextResponse.json({ ok: false }, { status: 404 });
+  }
 
   const post = await prisma.post.findUnique({
     where: { id: postId },

@@ -1,16 +1,21 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { redis } from "@/lib/redis";
+import { rateLimit, RL, getClientIp } from "@/lib/rate-limit";
+import { isValidObjectId } from "@/lib/validate";
 
 const PUBLIC_PROFILE_TTL = 60;
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const rl = await rateLimit(`ip:user-profile:${getClientIp(req)}`, RL.public);
+  if (!rl.ok) return rl.response;
+
   const { id } = await params;
 
-  if (!id || id.length > 100) {
+  if (!isValidObjectId(id)) {
     return NextResponse.json({ error: "ID invalid" }, { status: 400 });
   }
 

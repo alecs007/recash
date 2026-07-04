@@ -1,17 +1,19 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { rateLimit, RL } from "@/lib/rate-limit";
+import { rateLimit, RL, getClientIp } from "@/lib/rate-limit";
 import { invalidate, CacheKey } from "@/lib/cache";
 import { checkPostBadges } from "@/lib/badges";
 import { startExpiryLoop } from "@/lib/expiry";
 import { dispatchRadarNotifications } from "@/lib/radar";
+import { createPostSchema } from "@/lib/validations/post";
 
 startExpiryLoop();
 
-const ACTIVE_STATUSES = ["OPEN", "CLAIMED", "IN_PROGRESS"] as const;
-
 export async function GET(req: Request) {
+  const rl = await rateLimit(`ip:posts-feed:${getClientIp(req)}`, RL.public);
+  if (!rl.ok) return rl.response;
+
   const { searchParams } = new URL(req.url);
   const limit = Math.min(
     200,
@@ -66,6 +68,8 @@ export async function GET(req: Request) {
   }
 }
 
+const ACTIVE_STATUSES = ["OPEN", "CLAIMED", "IN_PROGRESS"] as const;
+
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -82,118 +86,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Cerere invalidă" }, { status: 400 });
   }
 
-  if (typeof body !== "object" || body === null || Array.isArray(body)) {
-    return NextResponse.json({ error: "Cerere invalidă" }, { status: 400 });
-  }
-
-  const {
-    description,
-    bottleCount,
-    estimatedValue,
-    collectorSharePercent,
-    latitude,
-    longitude,
-    locationName,
-    address,
-    images,
-    expiresInHours,
-    availabilitySchedule,
-  } = body as Record<string, unknown>;
-
-  if (typeof description !== "string" || description.trim().length > 500) {
+  const parsed = createPostSchema.safeParse(body);
+  if (!parsed.success) {
     return NextResponse.json(
-      { error: "Descrierea poate avea maxim 500 de caractere" },
+      { error: "Date invalide", details: parsed.error.flatten().fieldErrors },
       { status: 400 },
     );
   }
 
-  if (
-    typeof bottleCount !== "number" ||
-    !Number.isInteger(bottleCount) ||
-    bottleCount < 1 ||
-    bottleCount > 10_000
-  ) {
-    return NextResponse.json(
-      { error: "Numărul de sticle trebuie să fie între 1 și 10.000" },
-      { status: 400 },
-    );
-  }
-
-  if (
-    typeof estimatedValue !== "number" ||
-    estimatedValue < 0 ||
-    estimatedValue > 100_000
-  ) {
-    return NextResponse.json(
-      { error: "Valoarea estimată este invalidă" },
-      { status: 400 },
-    );
-  }
-
-  if (
-    typeof collectorSharePercent !== "number" ||
-    !Number.isInteger(collectorSharePercent) ||
-    collectorSharePercent < 0 ||
-    collectorSharePercent > 100
-  ) {
-    return NextResponse.json(
-      { error: "Procentul colectorului trebuie să fie între 0% și 100%" },
-      { status: 400 },
-    );
-  }
-
-  if (
-    typeof latitude !== "number" ||
-    latitude < -90 ||
-    latitude > 90 ||
-    typeof longitude !== "number" ||
-    longitude < -180 ||
-    longitude > 180
-  ) {
-    return NextResponse.json(
-      { error: "Coordonate geografice invalide" },
-      { status: 400 },
-    );
-  }
-
-  if (
-    locationName !== undefined &&
-    (typeof locationName !== "string" || locationName.length > 200)
-  ) {
-    return NextResponse.json(
-      { error: "Numele locației este prea lung (max 200 caractere)" },
-      { status: 400 },
-    );
-  }
-
-  const safeImages: string[] = [];
-  if (images !== undefined) {
-    if (!Array.isArray(images) || images.length > 5) {
-      return NextResponse.json(
-        { error: "Poți atașa cel mult 5 imagini" },
-        { status: 400 },
-      );
-    }
-    for (const img of images) {
-      if (typeof img !== "string" || img.length > 2048) {
-        return NextResponse.json(
-          { error: "URL imagine invalid" },
-          { status: 400 },
-        );
-      }
-      safeImages.push(img);
-    }
-  }
-
-  const safeExpiresInHours =
-    expiresInHours === null
-      ? null
-      : typeof expiresInHours === "number" &&
-          Number.isInteger(expiresInHours) &&
-          expiresInHours >= 1 &&
-          expiresInHours <= 8760
-        ? expiresInHours
-        : 168;
+  const data = parsed.data;
 
   const existingActive = await prisma.post.findFirst({
     where: {
@@ -214,45 +115,24 @@ export async function POST(req: Request) {
     );
   }
 
-  type AvailabilitySchedule = { day: number; start: string; end: string }[];
-
-  let safeSchedule: AvailabilitySchedule | null = null;
-  if (Array.isArray(availabilitySchedule) && availabilitySchedule.length <= 7) {
-    const valid = (availabilitySchedule as unknown[]).every((s) => {
-      if (typeof s !== "object" || !s) return false;
-      const item = s as Record<string, unknown>;
-      return (
-        typeof item.day === "number" &&
-        item.day >= 0 &&
-        item.day <= 6 &&
-        typeof item.start === "string" &&
-        /^\d{2}:\d{2}$/.test(item.start) &&
-        typeof item.end === "string" &&
-        /^\d{2}:\d{2}$/.test(item.end)
-      );
-    });
-    if (valid) safeSchedule = availabilitySchedule as AvailabilitySchedule;
-  }
-
   try {
     const post = await prisma.post.create({
       data: {
         authorId: session.user.id,
-        description: description.trim(),
-        bottleCount,
-        estimatedValue,
-        collectorSharePercent,
-        latitude,
-        longitude,
-        locationName:
-          typeof locationName === "string" ? locationName.trim() || null : null,
-        address: typeof address === "string" ? address.trim() || null : null,
-        images: safeImages,
+        description: data.description,
+        bottleCount: data.bottleCount,
+        estimatedValue: data.estimatedValue,
+        collectorSharePercent: data.collectorSharePercent,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        locationName: data.locationName?.trim() || null,
+        address: data.address?.trim() || null,
+        images: data.images,
         expiresAt:
-          safeExpiresInHours === null
+          data.expiresInHours === null
             ? null
-            : new Date(Date.now() + safeExpiresInHours * 60 * 60 * 1000),
-        availabilitySchedule: safeSchedule,
+            : new Date(Date.now() + data.expiresInHours * 60 * 60 * 1000),
+        availabilitySchedule: data.availabilitySchedule,
       },
       select: { id: true, status: true, createdAt: true },
     });
@@ -269,13 +149,12 @@ export async function POST(req: Request) {
     dispatchRadarNotifications({
       postId: post.id,
       postAuthorId: session.user.id,
-      postLatitude: latitude as number,
-      postLongitude: longitude as number,
-      postLocationName:
-        typeof locationName === "string" ? locationName.trim() || null : null,
-      bottleCount: bottleCount as number,
-      estimatedValue: estimatedValue as number,
-      collectorSharePercent: collectorSharePercent as number,
+      postLatitude: data.latitude,
+      postLongitude: data.longitude,
+      postLocationName: data.locationName?.trim() || null,
+      bottleCount: data.bottleCount,
+      estimatedValue: data.estimatedValue,
+      collectorSharePercent: data.collectorSharePercent,
     }).catch(console.error);
 
     return NextResponse.json(post, { status: 201 });

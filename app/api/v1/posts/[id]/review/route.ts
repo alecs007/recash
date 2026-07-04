@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit, RL } from "@/lib/rate-limit";
+import { isValidObjectId } from "@/lib/validate";
 import { reviewSchema } from "@/lib/validations/post";
 import { notifyRatingReceived } from "@/lib/notifications";
 import { invalidate, CacheKey } from "@/lib/cache";
@@ -21,6 +22,10 @@ export async function POST(
   if (!rl.ok) return rl.response;
 
   const { id: postId } = await params;
+
+  if (!isValidObjectId(postId)) {
+    return NextResponse.json({ error: "Anunț negăsit" }, { status: 404 });
+  }
 
   let body: unknown;
   try {
@@ -136,7 +141,6 @@ export async function POST(
       invalidate(CacheKey.profile(reviewedUserId)),
     ];
 
-    // Check PERFECT_RATING badge after score is persisted
     sideEffects.push(
       prisma.user
         .findUnique({

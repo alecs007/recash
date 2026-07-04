@@ -65,9 +65,19 @@ export async function rateLimit(
   }
 }
 
+export function getClientIp(req: Request): string {
+  const xff = req.headers.get("x-forwarded-for");
+  if (xff) return xff.split(",")[0].trim();
+  const real = req.headers.get("x-real-ip");
+  if (real) return real.trim();
+  return "unknown";
+}
+
 export const RL = {
   /** Standard read endpoints: 120 req / 60 s */
   read: { limit: 120, windowSec: 60 } satisfies RateLimitConfig,
   /** Write / mutation endpoints: 30 req / 60 s */
   write: { limit: 30, windowSec: 60 } satisfies RateLimitConfig,
+  /** Public, unauthenticated endpoints keyed by IP: 60 req / 60 s */
+  public: { limit: 60, windowSec: 60 } satisfies RateLimitConfig,
 } as const;

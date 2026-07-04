@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { redis } from "@/lib/redis";
+import { rateLimit, RL } from "@/lib/rate-limit";
 import { randomBytes } from "crypto";
 
 const WS_TOKEN_TTL_SEC = 60;
@@ -10,6 +11,9 @@ export async function GET() {
   if (!session?.user?.id) {
     return NextResponse.json({ token: null }, { status: 401 });
   }
+
+  const rl = await rateLimit(session.user.id, RL.read);
+  if (!rl.ok) return rl.response;
 
   const token = randomBytes(32).toString("hex");
 

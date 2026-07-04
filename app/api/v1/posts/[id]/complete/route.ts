@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit, RL } from "@/lib/rate-limit";
+import { isValidObjectId } from "@/lib/validate";
 import { redis } from "@/lib/redis";
 import { notifyPostCompleted } from "@/lib/notifications";
 import { invalidate, CacheKey } from "@/lib/cache";
@@ -23,6 +24,10 @@ export async function POST(
   if (!rl.ok) return rl.response;
 
   const { id } = await params;
+
+  if (!isValidObjectId(id)) {
+    return NextResponse.json({ error: "Anunț negăsit" }, { status: 404 });
+  }
 
   let body: { code?: string } = {};
   try {
@@ -86,39 +91,51 @@ export async function POST(
       Math.round(((actualValue * post.collectorSharePercent) / 100) * 2) / 2;
     const posterEarning = actualValue - collectorEarning;
 
-    await prisma.$transaction(async (tx) => {
-      await tx.post.update({
-        where: { id },
-        data: { status: "COMPLETED", completedAt: new Date() },
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.post.update({
+          where: { id, status: "IN_PROGRESS", collectorId: post.collectorId! },
+          data: { status: "COMPLETED", completedAt: new Date() },
+        });
+        await tx.transaction.create({
+          data: {
+            postId: id,
+            posterId: post.authorId,
+            collectorId: post.collectorId!,
+            bottleCount,
+            actualValue,
+            collectorEarning,
+            posterEarning,
+          },
+        });
+        await tx.user.update({
+          where: { id: post.authorId },
+          data: {
+            totalBottlesGiven: { increment: bottleCount },
+            totalTransactions: { increment: 1 },
+            totalSaved: { increment: posterEarning },
+          },
+        });
+        await tx.user.update({
+          where: { id: post.collectorId! },
+          data: {
+            totalBottlesCollected: { increment: bottleCount },
+            totalTransactions: { increment: 1 },
+            totalEarned: { increment: collectorEarning },
+          },
+        });
       });
-      await tx.transaction.create({
-        data: {
-          postId: id,
-          posterId: post.authorId,
-          collectorId: post.collectorId!,
-          bottleCount,
-          actualValue,
-          collectorEarning,
-          posterEarning,
-        },
-      });
-      await tx.user.update({
-        where: { id: post.authorId },
-        data: {
-          totalBottlesGiven: { increment: bottleCount },
-          totalTransactions: { increment: 1 },
-          totalSaved: { increment: posterEarning },
-        },
-      });
-      await tx.user.update({
-        where: { id: post.collectorId! },
-        data: {
-          totalBottlesCollected: { increment: bottleCount },
-          totalTransactions: { increment: 1 },
-          totalEarned: { increment: collectorEarning },
-        },
-      });
-    });
+    } catch (e) {
+      if ((e as { code?: string }).code === "P2025") {
+        return NextResponse.json(
+          {
+            error: "Colectarea nu mai este activă - a fost anulată între timp.",
+          },
+          { status: 409 },
+        );
+      }
+      throw e;
+    }
 
     await redis.del(`code:${id}`);
 

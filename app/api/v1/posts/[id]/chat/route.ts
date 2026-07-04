@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit, RL } from "@/lib/rate-limit";
+import { isValidObjectId } from "@/lib/validate";
 import { publishChatMessage } from "@/lib/pubsub";
 import { z } from "zod";
 
@@ -39,6 +40,11 @@ export async function GET(
   if (!rl.ok) return rl.response;
 
   const { id: postId } = await params;
+
+  if (!isValidObjectId(postId)) {
+    return NextResponse.json({ error: "Anunț negăsit" }, { status: 404 });
+  }
+
   const post = await assertParticipant(postId, session.user.id);
   if (!post)
     return NextResponse.json({ error: "Acces interzis" }, { status: 403 });
@@ -87,6 +93,11 @@ export async function POST(
   if (!rl.ok) return rl.response;
 
   const { id: postId } = await params;
+
+  if (!isValidObjectId(postId)) {
+    return NextResponse.json({ error: "Anunț negăsit" }, { status: 404 });
+  }
+
   const post = await assertParticipant(postId, session.user.id);
   if (!post)
     return NextResponse.json({ error: "Acces interzis" }, { status: 403 });
