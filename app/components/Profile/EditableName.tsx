@@ -98,7 +98,7 @@ export function EditableName({ initialName, certified }: Props) {
             }}
             maxLength={100}
             placeholder="Numele tău"
-            className="text-[0.9rem] sm:text-lg font-extrabold text-white bg-white/10 border-2 border-lime-400/60 rounded-xl px-3 py-1 outline-none focus:border-lime-400 transition-all w-full max-w-[180px] sm:max-w-xs placeholder:text-white/40 min-w-0"
+            className="text-[1rem] sm:text-lg font-extrabold text-white bg-white/10 border-2 border-lime-400/60 rounded-xl px-3 py-0.5 sm:py-1 outline-none focus:border-lime-400 transition-all w-full max-w-[180px] sm:max-w-xs placeholder:text-white/40 min-w-0"
           />
           <button
             onClick={() => void save()}

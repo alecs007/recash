@@ -211,6 +211,7 @@ function useLeaflet() {
 }
 
 const VIRTUAL_PAGE_SIZE = 30;
+const CIRCLE_MIN_ZOOM = 14;
 
 function useVirtualList<T>(items: T[]) {
   const [limit, setLimit] = useState(VIRTUAL_PAGE_SIZE);
@@ -342,6 +343,11 @@ function PostCard({
             <span className="text-[10px] font-semibold text-slate-400">
               {post.author.reputationScore.toFixed(1)}
             </span>
+            {post.author.ratingCount > 0 && (
+              <span className="text-[10px] text-slate-300">
+                ({post.author.ratingCount})
+              </span>
+            )}
           </div>
         </div>
         <div className="text-right shrink-0">
@@ -501,6 +507,11 @@ function SelectedPostOverlay({
               <span className="text-[10px] font-semibold text-slate-400">
                 {post.author.reputationScore.toFixed(1)}
               </span>
+              {post.author.ratingCount > 0 && (
+                <span className="text-[10px] text-slate-300">
+                  ({post.author.ratingCount})
+                </span>
+              )}
             </div>
           </div>
           <div className="text-right shrink-0">
@@ -633,7 +644,19 @@ function PostMap({
       maxZoom: 19,
     }).addTo(map);
 
+    map.on("zoomend", () => {
+      const zoom = (map as unknown as { getZoom: () => number }).getZoom();
+      const visible = zoom >= CIRCLE_MIN_ZOOM;
+      circlesRef.current.forEach((c: any) =>
+        c.setStyle({
+          opacity: visible ? 1 : 0,
+          fillOpacity: visible ? 0.15 : 0,
+        }),
+      );
+    });
+
     let clusterGroup: LeafletLayer;
+
     if (L.markerClusterGroup) {
       clusterGroup = L.markerClusterGroup({
         chunkedLoading: true,
@@ -780,12 +803,18 @@ function PostMap({
       if (currentCircles.has(post.id)) {
         // nothing to update
       } else {
+        const currentZoom = (
+          mapRef.current as unknown as { getZoom: () => number }
+        ).getZoom();
+        const visible = currentZoom >= CIRCLE_MIN_ZOOM;
+
         const circle = (L as any)
           .circle([displayLat, displayLng], {
             radius: radiusMeters,
             color: "#64748b",
             fillColor: "#94a3b8",
-            fillOpacity: 0.15,
+            fillOpacity: visible ? 0.15 : 0,
+            opacity: visible ? 1 : 0,
             weight: 1.5,
             dashArray: "3 5",
           })
@@ -836,8 +865,13 @@ function PostMap({
         c.setStyle({ opacity: 0, fillOpacity: 0 }),
       );
       (map as any).once("moveend", () => {
+        const zoom = (map as unknown as { getZoom: () => number }).getZoom();
+        const visible = zoom >= CIRCLE_MIN_ZOOM;
         circlesRef.current.forEach((c: any) =>
-          c.setStyle({ opacity: 1, fillOpacity: 0.15 }),
+          c.setStyle({
+            opacity: visible ? 1 : 0,
+            fillOpacity: visible ? 0.15 : 0,
+          }),
         );
       });
 

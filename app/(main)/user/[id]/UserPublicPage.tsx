@@ -258,7 +258,7 @@ function Skeleton() {
       {/* Hero card */}
       <div className="bg-slate-100 rounded-[2rem] mx-4 sm:mx-6 lg:mx-8 mb-6 px-6 sm:px-10 py-6 sm:py-8">
         <div className="flex flex-row items-center gap-4 sm:gap-6">
-          <div className="w-[4.5rem] h-[4.5rem] sm:w-28 sm:h-28 rounded-full bg-slate-200 shrink-0" />
+          <div className="w-[4.5rem] h-[4.5rem] sm:w-28 sm:h-28 rounded-2xl sm:rounded-3xl bg-slate-200 shrink-0" />
           <div className="flex-1 min-w-0 space-y-3">
             <div className="h-7 sm:h-9 w-48 bg-slate-200 rounded-xl" />
             <div className="flex items-center gap-2">
@@ -283,7 +283,7 @@ function Skeleton() {
 
       {/* Stats grid */}
       <div className="mx-4 sm:mx-6 lg:mx-8 mb-8">
-        <div className="bg-white rounded-2xl overflow-hidden border border-slate-100">
+        <div className="bg-white overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-4">
             {[0, 1, 2, 3].map((i) => (
               <div
@@ -519,7 +519,7 @@ export default function UserPublicPage({ userId }: { userId: string }) {
           <div className="relative shrink-0">
             {user.image ? (
               <div className="relative w-18 h-18 sm:w-28 sm:h-28 shrink-0">
-                <div className="absolute inset-0 rounded-full bg-slate-200" />
+                <div className="absolute inset-0 rounded-2xl sm:rounded-3xl bg-slate-200" />
                 <Image
                   src={user.image}
                   alt={user.name ?? "Profil"}

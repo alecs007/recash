@@ -669,7 +669,7 @@ export function RadarSection() {
                   bottom: 12,
                   left: 0,
                   right: 0,
-                  zIndex: 1001,
+                  zIndex: 999,
                 }}
                 className="flex justify-center pointer-events-none"
               >
