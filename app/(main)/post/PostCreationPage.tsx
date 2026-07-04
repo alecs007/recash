@@ -1756,9 +1756,9 @@ export default function PostCreationClient({
 
   return (
     <ActivePostGuard>
-      {showOnboarding && (
+      {/* {showOnboarding && (
         <OnboardingSheet onDismiss={() => setShowOnboarding(false)} />
-      )}
+      )} */}
       <div className="max-w-lg mx-auto px-4 py-8 min-h-[100dvh]">
         <StepIndicator current={step} />
 
