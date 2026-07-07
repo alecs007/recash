@@ -36,7 +36,7 @@ export async function GET(
   if (!session?.user?.id)
     return NextResponse.json({ error: "Neautentificat" }, { status: 401 });
 
-  const rl = await rateLimit(session.user.id, RL.read);
+  const rl = await rateLimit(`${session.user.id}:chat-read`, RL.read);
   if (!rl.ok) return rl.response;
 
   const { id: postId } = await params;
@@ -89,7 +89,7 @@ export async function POST(
   if (!session?.user?.id)
     return NextResponse.json({ error: "Neautentificat" }, { status: 401 });
 
-  const rl = await rateLimit(session.user.id, CHAT_WRITE_RL);
+  const rl = await rateLimit(`${session.user.id}:chat-write`, CHAT_WRITE_RL);
   if (!rl.ok) return rl.response;
 
   const { id: postId } = await params;

@@ -18,7 +18,7 @@ export async function POST(
     return NextResponse.json({ error: "Neautentificat" }, { status: 401 });
   }
 
-  const rl = await rateLimit(session.user.id, RL.write);
+  const rl = await rateLimit(`${session.user.id}:posts-claim`, RL.write);
   if (!rl.ok) return rl.response;
 
   const { id } = await params;

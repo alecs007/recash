@@ -74,10 +74,7 @@ export function getClientIp(req: Request): string {
 }
 
 export const RL = {
-  /** Standard read endpoints: 120 req / 60 s */
-  read: { limit: 120, windowSec: 60 } satisfies RateLimitConfig,
-  /** Write / mutation endpoints: 30 req / 60 s */
-  write: { limit: 30, windowSec: 60 } satisfies RateLimitConfig,
-  /** Public, unauthenticated endpoints keyed by IP: 60 req / 60 s */
-  public: { limit: 60, windowSec: 60 } satisfies RateLimitConfig,
+  read: { limit: 180, windowSec: 60 },
+  write: { limit: 60, windowSec: 60 },
+  public: { limit: 60, windowSec: 60 },
 } as const;

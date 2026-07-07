@@ -16,7 +16,7 @@ export async function POST(
   if (!session?.user?.id)
     return NextResponse.json({ ok: false }, { status: 401 });
 
-  const rl = await rateLimit(session.user.id, TYPING_RL);
+  const rl = await rateLimit(`${session.user.id}:chat-typing`, TYPING_RL);
   if (!rl.ok) return rl.response;
 
   const { id: postId } = await params;
