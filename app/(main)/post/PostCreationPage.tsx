@@ -454,7 +454,7 @@ function StepBottles({
       </div>
 
       {/* ── AI Estimator button ── */}
-      <div className="pt-1">
+      {/* <div className="pt-1">
         <button
           type="button"
           onClick={() => setShowAi(true)}
@@ -475,7 +475,7 @@ function StepBottles({
           </svg>
           Estimează cu AI printr-o fotografie
         </button>
-      </div>
+      </div>  */}
 
       {showAi && (
         <AiBottleAnalyzer
