@@ -2,7 +2,6 @@
 
 import { useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { PiStarFourBold } from "react-icons/pi";
@@ -125,7 +124,6 @@ export function AiBottleAnalyzer({ onApply, onClose }: AiBottleAnalyzerProps) {
           className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header */}
           <div className="flex items-center justify-between px-6 pt-6 pb-4">
             <div>
               <h2 className="text-base font-extrabold text-slate-900 tracking-tight flex items-center">
@@ -145,7 +143,6 @@ export function AiBottleAnalyzer({ onApply, onClose }: AiBottleAnalyzerProps) {
           </div>
 
           <div className="px-6 pb-6 space-y-4">
-            {/* Drop zone */}
             <div
               onDragOver={(e) => {
                 e.preventDefault();
@@ -169,14 +166,12 @@ export function AiBottleAnalyzer({ onApply, onClose }: AiBottleAnalyzerProps) {
             >
               {imagePreview ? (
                 <>
-                  <Image
+                  {/* eslint-disable-next-line @next/next/no-img-element -- user-uploaded data URI with unknown dimensions; needs natural aspect ratio, which next/image can't size without knowing it upfront */}
+                  <img
                     src={imagePreview}
                     alt="Preview"
-                    width={480}
-                    height={300}
-                    className="w-full object-cover"
-                    style={{ maxHeight: 220 }}
-                    unoptimized
+                    className="w-full block mx-auto object-cover"
+                    style={{ height: "auto", maxHeight: 320 }}
                   />
                   <button
                     onClick={(e) => {
@@ -237,7 +232,6 @@ export function AiBottleAnalyzer({ onApply, onClose }: AiBottleAnalyzerProps) {
               }}
             />
 
-            {/* Error */}
             <AnimatePresence>
               {error && (
                 <motion.p
@@ -251,7 +245,6 @@ export function AiBottleAnalyzer({ onApply, onClose }: AiBottleAnalyzerProps) {
               )}
             </AnimatePresence>
 
-            {/* Result */}
             <AnimatePresence>
               {result && (
                 <motion.div
@@ -261,10 +254,14 @@ export function AiBottleAnalyzer({ onApply, onClose }: AiBottleAnalyzerProps) {
                   transition={{ duration: 0.28 }}
                   className="rounded-2xl border border-slate-100 bg-slate-50 p-4"
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                      Estimare
-                    </span>
+                  <div className="flex items-start justify-between mb-1">
+                    {" "}
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-4xl font-black text-[#123424] tabular-nums">
+                        {result.estimate}
+                      </span>
+                      <span className="text-sm text-slate-400">sticle</span>
+                    </div>
                     {confCfg && (
                       <span
                         className="text-[10px] font-bold px-2 py-0.5 rounded-full"
@@ -278,12 +275,7 @@ export function AiBottleAnalyzer({ onApply, onClose }: AiBottleAnalyzerProps) {
                       </span>
                     )}
                   </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-black text-[#123424] tabular-nums">
-                      {result.estimate}
-                    </span>
-                    <span className="text-sm text-slate-400">sticle</span>
-                  </div>
+
                   {result.note && (
                     <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
                       {result.note}
@@ -291,14 +283,13 @@ export function AiBottleAnalyzer({ onApply, onClose }: AiBottleAnalyzerProps) {
                   )}
                   {result.remainingToday < 3 && (
                     <p className="text-[10px] text-slate-400 mt-2">
-                      {result.remainingToday} analize rămase azi
+                      {result.remainingToday} analize rămase (limită orară)
                     </p>
                   )}
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* Actions */}
             <div className="flex gap-2.5">
               {result ? (
                 <>

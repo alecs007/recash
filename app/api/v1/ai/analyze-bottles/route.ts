@@ -3,23 +3,18 @@ import { auth } from "@/auth";
 import { redis } from "@/lib/redis";
 import { rateLimit, RL } from "@/lib/rate-limit";
 
-// Per-user daily limit
-const USER_DAILY_LIMIT = 20;
-const WINDOW_SECONDS = 24 * 60 * 60;
+const USER_HOURLY_LIMIT = 10;
+const WINDOW_SECONDS = 60 * 60;
 
-// Global RPM guard — Gemini free tier is 15 RPM, stay safely under
+// Global RPM guard. Gemini free tier is ~10 RPM for 2.5 models, stay safely under
 const GLOBAL_RPM_KEY = "ai:bottles:global:rpm";
-const GLOBAL_RPM_LIMIT = 12;
+const GLOBAL_RPM_LIMIT = 8;
 
-// Gemini models in priority order
+// Gemini models in priority order (2.0 models are excluded — no free-tier quota)
 const GEMINI_MODELS = [
   "models/gemini-2.5-flash",
-  "models/gemini-2.0-flash",
-  "models/gemini-2.0-flash-001",
+  "models/gemini-2.5-flash-lite",
 ];
-
-// HuggingFace fallback model
-const HF_MODEL = "meta-llama/Llama-3.2-11B-Vision-Instruct";
 
 const ALLOWED_MIME_TYPES = [
   "image/jpeg",
@@ -58,17 +53,17 @@ async function checkGlobalRpm(): Promise<boolean> {
   }
 }
 
-async function checkUserDailyLimit(
+async function checkUserHourlyLimit(
   userId: string,
 ): Promise<{ ok: boolean; remaining: number }> {
-  const key = `ai:bottles:user:${userId}:daily`;
+  const key = `ai:bottles:user:${userId}:hourly`;
   try {
     const count = await redis.incr(key);
     if (count === 1) await redis.expire(key, WINDOW_SECONDS);
-    if (count > USER_DAILY_LIMIT) return { ok: false, remaining: 0 };
-    return { ok: true, remaining: Math.max(0, USER_DAILY_LIMIT - count) };
+    if (count > USER_HOURLY_LIMIT) return { ok: false, remaining: 0 };
+    return { ok: true, remaining: Math.max(0, USER_HOURLY_LIMIT - count) };
   } catch {
-    return { ok: true, remaining: USER_DAILY_LIMIT };
+    return { ok: true, remaining: USER_HOURLY_LIMIT };
   }
 }
 
@@ -94,77 +89,13 @@ async function callGemini(
         ],
         generationConfig: {
           temperature: 0.1,
-          maxOutputTokens: 200,
+          maxOutputTokens: 300,
           responseMimeType: "application/json",
+          thinkingConfig: { thinkingBudget: 0 },
         },
       }),
     },
   );
-}
-
-async function callHuggingFace(
-  apiKey: string,
-  imageBase64: string,
-  mimeType: AllowedMimeType,
-): Promise<{ estimate: number; confidence: string; note: string } | null> {
-  const dataUrl = `data:${mimeType};base64,${imageBase64}`;
-
-  let response: Response;
-  try {
-    response = await fetch(
-      `https://api-inference.huggingface.co/models/${HF_MODEL}/v1/chat/completions`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: HF_MODEL,
-          messages: [
-            {
-              role: "user",
-              content: [
-                { type: "text", text: PROMPT },
-                { type: "image_url", image_url: { url: dataUrl } },
-              ],
-            },
-          ],
-          signal: AbortSignal.timeout(40_000),
-          max_tokens: 200,
-          temperature: 0.1,
-        }),
-      },
-    );
-  } catch {
-    console.error("[analyze-bottles] HF network error");
-    return null;
-  }
-
-  if (!response.ok) {
-    const errText = await response.text().catch(() => "unknown");
-    console.error(`[analyze-bottles] HF error ${response.status}:`, errText);
-    return null;
-  }
-
-  const data = await response.json().catch(() => null);
-  const rawText: string = data?.choices?.[0]?.message?.content ?? "";
-
-  if (!rawText) {
-    console.error("[analyze-bottles] HF empty response");
-    return null;
-  }
-
-  try {
-    const clean = rawText.replace(/```json|```/g, "").trim();
-    // Extract JSON object if model adds surrounding text
-    const match = clean.match(/\{[\s\S]*\}/);
-    if (!match) return null;
-    return JSON.parse(match[0]);
-  } catch {
-    console.error("[analyze-bottles] HF JSON parse failed:", rawText);
-    return null;
-  }
 }
 
 function parseGeminiResult(
@@ -191,17 +122,20 @@ export async function POST(req: Request) {
   if (!globalOk) {
     return NextResponse.json(
       {
-        error: "Serviciul AI este ocupat. Încearcă din nou în câteva secunde.",
+        error:
+          "Serviciul AI este suprasolicitat. Încearcă din nou în câteva secunde.",
       },
       { status: 429 },
     );
   }
 
-  const { ok: dailyOk, remaining } = await checkUserDailyLimit(session.user.id);
-  if (!dailyOk) {
+  const { ok: hourlyOk, remaining } = await checkUserHourlyLimit(
+    session.user.id,
+  );
+  if (!hourlyOk) {
     return NextResponse.json(
       {
-        error: `Ai atins limita zilnică de ${USER_DAILY_LIMIT} analize AI. Revino mâine!`,
+        error: `Ai atins limita de ${USER_HOURLY_LIMIT} analize AI pe oră. Încearcă mai târziu.`,
       },
       { status: 429 },
     );
@@ -234,7 +168,6 @@ export async function POST(req: Request) {
     );
   }
 
-  // ── 1. Try Gemini models ──────────────────────────────────────────────────
   const geminiKey = process.env.GEMINI_API_KEY;
 
   if (geminiKey) {
@@ -297,33 +230,6 @@ export async function POST(req: Request) {
     }
   }
 
-  // ── 2. Fallback: HuggingFace Llama 3.2 Vision ────────────────────────────
-  const hfKey = process.env.HUGGINGFACE_API_KEY;
-
-  if (hfKey) {
-    console.info(
-      "[analyze-bottles] Gemini exhausted, trying HuggingFace fallback",
-    );
-    const parsed = await callHuggingFace(
-      hfKey,
-      imageBase64,
-      mimeType as AllowedMimeType,
-    );
-
-    if (parsed) {
-      return NextResponse.json({
-        estimate: Math.max(
-          0,
-          Math.min(10_000, Math.round(Number(parsed.estimate) || 0)),
-        ),
-        confidence: parsed.confidence ?? "scăzut",
-        note: parsed.note ?? "",
-        remainingToday: remaining,
-      });
-    }
-  }
-
-  // ── 3. Everything failed ──────────────────────────────────────────────────
   console.error("[analyze-bottles] all providers failed");
   return NextResponse.json(
     { error: "Serviciul AI nu este disponibil momentan. Încearcă mai târziu." },
