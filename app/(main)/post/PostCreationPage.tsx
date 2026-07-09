@@ -34,6 +34,7 @@ import { showToast } from "@/lib/toast";
 import useSWR from "swr";
 import { useSetActiveCounts } from "@/hooks/useActiveCounts";
 import { AiBottleAnalyzer } from "@/app/components/UI/AIBottleAnalyzer";
+import { scrollToTop } from "@/app/components/UX/SmoothScroll";
 import { createPortal } from "react-dom";
 
 const API = process.env.NEXT_PUBLIC_API_VERSION ?? "v1";
@@ -476,7 +477,6 @@ function StepBottles({
           Estimează cu AI printr-o fotografie
         </button>
       </div>
-
 
       {showAi && (
         <AiBottleAnalyzer
@@ -1682,14 +1682,14 @@ export default function PostCreationClient({
     if (canProceed()) {
       setDirection(1);
       setStep((s) => Math.min(s + 1, STEPS.length - 1));
-      window.scrollTo(0, 0);
+      scrollToTop();
     }
   };
 
   const handleBack = () => {
     setDirection(-1);
     setStep((s) => Math.max(s - 1, 0));
-    window.scrollTo(0, 0);
+    scrollToTop();
   };
 
   const handleSubmit = async () => {
@@ -1763,7 +1763,11 @@ export default function PostCreationClient({
       <div className="max-w-lg mx-auto px-4 py-8 min-h-[100dvh]">
         <StepIndicator current={step} />
 
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm shadow-slate-100/50 overflow-hidden mb-6">
+        <motion.div
+          layout
+          transition={{ duration: 0.35, ease: SLIDE_EASE }}
+          className="bg-white rounded-3xl border border-slate-200 shadow-sm shadow-slate-100/50 overflow-hidden mb-6"
+        >
           <AnimatePresence mode="wait" custom={direction} initial={false}>
             <motion.div
               key={step}
@@ -1793,7 +1797,7 @@ export default function PostCreationClient({
               </div>
             </motion.div>
           </AnimatePresence>
-        </div>
+        </motion.div>
 
         <div className="space-y-2">
           <div className="flex gap-3">
@@ -1820,6 +1824,7 @@ export default function PostCreationClient({
                 <motion.button
                   key="next"
                   type="button"
+                  layout
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
@@ -1839,6 +1844,7 @@ export default function PostCreationClient({
                 <motion.button
                   key="submit"
                   type="button"
+                  layout
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}

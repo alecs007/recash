@@ -115,44 +115,51 @@ function _attachAndShow(src: string) {
   _clearHide();
 
   const overlay = _ensureOverlay();
+  const video = overlay.querySelector("video");
 
-  // Already visible with a video playing: just reset the minimum-time guard
-  // so rapid navigations each get their full MIN_MS
-  if (_isVisible && overlay.querySelector("video")) {
+  // A video element already exists — either still visible, or mid fade-out
+  // from a navigation that just got superseded. Either way, just (re)show it:
+  // its "canplay" listener is { once: true } and has already fired, so this
+  // is the only thing that can bring a fading-out overlay back to opaque.
+  if (video) {
+    if (!_isVisible) {
+      _isVisible = true;
+      requestAnimationFrame(() => {
+        if (_overlay) _overlay.style.opacity = "1";
+      });
+    }
     _resetMinTimer();
     return;
   }
 
-  // Not yet visible: create the video element once, show on canplay
-  if (!overlay.querySelector("video")) {
-    const video = document.createElement("video");
-    video.src = src;
-    video.width = 160;
-    video.height = 160;
-    video.autoplay = true;
-    video.loop = true;
-    video.muted = true;
-    video.playsInline = true;
-    video.playbackRate = 1.2;
-    video.style.pointerEvents = "none";
-    video.setAttribute("aria-hidden", "true");
-    overlay.appendChild(video);
+  // No video yet at all: create it once, show on canplay
+  const newVideo = document.createElement("video");
+  newVideo.src = src;
+  newVideo.width = 160;
+  newVideo.height = 160;
+  newVideo.autoplay = true;
+  newVideo.loop = true;
+  newVideo.muted = true;
+  newVideo.playsInline = true;
+  newVideo.playbackRate = 1.2;
+  newVideo.style.pointerEvents = "none";
+  newVideo.setAttribute("aria-hidden", "true");
+  overlay.appendChild(newVideo);
 
-    video.addEventListener(
-      "canplay",
-      () => {
-        if (_mountCount === 0) return; // page loaded before video was ready
-        _isVisible = true;
-        requestAnimationFrame(() => {
-          if (_overlay) _overlay.style.opacity = "1";
-        });
-        _resetMinTimer();
-      },
-      { once: true },
-    );
+  newVideo.addEventListener(
+    "canplay",
+    () => {
+      if (_mountCount === 0) return; // page loaded before video was ready
+      _isVisible = true;
+      requestAnimationFrame(() => {
+        if (_overlay) _overlay.style.opacity = "1";
+      });
+      _resetMinTimer();
+    },
+    { once: true },
+  );
 
-    video.play().catch(() => {});
-  }
+  newVideo.play().catch(() => {});
 }
 
 export default function Loading() {
