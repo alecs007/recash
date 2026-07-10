@@ -7,6 +7,7 @@ import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BADGE_CONFIG, BADGE_COLORS } from "@/lib/constants/badges";
 import type { BadgeData } from "./BadgeCard";
+import { useI18n } from "@/context/I18nContext";
 
 interface BadgeModalProps {
   badge: BadgeData | null;
@@ -15,6 +16,7 @@ interface BadgeModalProps {
 }
 
 export function BadgeModal({ badge, earned = true, onClose }: BadgeModalProps) {
+  const { t, locale } = useI18n();
   const isOpen = badge !== null;
 
   useEffect(() => {
@@ -68,7 +70,7 @@ export function BadgeModal({ badge, earned = true, onClose }: BadgeModalProps) {
               <button
                 onClick={onClose}
                 className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors cursor-pointer"
-                aria-label="Închide"
+                aria-label={t({ ro: "Închide", en: "Close" })}
               >
                 <X className="w-4 h-4 text-slate-600" />
               </button>
@@ -97,7 +99,7 @@ export function BadgeModal({ badge, earned = true, onClose }: BadgeModalProps) {
                     transition={{ delay: 0.2, type: "spring", stiffness: 500 }}
                     className="absolute top-4 left-4 bg-lime-400 text-[#123424] text-[10px] font-black px-2.5 py-1 rounded-full leading-none shadow-sm tracking-wide"
                   >
-                    NOU
+                    {t({ ro: "NOU", en: "NEW" })}
                   </motion.span>
                 )}
 
@@ -144,7 +146,7 @@ export function BadgeModal({ badge, earned = true, onClose }: BadgeModalProps) {
                       priority
                       draggable={false}
                       src={cfg.image}
-                      alt={cfg.label}
+                      alt={t(cfg.label)}
                       className="w-16 h-16 object-contain"
                     />
                   </div>
@@ -157,9 +159,9 @@ export function BadgeModal({ badge, earned = true, onClose }: BadgeModalProps) {
                   className="text-center"
                 >
                   <h2 className="text-xl font-extrabold text-slate-900 tracking-tight leading-tight">
-                    {cfg.label}
+                    {t(cfg.label)}
                   </h2>
-                  <p className="text-sm text-slate-500 mt-1">{cfg.desc}</p>
+                  <p className="text-sm text-slate-500 mt-1">{t(cfg.desc)}</p>
                 </motion.div>
               </div>
 
@@ -171,7 +173,7 @@ export function BadgeModal({ badge, earned = true, onClose }: BadgeModalProps) {
               >
                 <div className="flex items-center justify-between py-2.5 px-3 bg-slate-50 rounded-xl">
                   <span className="text-xs font-semibold text-slate-500">
-                    Categorie
+                    {t({ ro: "Categorie", en: "Category" })}
                   </span>
                   <span
                     className="text-xs font-bold px-2.5 py-1 rounded-full"
@@ -182,26 +184,29 @@ export function BadgeModal({ badge, earned = true, onClose }: BadgeModalProps) {
                       color: earned ? color : "#64748b",
                     }}
                   >
-                    {cfg.group}
+                    {t(cfg.group)}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between py-2.5 px-3 bg-slate-50 rounded-xl">
                   <span className="text-xs font-semibold text-slate-500">
-                    Stare
+                    {t({ ro: "Stare", en: "Status" })}
                   </span>
                   {earned ? (
                     <span className="text-xs font-bold text-lime-700">
-                      Obținut pe{" "}
-                      {new Date(badge.earnedAt).toLocaleDateString("ro-RO", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })}
+                      {t({ ro: "Obținut pe", en: "Earned on" })}{" "}
+                      {new Date(badge.earnedAt).toLocaleDateString(
+                        locale === "ro" ? "ro-RO" : "en-GB",
+                        {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        },
+                      )}
                     </span>
                   ) : (
                     <span className="text-xs font-semibold text-slate-400">
-                      Neobținut
+                      {t({ ro: "Neobținut", en: "Not earned" })}
                     </span>
                   )}
                 </div>

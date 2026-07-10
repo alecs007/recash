@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { PiStarFourBold } from "react-icons/pi";
+import { useI18n } from "@/context/I18nContext";
 
 interface AnalyzeResult {
   estimate: number;
@@ -18,13 +19,26 @@ interface AiBottleAnalyzerProps {
   onClose: () => void;
 }
 
-const CONFIDENCE_LABEL: Record<string, { text: string; color: string }> = {
-  scăzut: { text: "Estimare aproximativă", color: "#f59e0b" },
-  mediu: { text: "Estimare rezonabilă", color: "#a3e635" },
-  ridicat: { text: "Estimare sigură", color: "#a3e635" },
+const CONFIDENCE_LABEL: Record<
+  string,
+  { text: { ro: string; en: string }; color: string }
+> = {
+  scăzut: {
+    text: { ro: "Estimare aproximativă", en: "Rough estimate" },
+    color: "#f59e0b",
+  },
+  mediu: {
+    text: { ro: "Estimare rezonabilă", en: "Reasonable estimate" },
+    color: "#a3e635",
+  },
+  ridicat: {
+    text: { ro: "Estimare sigură", en: "Confident estimate" },
+    color: "#a3e635",
+  },
 };
 
 export function AiBottleAnalyzer({ onApply, onClose }: AiBottleAnalyzerProps) {
+  const { t } = useI18n();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [mimeType, setMimeType] = useState<string>("image/jpeg");
@@ -34,29 +48,42 @@ export function AiBottleAnalyzer({ onApply, onClose }: AiBottleAnalyzerProps) {
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const processFile = useCallback((file: File) => {
-    if (!file.type.startsWith("image/")) {
-      setError("Selectează o imagine (JPEG, PNG, WebP).");
-      return;
-    }
-    if (file.size > 4 * 1024 * 1024) {
-      setError("Imaginea depășește 4MB. Comprimă-o înainte.");
-      return;
-    }
-    setError("");
-    setResult(null);
-    setMimeType(file.type);
+  const processFile = useCallback(
+    (file: File) => {
+      if (!file.type.startsWith("image/")) {
+        setError(
+          t({
+            ro: "Selectează o imagine (JPEG, PNG, WebP).",
+            en: "Select an image (JPEG, PNG, WebP).",
+          }),
+        );
+        return;
+      }
+      if (file.size > 4 * 1024 * 1024) {
+        setError(
+          t({
+            ro: "Imaginea depășește 4MB. Comprimă-o înainte.",
+            en: "The image exceeds 4MB. Compress it first.",
+          }),
+        );
+        return;
+      }
+      setError("");
+      setResult(null);
+      setMimeType(file.type);
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      setImagePreview(dataUrl);
-      // Strip the data:mime/type;base64, prefix
-      const base64 = dataUrl.split(",")[1];
-      setImageBase64(base64);
-    };
-    reader.readAsDataURL(file);
-  }, []);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string;
+        setImagePreview(dataUrl);
+        // Strip the data:mime/type;base64, prefix
+        const base64 = dataUrl.split(",")[1];
+        setImageBase64(base64);
+      };
+      reader.readAsDataURL(file);
+    },
+    [t],
+  );
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -82,12 +109,20 @@ export function AiBottleAnalyzer({ onApply, onClose }: AiBottleAnalyzerProps) {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Analiza a eșuat.");
+        setError(
+          data.error ??
+            t({ ro: "Analiza a eșuat.", en: "The analysis failed." }),
+        );
         return;
       }
       setResult(data as AnalyzeResult);
     } catch {
-      setError("Eroare de rețea. Încearcă din nou.");
+      setError(
+        t({
+          ro: "Eroare de rețea. Încearcă din nou.",
+          en: "Network error. Try again.",
+        }),
+      );
     } finally {
       setLoading(false);
     }
@@ -128,10 +163,13 @@ export function AiBottleAnalyzer({ onApply, onClose }: AiBottleAnalyzerProps) {
             <div>
               <h2 className="text-base font-extrabold text-slate-900 tracking-tight flex items-center">
                 <PiStarFourBold className="inline-block w-4.5 h-4.5 text-[#a3e635] mr-1" />
-                Estimare AI
+                {t({ ro: "Estimare AI", en: "AI estimate" })}
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                Fotografiază sticlele pentru a estima cantitatea
+                {t({
+                  ro: "Fotografiază sticlele pentru a estima cantitatea",
+                  en: "Photograph the bottles to estimate the quantity",
+                })}
               </p>
             </div>
             <button
@@ -210,11 +248,17 @@ export function AiBottleAnalyzer({ onApply, onClose }: AiBottleAnalyzerProps) {
                   </div>
                   <p className="text-sm font-semibold text-slate-600">
                     {dragging
-                      ? "Eliberează imaginea"
-                      : "Trage sau apasă pentru a adăuga"}
+                      ? t({ ro: "Eliberează imaginea", en: "Drop the image" })
+                      : t({
+                          ro: "Trage sau apasă pentru a adăuga",
+                          en: "Drag or click to add",
+                        })}
                   </p>
                   <p className="text-xs text-slate-400">
-                    JPEG, PNG sau WebP · max 4MB
+                    {t({
+                      ro: "JPEG, PNG sau WebP · max 4MB",
+                      en: "JPEG, PNG or WebP · max 4MB",
+                    })}
                   </p>
                 </div>
               )}
@@ -260,7 +304,9 @@ export function AiBottleAnalyzer({ onApply, onClose }: AiBottleAnalyzerProps) {
                       <span className="text-4xl font-black text-[#123424] tabular-nums">
                         {result.estimate}
                       </span>
-                      <span className="text-sm text-slate-400">sticle</span>
+                      <span className="text-sm text-slate-400">
+                        {t({ ro: "sticle", en: "bottles" })}
+                      </span>
                     </div>
                     {confCfg && (
                       <span
@@ -271,7 +317,7 @@ export function AiBottleAnalyzer({ onApply, onClose }: AiBottleAnalyzerProps) {
                             confCfg.color === "#a3e635" ? "#4d7c0f" : "#92400e",
                         }}
                       >
-                        {confCfg.text}
+                        {t(confCfg.text)}
                       </span>
                     )}
                   </div>
@@ -283,7 +329,10 @@ export function AiBottleAnalyzer({ onApply, onClose }: AiBottleAnalyzerProps) {
                   )}
                   {result.remainingToday < 3 && (
                     <p className="text-[10px] text-slate-400 mt-2">
-                      {result.remainingToday} analize rămase (limită orară)
+                      {t({
+                        ro: `${result.remainingToday} analize rămase (limită orară)`,
+                        en: `${result.remainingToday} analyses left (hourly limit)`,
+                      })}
                     </p>
                   )}
                 </motion.div>
@@ -299,14 +348,17 @@ export function AiBottleAnalyzer({ onApply, onClose }: AiBottleAnalyzerProps) {
                     }}
                     className="flex-1 py-3 rounded-xl border-2 border-slate-200 text-slate-600 font-semibold text-sm hover:border-slate-300 transition-all cursor-pointer"
                   >
-                    Reîncearcă
+                    {t({ ro: "Reîncearcă", en: "Try again" })}
                   </button>
                   <motion.button
                     onClick={handleApply}
                     whileTap={{ scale: 0.97 }}
                     className="flex-[1.6] py-3 rounded-xl bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all cursor-pointer"
                   >
-                    Aplică {result.estimate} sticle
+                    {t({
+                      ro: `Aplică ${result.estimate} sticle`,
+                      en: `Apply ${result.estimate} bottles`,
+                    })}
                   </motion.button>
                 </>
               ) : (
@@ -342,19 +394,22 @@ export function AiBottleAnalyzer({ onApply, onClose }: AiBottleAnalyzerProps) {
                           strokeLinecap="round"
                         />
                       </svg>
-                      Se analizează...
+                      {t({ ro: "Se analizează...", en: "Analyzing..." })}
                     </>
                   ) : imageBase64 ? (
-                    "Analizează cu AI"
+                    t({ ro: "Analizează cu AI", en: "Analyze with AI" })
                   ) : (
-                    "Adaugă o fotografie"
+                    t({ ro: "Adaugă o fotografie", en: "Add a photo" })
                   )}
                 </motion.button>
               )}
             </div>
 
             <p className="text-[11px] text-slate-400 text-center leading-relaxed">
-              Funcționează cu saci, cutii sau grămezi de sticle
+              {t({
+                ro: "Funcționează cu saci, cutii sau grămezi de sticle",
+                en: "Works with bags, boxes or piles of bottles",
+              })}
             </p>
           </div>
         </motion.div>

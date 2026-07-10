@@ -8,10 +8,12 @@ import { useLoading } from "@/context/LoadingContext";
 import { X } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { FaFacebook } from "react-icons/fa";
+import { useI18n } from "@/context/I18nContext";
 
 export function AuthModal() {
   const { isOpen, close } = useAuthModal();
   const { show } = useLoading();
+  const { t } = useI18n();
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -32,7 +34,7 @@ export function AuthModal() {
 
   const handleSignIn = (provider: "google" | "facebook") => {
     close();
-    show("Se conectează...");
+    show(t({ ro: "Se conectează...", en: "Signing in..." }));
     signIn(provider, { callbackUrl: "/" });
   };
 
@@ -56,7 +58,7 @@ export function AuthModal() {
         <button
           onClick={close}
           className="absolute top-4 right-4 grid place-items-center w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
-          aria-label="Închide"
+          aria-label={t({ ro: "Închide", en: "Close" })}
         >
           <X className="w-4 h-4 text-slate-600" />
         </button>
@@ -73,9 +75,11 @@ export function AuthModal() {
             />
           </div>
           <h2 className="font-extrabold text-2xl text-slate-900 tracking-tight">
-            Gata să reciclezi?
+            {t({ ro: "Gata să reciclezi?", en: "Ready to recycle?" })}
           </h2>
-          <p className="text-slate-700 text-sm mt-1">Începe acum cu Recash</p>
+          <p className="text-slate-700 text-sm mt-1">
+            {t({ ro: "Începe acum cu Recash", en: "Get started with Recash" })}
+          </p>
         </div>
 
         <div className="flex flex-col gap-3">
@@ -84,7 +88,7 @@ export function AuthModal() {
             className="flex items-center justify-center gap-3 w-full py-3.5 px-4 rounded-2xl border-2 border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all font-semibold text-slate-800 shadow-sm cursor-pointer"
           >
             <FcGoogle className="w-5 h-5 shrink-0" />
-            Continuă cu Google
+            {t({ ro: "Continuă cu Google", en: "Continue with Google" })}
           </button>
 
           <button
@@ -92,23 +96,45 @@ export function AuthModal() {
             className="flex items-center justify-center gap-3 w-full py-3.5 px-4 rounded-2xl border-2 border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all font-semibold text-slate-800 shadow-sm cursor-pointer"
           >
             <FaFacebook className="w-5 h-5 shrink-0 text-[#1877F2]" />
-            Continuă cu Facebook
+            {t({ ro: "Continuă cu Facebook", en: "Continue with Facebook" })}
           </button>
         </div>
 
         <p className="text-center text-xs text-slate-400 mt-6 leading-relaxed">
-          Prin conectare, sunteți de acord cu{" "}
-          <a href="/termeni" className="underline hover:text-slate-600">
-            Termenii
-          </a>{" "}
-          și{" "}
-          <a
-            href="/confidentialitate"
-            className="underline hover:text-slate-600"
-          >
-            Politica de confidențialitate
-          </a>
-          .
+          {t({
+            ro: (
+              <>
+                Prin conectare, sunteți de acord cu{" "}
+                <a href="/termeni" className="underline hover:text-slate-600">
+                  Termenii
+                </a>{" "}
+                și{" "}
+                <a
+                  href="/confidentialitate"
+                  className="underline hover:text-slate-600"
+                >
+                  Politica de confidențialitate
+                </a>
+                .
+              </>
+            ),
+            en: (
+              <>
+                By signing in, you agree to our{" "}
+                <a href="/termeni" className="underline hover:text-slate-600">
+                  Terms
+                </a>{" "}
+                and{" "}
+                <a
+                  href="/confidentialitate"
+                  className="underline hover:text-slate-600"
+                >
+                  Privacy Policy
+                </a>
+                .
+              </>
+            ),
+          })}
         </p>
       </div>
     </div>

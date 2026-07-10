@@ -1,8 +1,11 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { MapPin } from "lucide-react";
 import { Transaction } from "@/types";
 import { SectionHeader } from "./SectionHeader";
+import { useI18n } from "@/context/I18nContext";
 
 function Stars({
   rating,
@@ -35,17 +38,21 @@ export function TransactionsSection({
   totalTransactions: number;
   userId: string;
 }) {
+  const { t: tr, fmt, locale } = useI18n();
   if (transactions.length === 0) return null;
 
   return (
     <div className="mx-4 sm:mx-6 lg:mx-8 mb-8 p-4 sm:p-6 bg-slate-50 border border-slate-100 rounded-2xl">
       <SectionHeader
-        title="Tranzacții recente"
+        title={tr({ ro: "Tranzacții recente", en: "Recent transactions" })}
         href="/profil/tranzactii"
         hrefLabel={
           totalTransactions > 3
-            ? `Vezi istoric (${totalTransactions})`
-            : "Vezi istoric"
+            ? tr({
+                ro: `Vezi istoric (${totalTransactions})`,
+                en: `See history (${totalTransactions})`,
+              })
+            : tr({ ro: "Vezi istoric", en: "See history" })
         }
       />
       <div className="space-y-3">
@@ -84,32 +91,41 @@ export function TransactionsSection({
 
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold text-sm text-slate-900 truncate">
-                      {other?.name ?? "Utilizator necunoscut"}
+                      {other?.name ??
+                        tr({ ro: "Utilizator necunoscut", en: "Unknown user" })}
                     </div>
 
                     <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
                       <MapPin className="w-3 h-3 shrink-0" />
                       <span className="truncate">
-                        {t.post.locationName ?? "Locație necunoscută"}
+                        {t.post.locationName ??
+                          tr({
+                            ro: "Locație necunoscută",
+                            en: "Unknown location",
+                          })}
                       </span>
                     </div>
 
                     <div className="text-xs text-slate-400 mt-0.5">
-                      {new Date(t.completedAt).toLocaleDateString("ro-RO", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
+                      {new Date(t.completedAt).toLocaleDateString(
+                        locale === "ro" ? "ro-RO" : "en-GB",
+                        {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        },
+                      )}
                     </div>
                   </div>
                 </div>
 
                 <div className="text-right shrink-0">
                   <div className="text-lg font-black text-lime-600">
-                    +{earning.toFixed(2)} RON
+                    {fmt(earning, { sign: true })}
                   </div>
                   <div className="text-xs text-slate-500">
-                    {t.bottleCount} sticle | {t.actualValue.toFixed(2)} RON
+                    {t.bottleCount} {tr({ ro: "sticle", en: "bottles" })} |{" "}
+                    {fmt(t.actualValue)}
                   </div>
 
                   <div className="flex flex-col items-end gap-1 mt-1.5">
@@ -117,7 +133,7 @@ export function TransactionsSection({
                       ratingIReceived !== undefined && (
                         <div className="flex items-center gap-1">
                           <span className="text-[9px] text-slate-400 font-medium">
-                            Rating-ul primit
+                            {tr({ ro: "Rating-ul primit", en: "Rating received" })}
                           </span>
                           <Stars rating={ratingIReceived} size="xs" />
                         </div>
@@ -125,7 +141,7 @@ export function TransactionsSection({
                     {ratingIGave !== null && ratingIGave !== undefined && (
                       <div className="flex items-center gap-1">
                         <span className="text-[9px] text-slate-400 font-medium">
-                          Rating-ul tău
+                          {tr({ ro: "Rating-ul tău", en: "Your rating" })}
                         </span>
                         <Stars rating={ratingIGave} size="xs" />
                       </div>

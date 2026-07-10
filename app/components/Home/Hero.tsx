@@ -1,9 +1,13 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { LuMousePointerClick } from "react-icons/lu";
 import { FaSackDollar } from "react-icons/fa6";
+import { useI18n } from "@/context/I18nContext";
 
 export const Hero = () => {
+  const { t } = useI18n();
   return (
     <section className="relative bg-white">
       <div
@@ -44,7 +48,7 @@ export const Hero = () => {
     `,
               }}
             >
-              Reciclează.
+              {t({ ro: "Reciclează.", en: "Recycle." })}
               <br />
               <span
                 className="text-lime-400 italic"
@@ -55,14 +59,23 @@ export const Hero = () => {
       `,
                 }}
               >
-                <span className="text-[0.9em] sm:text-[0.95em]">Î</span>
-                ncasează.
+                {t({
+                  ro: (
+                    <>
+                      <span className="text-[0.9em] sm:text-[0.95em]">Î</span>
+                      ncasează.
+                    </>
+                  ),
+                  en: <>Earn cash.</>,
+                })}
               </span>{" "}
-              Repetă.
+              {t({ ro: "Repetă.", en: "Repeat." })}
             </h1>
             <p className="text-white/80 text-lg mt-6 max-w-md">
-              Cea mai simplă cale de a face bani prin reciclare. Postezi
-              sticlele, un colector le preia, banii ajung la tine.
+              {t({
+                ro: "Cea mai simplă cale de a face bani prin reciclare. Postezi sticlele, un colector le preia, banii ajung la tine.",
+                en: "The easiest way to earn money by recycling. You post the bottles, a collector picks them up, the money comes to you.",
+              })}
             </p>
 
             <div className="flex flex-wrap gap-6 mt-8">
@@ -70,14 +83,16 @@ export const Hero = () => {
                 href="/post"
                 className="inline-flex items-center justify-center gap-2 bg-lime-400 text-black font-bold py-4 px-8 w-full sm:w-auto rounded-full text-lg transition-all shadow-[4px_4px_0px_#365a0a] active:translate-y-[4px] active:shadow-none"
               >
-                <LuMousePointerClick className="w-6 h-6" /> Creează un anunț
+                <LuMousePointerClick className="w-6 h-6" />{" "}
+                {t({ ro: "Creează un anunț", en: "Create a listing" })}
               </Link>
 
               <Link
                 href="/map"
                 className="inline-flex items-center justify-center gap-2.5 bg-white/10 text-white border border-white/20 font-bold py-4 px-8 w-full sm:w-auto rounded-full text-lg backdrop-blur transition-all shadow-[4px_4px_0px_rgba(12,53,36,0.5)] active:translate-y-[4px] active:shadow-none"
               >
-                <FaSackDollar className="w-5 h-5" /> Colectează sticle
+                <FaSackDollar className="w-5 h-5" />{" "}
+                {t({ ro: "Colectează sticle", en: "Collect bottles" })}
               </Link>
             </div>
 
@@ -114,7 +129,12 @@ export const Hero = () => {
                   />
                 </span>
               </div>
-              <span>Susținut de cetățeni din toate colțurile tării</span>
+              <span>
+                {t({
+                  ro: "Susținut de cetățeni din toate colțurile tării",
+                  en: "Trusted by people from every corner of the country",
+                })}
+              </span>
             </div>
           </div>
 

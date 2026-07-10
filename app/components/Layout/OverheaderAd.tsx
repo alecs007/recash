@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { X } from "lucide-react";
+import { useI18n } from "@/context/I18nContext";
 
 export interface OverheaderAdConfig {
   id: string;
@@ -22,6 +23,7 @@ export function OverheaderAd({
   ad?: OverheaderAdConfig;
   headerRef: React.RefObject<HTMLElement | null>;
 }) {
+  const { t } = useI18n();
   const [mounted, setMounted] = useState(false);
   const [closed, setClosed] = useState(false);
   const adRef = useRef<HTMLDivElement>(null);
@@ -116,7 +118,7 @@ export function OverheaderAd({
       <div className="max-w-7xl mx-auto px-3 sm:px-4 flex items-center gap-2 h-9 sm:h-10">
         <button
           onClick={handleClose}
-          aria-label="Închide reclama"
+          aria-label={t({ ro: "Închide reclama", en: "Close ad" })}
           className="shrink-0 w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors cursor-pointer"
         >
           <X className="w-3 h-3 text-slate-500" />
@@ -152,7 +154,10 @@ export function OverheaderAd({
               Ad
             </span>
             <span className="text-xs text-slate-400 truncate">
-              Spațiu publicitar disponibil
+              {t({
+                ro: "Spațiu publicitar disponibil",
+                en: "Ad space available",
+              })}
             </span>
           </div>
         )}

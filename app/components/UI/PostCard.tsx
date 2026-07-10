@@ -1,11 +1,15 @@
+"use client";
+
 import { MapPin } from "lucide-react";
 import { FaWineBottle } from "react-icons/fa";
 import Image from "next/image";
 import Link from "next/link";
 import { Post } from "@/types";
 import { POST_STATUS_CONFIG } from "@/lib/constants/posts";
+import { useI18n } from "@/context/I18nContext";
 
 export function PostCard({ post }: { post: Post }) {
+  const { t, fmt, locale } = useI18n();
   const cfg = POST_STATUS_CONFIG[post.status] ?? POST_STATUS_CONFIG.OPEN;
   const Icon = cfg.Icon;
 
@@ -21,10 +25,12 @@ export function PostCard({ post }: { post: Post }) {
               className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border ${cfg.color}`}
             >
               <Icon className="w-3 h-3" />
-              {cfg.label}
+              {t(cfg.label)}
             </span>
             <span className="text-xs text-slate-400">
-              {new Date(post.createdAt).toLocaleDateString("ro-RO")}
+              {new Date(post.createdAt).toLocaleDateString(
+                locale === "ro" ? "ro-RO" : "en-GB",
+              )}
             </span>
           </div>
           <p className="text-sm font-semibold text-slate-800 truncate">
@@ -46,11 +52,11 @@ export function PostCard({ post }: { post: Post }) {
           </div>
           {post.transaction ? (
             <div className="text-sm font-bold text-lime-600 mt-1">
-              +{post.transaction.posterEarning.toFixed(2)} RON
+              {fmt(post.transaction.posterEarning, { sign: true })}
             </div>
           ) : (
             <div className="text-sm text-slate-400 mt-1">
-              {post.estimatedValue.toFixed(2)} RON
+              {fmt(post.estimatedValue)}
             </div>
           )}
         </div>
@@ -74,7 +80,9 @@ export function PostCard({ post }: { post: Post }) {
           </div>
 
           <span className="text-xs text-slate-500 truncate">
-            {post.status === "CLAIMED" ? "Revendicat de " : "Colectat de "}
+            {post.status === "CLAIMED"
+              ? t({ ro: "Revendicat de ", en: "Claimed by " })
+              : t({ ro: "Colectat de ", en: "Collected by " })}
             <span className="font-semibold text-slate-700">
               {post.collector.name}
             </span>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FaMedal, FaTrophy, FaStar, FaLeaf, FaRecycle } from "react-icons/fa";
+import { useI18n } from "@/context/I18nContext";
 
 interface Props {
   rank: number;
@@ -9,13 +10,17 @@ interface Props {
 }
 
 export function ProfileRankBadge({ rank, totalBottles }: Props) {
+  const { t } = useI18n();
   if (!rank || totalBottles === 0) return null;
+
+  const inLeaderboard = (n: number) =>
+    t({ ro: `#${n} în clasament`, en: `#${n} on the leaderboard` });
 
   const cfg = (() => {
     if (rank === 1)
       return {
         Icon: FaMedal,
-        label: "#1 în clasament",
+        label: inLeaderboard(1),
         bg: "bg-amber-400/20",
         text: "text-amber-300",
         border: "border-amber-400/40",
@@ -24,7 +29,7 @@ export function ProfileRankBadge({ rank, totalBottles }: Props) {
     if (rank === 2)
       return {
         Icon: FaMedal,
-        label: "#2 în clasament",
+        label: inLeaderboard(2),
         bg: "bg-slate-400/20",
         text: "text-slate-300",
         border: "border-slate-400/40",
@@ -33,7 +38,7 @@ export function ProfileRankBadge({ rank, totalBottles }: Props) {
     if (rank === 3)
       return {
         Icon: FaMedal,
-        label: "#3 în clasament",
+        label: inLeaderboard(3),
         bg: "bg-orange-400/20",
         text: "text-orange-300",
         border: "border-orange-400/40",
@@ -68,7 +73,7 @@ export function ProfileRankBadge({ rank, totalBottles }: Props) {
       };
     return {
       Icon: FaRecycle,
-      label: `#${rank} în clasament`,
+      label: inLeaderboard(rank),
       bg: "bg-white/10",
       text: "text-white/70",
       border: "border-white/15",

@@ -1,33 +1,42 @@
+"use client";
+
 import Image from "next/image";
 import { UserProfile } from "@/types";
+import { useI18n } from "@/context/I18nContext";
 
 export function StatsGrid({ user }: { user: UserProfile }) {
+  const { t, fmt, locale, currency } = useI18n();
   const totalBottles = user.totalBottlesGiven + user.totalBottlesCollected;
   const totalEarning = user.totalEarned + user.totalSaved;
+  const totalEarningFormatted = fmt(totalEarning);
   const stats = [
     {
       icon: "/images/icons/bottles-recycled.svg",
-      label: "Sticle reciclate",
-      value: totalBottles.toLocaleString("ro-RO"),
-      unit: "buc",
+      label: t({ ro: "Sticle reciclate", en: "Bottles recycled" }),
+      value: totalBottles.toLocaleString(locale === "ro" ? "ro-RO" : "en-GB"),
+      unit: t({ ro: "buc", en: "pcs" }),
     },
     {
       icon: "/images/icons/total-earnings.svg",
-      label: "Încasări totale",
-      value: totalEarning.toFixed(2),
-      unit: "RON",
+      label: t({ ro: "Încasări totale", en: "Total earnings" }),
+      // fmt() returns "12,50 RON" / "€2.47" — split value from unit for layout
+      value:
+        currency === "RON"
+          ? totalEarningFormatted.replace(/\s*RON$/, "")
+          : totalEarningFormatted,
+      unit: currency === "RON" ? "RON" : "",
     },
     {
       icon: "/images/icons/plastic.svg",
-      label: "Plastic recuperat",
+      label: t({ ro: "Plastic recuperat", en: "Plastic recovered" }),
       value: `${totalBottles > 0 ? "~" : ""}${(totalBottles * 0.033).toFixed(1)}`,
       unit: "kg",
     },
     {
       icon: "/images/icons/co2-footprint.svg",
-      label: "Amprentă CO₂",
+      label: t({ ro: "Amprentă CO₂", en: "CO₂ footprint" }),
       value: `${totalBottles > 0 ? "~" : ""}${(totalBottles * 0.12).toFixed(1)}`,
-      unit: "kg CO₂ redus",
+      unit: t({ ro: "kg CO₂ redus", en: "kg CO₂ saved" }),
     },
   ];
   return (

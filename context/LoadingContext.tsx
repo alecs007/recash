@@ -9,6 +9,7 @@ import {
   useRef,
   type ReactNode,
 } from "react";
+import { useI18n } from "@/context/I18nContext";
 
 interface LoadingContextValue {
   show: (message?: string) => void;
@@ -18,13 +19,18 @@ interface LoadingContextValue {
 const LoadingContext = createContext<LoadingContextValue | null>(null);
 
 export function LoadingProvider({ children }: { children: ReactNode }) {
-  const [message, setMessage] = useState("Se încarcă...");
+  const { t } = useI18n();
+  const defaultMessage = t({ ro: "Se încarcă...", en: "Loading..." });
+  const [message, setMessage] = useState(defaultMessage);
   const [visible, setVisible] = useState(false);
 
-  const show = useCallback((msg = "Se încarcă...") => {
-    setMessage(msg);
-    setVisible(true);
-  }, []);
+  const show = useCallback(
+    (msg?: string) => {
+      setMessage(msg ?? defaultMessage);
+      setVisible(true);
+    },
+    [defaultMessage],
+  );
 
   const hide = useCallback(() => {
     setVisible(false);

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bell, BellOff } from "lucide-react";
+import { useI18n } from "@/context/I18nContext";
 
 interface EmailOptinPopupProps {
   context: "author" | "collector";
@@ -12,20 +13,33 @@ interface EmailOptinPopupProps {
 
 const COPY = {
   author: {
-    heading: "Notificare pe email?",
-    body: "Vrei să fii anunțat pe email atunci când un colector face o cerere pentru acest anunț?",
-    yes: "Da, anunță-mă",
-    no: "Nu, mulțumesc",
+    heading: {
+      ro: "Notificare pe email?",
+      en: "Email notification?",
+    },
+    body: {
+      ro: "Vrei să fii anunțat pe email atunci când un colector face o cerere pentru acest anunț?",
+      en: "Would you like an email when a collector requests this listing?",
+    },
+    yes: { ro: "Da, anunță-mă", en: "Yes, notify me" },
+    no: { ro: "Nu, mulțumesc", en: "No, thanks" },
   },
   collector: {
-    heading: "Notificare de confirmare?",
-    body: "Vrei să fii anunțat pe email atunci când autorul aprobă sau refuză cererea ta pentru acest anunț?",
-    yes: "Da, anunță-mă",
-    no: "Nu, mulțumesc",
+    heading: {
+      ro: "Notificare de confirmare?",
+      en: "Confirmation notification?",
+    },
+    body: {
+      ro: "Vrei să fii anunțat pe email atunci când autorul aprobă sau refuză cererea ta pentru acest anunț?",
+      en: "Would you like an email when the author approves or declines your request for this listing?",
+    },
+    yes: { ro: "Da, anunță-mă", en: "Yes, notify me" },
+    no: { ro: "Nu, mulțumesc", en: "No, thanks" },
   },
 };
 
 export function EmailOptinPopup({ context, postId }: EmailOptinPopupProps) {
+  const { t } = useI18n();
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [answered, setAnswered] = useState(false);
@@ -101,7 +115,7 @@ export function EmailOptinPopup({ context, postId }: EmailOptinPopupProps) {
                 />
               </div>
 
-              <p className="text-sm text-slate-600">{copy.body}</p>
+              <p className="text-sm text-slate-600">{t(copy.body)}</p>
             </div>
 
             <div className="flex gap-2">
@@ -111,7 +125,7 @@ export function EmailOptinPopup({ context, postId }: EmailOptinPopupProps) {
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:border-slate-300 hover:bg-slate-50 transition-all disabled:opacity-40 cursor-pointer"
               >
                 <BellOff className="w-3.5 h-3.5" />
-                {copy.no}
+                {t(copy.no)}
               </button>
               <button
                 onClick={() => respond(true)}
@@ -119,7 +133,7 @@ export function EmailOptinPopup({ context, postId }: EmailOptinPopupProps) {
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#123424] text-xs font-bold text-white hover:bg-[#1a4d36] transition-all disabled:opacity-40 cursor-pointer"
               >
                 <Bell className="w-3.5 h-3.5 text-lime-400" />
-                {copy.yes}
+                {t(copy.yes)}
               </button>
             </div>
           </div>

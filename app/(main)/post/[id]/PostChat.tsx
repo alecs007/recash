@@ -20,6 +20,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { usePostChat, type ChatMessage } from "@/hooks/usePostChat";
+import { useI18n, type Locale } from "@/context/I18nContext";
 
 const MAX_TEXT = 500;
 const MIN_H = 44;
@@ -27,8 +28,8 @@ const MAX_H = 120;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString("ro-RO", {
+function formatTime(iso: string, locale: Locale) {
+  return new Date(iso).toLocaleTimeString(locale === "ro" ? "ro-RO" : "en-GB", {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -114,6 +115,7 @@ function ScrollPill({
   unread: number;
   onClick: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <AnimatePresence>
       {visible && (
@@ -127,12 +129,17 @@ function ScrollPill({
         >
           {unread > 0 ? (
             <span className="text-lime-700">
-              {unread} mesaj{unread > 1 ? "e noi" : " nou"}
+              {t({
+                ro: `${unread} mesaj${unread > 1 ? "e noi" : " nou"}`,
+                en: `${unread} new message${unread > 1 ? "s" : ""}`,
+              })}
             </span>
           ) : (
             <>
               <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
-              <span className="text-slate-600">Mergi jos</span>
+              <span className="text-slate-600">
+                {t({ ro: "Mergi jos", en: "Go to bottom" })}
+              </span>
             </>
           )}
         </motion.button>
@@ -162,6 +169,7 @@ function MessageBubble({
   doAnimate: boolean;
   isPending: boolean;
 }) {
+  const { locale } = useI18n();
   return (
     <motion.div
       initial={doAnimate ? { opacity: 1, y: 10, scale: 0.97 } : false}
@@ -204,7 +212,7 @@ function MessageBubble({
               isMe ? "text-right" : "text-left"
             }`}
           >
-            {formatTime(msg.createdAt)}
+            {formatTime(msg.createdAt, locale)}
           </span>
         )}
       </div>
@@ -251,6 +259,7 @@ export function PostChat({
   partnerImage,
   partnerRole,
 }: PostChatProps) {
+  const { t } = useI18n();
   const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(true);
 
@@ -493,7 +502,8 @@ export function PostChat({
 
   if (!mounted) return null;
 
-  const firstName = partnerName?.split(" ")[0] ?? "partener";
+  const firstName =
+    partnerName?.split(" ")[0] ?? t({ ro: "partener", en: "partner" });
 
   // ── Panel variants ────────────────────────────────────────────────────────
 
@@ -573,7 +583,7 @@ export function PostChat({
 
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-slate-900 leading-tight truncate">
-                    {partnerName ?? "Partener"}
+                    {partnerName ?? t({ ro: "Partener", en: "Partner" })}
                   </p>
                   <div className="h-[18px] relative overflow-hidden">
                     <AnimatePresence mode="wait">
@@ -586,7 +596,7 @@ export function PostChat({
                           transition={{ duration: 0.13 }}
                           className="absolute text-[11px] text-lime-600 font-semibold"
                         >
-                          scrie...
+                          {t({ ro: "scrie...", en: "typing..." })}
                         </motion.p>
                       ) : (
                         <motion.p
@@ -607,7 +617,7 @@ export function PostChat({
                 <button
                   onClick={onClose}
                   className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors cursor-pointer shrink-0"
-                  aria-label="Închide"
+                  aria-label={t({ ro: "Închide", en: "Close" })}
                 >
                   <X className="w-4 h-4 text-slate-600" />
                 </button>
@@ -631,7 +641,9 @@ export function PostChat({
                   <div className="flex items-center justify-center h-full">
                     <div className="flex flex-col items-center gap-3">
                       <Loader2 className="w-5 h-5 animate-spin text-slate-300" />
-                      <p className="text-xs text-slate-400">Se încarcă...</p>
+                      <p className="text-xs text-slate-400">
+                        {t({ ro: "Se încarcă...", en: "Loading..." })}
+                      </p>
                     </div>
                   </div>
                 ) : messages.length === 0 ? (
@@ -645,11 +657,26 @@ export function PostChat({
 
                     <div>
                       <p className="text-xs text-slate-400 leading-relaxed max-w-[200px]">
-                        Conversează cu{" "}
-                        <span className="font-medium text-slate-600">
-                          {firstName}
-                        </span>{" "}
-                        direct pe Recash.
+                        {t({
+                          ro: (
+                            <>
+                              Conversează cu{" "}
+                              <span className="font-medium text-slate-600">
+                                {firstName}
+                              </span>{" "}
+                              direct pe Recash.
+                            </>
+                          ),
+                          en: (
+                            <>
+                              Chat with{" "}
+                              <span className="font-medium text-slate-600">
+                                {firstName}
+                              </span>{" "}
+                              directly on Recash.
+                            </>
+                          ),
+                        })}
                       </p>
                     </div>
                   </motion.div>
@@ -721,7 +748,10 @@ export function PostChat({
                     value={text}
                     onChange={handleTextChange}
                     onKeyDown={handleKeyDown}
-                    placeholder="Trimite un mesaj…"
+                    placeholder={t({
+                      ro: "Trimite un mesaj…",
+                      en: "Send a message…",
+                    })}
                     rows={1}
                     className="w-full resize-none px-3.5 py-[10px] rounded-2xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100/60 outline-none text-slate-900 placeholder:text-slate-400 transition-[border-color,box-shadow] bg-slate-50 leading-[1.45] overflow-hidden"
                     style={{
@@ -754,7 +784,7 @@ export function PostChat({
                   onClick={() => void handleSend()}
                   disabled={!text.trim() || sending}
                   className="w-11 h-11 mb-1.5 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer disabled:cursor-not-allowed"
-                  aria-label="Trimite"
+                  aria-label={t({ ro: "Trimite", en: "Send" })}
                 >
                   <AnimatePresence mode="wait">
                     {sending ? (
@@ -810,6 +840,7 @@ export function ChatTriggerButton({
   partnerImage?: string | null;
   onClick: () => void;
 }) {
+  const { t } = useI18n();
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -863,10 +894,10 @@ export function ChatTriggerButton({
 
             <div className="flex flex-col items-start leading-none gap-[2px]">
               <span className="text-[10px] text-white/70 font-semibold">
-                Ia legătura cu
+                {t({ ro: "Ia legătura cu", en: "Get in touch with" })}
               </span>
               <span className="text-sm font-bold whitespace-nowrap">
-                {partnerName ?? "Partener"}
+                {partnerName ?? t({ ro: "Partener", en: "Partner" })}
               </span>
             </div>
 

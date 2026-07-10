@@ -1,26 +1,36 @@
+"use client";
+
 import Image from "next/image";
+import { useI18n } from "@/context/I18nContext";
 
 export const Steps = () => {
+  const { t } = useI18n();
   const steps = [
     {
       number: "01",
-      title: "Postează anunțul",
-      subtext:
-        "Introdu numărul aproximativ de sticle, locația și procentajul oferit colectorului.",
+      title: t({ ro: "Postează anunțul", en: "Post your listing" }),
+      subtext: t({
+        ro: "Introdu numărul aproximativ de sticle, locația și procentajul oferit colectorului.",
+        en: "Enter the approximate number of bottles, the location and the share you offer the collector.",
+      }),
       image: "/images/steps/post-mascot.svg",
     },
     {
       number: "02",
-      title: "Așteaptă colectorul",
-      subtext:
-        "Cineva din zonă îți va prelua cererea și te va scăpa de drumul la aparat.",
+      title: t({ ro: "Așteaptă colectorul", en: "Wait for the collector" }),
+      subtext: t({
+        ro: "Cineva din zonă îți va prelua cererea și te va scăpa de drumul la aparat.",
+        en: "Someone nearby will pick up your request and save you the trip to the machine.",
+      }),
       image: "/images/steps/colector-mascot.svg",
     },
     {
       number: "03",
-      title: "Realizează schimbul",
-      subtext:
-        "Colectorul îți oferă suma convenită, iar tu îi predai sticlele gata de reciclat.",
+      title: t({ ro: "Realizează schimbul", en: "Make the exchange" }),
+      subtext: t({
+        ro: "Colectorul îți oferă suma convenită, iar tu îi predai sticlele gata de reciclat.",
+        en: "The collector pays you the agreed amount and you hand over the bottles, ready to recycle.",
+      }),
       image: "/images/steps/eco-mascot.svg",
     },
   ];
@@ -28,8 +38,20 @@ export const Steps = () => {
   return (
     <section>
       <h2 className="font-sans font-extrabold text-slate-900 text-[2.5rem] lg:text-[3.3rem] leading-[1.15] tracking-tight mb-12 sm:mb-16 text-center">
-        Este mai simplu{" "}
-        <span className="text-lime-500 italic">decât ai crede</span>
+        {t({
+          ro: (
+            <>
+              Este mai simplu{" "}
+              <span className="text-lime-500 italic">decât ai crede</span>
+            </>
+          ),
+          en: (
+            <>
+              It&apos;s easier{" "}
+              <span className="text-lime-500 italic">than you think</span>
+            </>
+          ),
+        })}
       </h2>
 
       <div className="grid lg:grid-cols-3 gap-12 px-3 md:px-0">

@@ -1,10 +1,14 @@
+"use client";
+
 import { LuMail } from "react-icons/lu";
 import { FaFacebook, FaInstagram } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
 import Image from "next/image";
 import Link from "next/link";
+import { useI18n } from "@/context/I18nContext";
 
 export const Footer = () => {
+  const { t } = useI18n();
   return (
     <footer className="relative bg-gradient-to-br from-[#123524] to-[#1a4d36] border-t border-lime-400/20 py-12 rounded-t-[2rem] lg:rounded-t-[3rem] overflow-hidden">
       <div className="absolute -top-24 -left-24 w-64 h-64 rounded-full bg-lime-400/10 blur-[80px] pointer-events-none" />
@@ -22,9 +26,24 @@ export const Footer = () => {
               className="h-9 w-auto mx-auto md:mx-0 mb-4"
             />
             <p className="text-white/80">
-              Transformăm{" "}
-              <span className="text-lime-400 font-medium">reciclarea</span>{" "}
-              într-o oportunitate pentru toți românii.
+              {t({
+                ro: (
+                  <>
+                    Transformăm{" "}
+                    <span className="text-lime-400 font-medium">
+                      reciclarea
+                    </span>{" "}
+                    într-o oportunitate pentru toți românii.
+                  </>
+                ),
+                en: (
+                  <>
+                    We turn{" "}
+                    <span className="text-lime-400 font-medium">recycling</span>{" "}
+                    into an opportunity for everyone in Romania.
+                  </>
+                ),
+              })}
             </p>
           </div>
 
@@ -72,18 +91,22 @@ export const Footer = () => {
                 href="/termeni"
                 className="hover:text-lime-400 transition-colors"
               >
-                Termeni și Condiții
+                {t({ ro: "Termeni și Condiții", en: "Terms & Conditions" })}
               </Link>
               <span className="text-white/20">•</span>
               <Link
                 href="/confidentialitate"
                 className="hover:text-lime-400 transition-colors"
               >
-                Confidențialitate
+                {t({ ro: "Confidențialitate", en: "Privacy" })}
               </Link>
             </div>
             <p className="text-center md:text-right">
-              © {new Date().getFullYear()} Recash. Toate drepturile rezervate.
+              © {new Date().getFullYear()} Recash.{" "}
+              {t({
+                ro: "Toate drepturile rezervate.",
+                en: "All rights reserved.",
+              })}
             </p>
           </div>
         </div>

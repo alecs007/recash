@@ -9,6 +9,7 @@ import { ArrowLeft, Star } from "lucide-react";
 import { Pagination } from "@/app/components/UI/Pagination";
 import { PageTransition } from "@/app/components/UI/PageTransition";
 import { VerifiedBadge } from "@/app/components/UI/VerifiedBadge";
+import { useI18n } from "@/context/I18nContext";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -79,6 +80,7 @@ function RankBadge({ rank }: { rank: number }) {
 }
 
 function EntryRow({ entry }: { entry: LeaderboardEntry }) {
+  const { t, locale } = useI18n();
   const m = MEDAL_COLORS[entry.rank];
   return (
     <Link
@@ -109,7 +111,7 @@ function EntryRow({ entry }: { entry: LeaderboardEntry }) {
 
       <div className="flex-1 min-w-0">
         <div className="text-sm font-bold text-slate-900 truncate group-hover:text-slate-700 flex items-center gap-0.5">
-          {entry.name ?? "Utilizator"}
+          {entry.name ?? t({ ro: "Utilizator", en: "User" })}
           {entry.certified && <VerifiedBadge className="w-4 h-4 shrink-0" />}
         </div>
         <p className="text-xs text-slate-400 flex items-center gap-1">
@@ -123,7 +125,9 @@ function EntryRow({ entry }: { entry: LeaderboardEntry }) {
 
       <div className="flex items-center gap-1.5 shrink-0">
         <span className="text-sm font-black tabular-nums text-slate-800">
-          {entry.totalBottles.toLocaleString("ro-RO")}
+          {entry.totalBottles.toLocaleString(
+            locale === "ro" ? "ro-RO" : "en-GB",
+          )}
         </span>
         <FaWineBottle className="w-3 h-3 text-[#7EC3E5]" />
       </div>
@@ -153,6 +157,7 @@ function Skeleton() {
 }
 
 export default function LeaderboardPage() {
+  const { t } = useI18n();
   const [page, setPage] = useState(1);
 
   const { data, isLoading } = useSWR(
@@ -176,7 +181,7 @@ export default function LeaderboardPage() {
         </Link>
         <div>
           <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-            Clasamentul Recash
+            {t({ ro: "Clasamentul Recash", en: "Recash Leaderboard" })}
           </h1>
         </div>
       </div>
@@ -188,7 +193,10 @@ export default function LeaderboardPage() {
           <div className="text-center py-20">
             <FaWineBottle className="w-10 h-10 text-slate-200 mx-auto mb-4" />
             <p className="font-bold text-slate-700">
-              Niciun participant găsit.
+              {t({
+                ro: "Niciun participant găsit.",
+                en: "No participants found.",
+              })}
             </p>
           </div>
         ) : (

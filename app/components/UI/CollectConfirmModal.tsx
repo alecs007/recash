@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useI18n } from "@/context/I18nContext";
 
 interface CollectConfirmModalProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ export function CollectConfirmModal({
   post,
   loading,
 }: CollectConfirmModalProps) {
+  const { t } = useI18n();
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -47,22 +49,31 @@ export function CollectConfirmModal({
   const steps = [
     {
       color: "bg-lime-100 text-lime-700",
-      label: "Cererea ta de colectare este trimisă autorului.",
+      label: t({
+        ro: "Cererea ta de colectare este trimisă autorului.",
+        en: "Your collection request is sent to the author.",
+      }),
     },
     {
       color: "bg-amber-100 text-amber-700",
-      label:
-        "Dacă este aprobată, ai 60 min la dispoziție să ajungi la locație.",
+      label: t({
+        ro: "Dacă este aprobată, ai 60 min la dispoziție să ajungi la locație.",
+        en: "If approved, you have 60 minutes to reach the location.",
+      }),
     },
     {
       color: "bg-blue-100 text-blue-800",
-      label:
-        "Odată ajuns, oferi prețul stabilit autorului și colectezi sticlele.",
+      label: t({
+        ro: "Odată ajuns, oferi prețul stabilit autorului și colectezi sticlele.",
+        en: "Once there, you pay the author the agreed amount and collect the bottles.",
+      }),
     },
     {
       color: "bg-slate-100 text-slate-600",
-      label:
-        "Introduci codul de confirmare primit de la autor și totul este gata!",
+      label: t({
+        ro: "Introduci codul de confirmare primit de la autor și totul este gata!",
+        en: "Enter the confirmation code from the author and you're done!",
+      }),
     },
   ];
 
@@ -119,7 +130,7 @@ export function CollectConfirmModal({
                     disabled={loading}
                     className="flex-1 py-3 rounded-2xl border-2 border-slate-200 text-slate-600 font-semibold text-sm hover:border-slate-300 hover:bg-slate-50 transition-all disabled:opacity-40 cursor-pointer"
                   >
-                    Anulează
+                    {t({ ro: "Anulează", en: "Cancel" })}
                   </button>
                   <motion.button
                     onClick={onConfirm}
@@ -149,7 +160,9 @@ export function CollectConfirmModal({
                         />
                       </svg>
                     )}
-                    {loading ? "Se încarcă..." : "Am înțeles, colectez!"}
+                    {loading
+                      ? t({ ro: "Se încarcă...", en: "Loading..." })
+                      : t({ ro: "Am înțeles, colectez!", en: "Got it, let's collect!" })}
                   </motion.button>
                 </div>
               </div>

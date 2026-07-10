@@ -9,6 +9,7 @@ import { RadioTower, MapPin, Loader2, Search, X, Power } from "lucide-react";
 import { FaRegCompass } from "react-icons/fa";
 import useSWR from "swr";
 import { showToast } from "@/lib/toast";
+import { useI18n } from "@/context/I18nContext";
 
 const API = process.env.NEXT_PUBLIC_API_VERSION ?? "v1";
 
@@ -34,6 +35,7 @@ interface GeocodeResult {
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export function RadarSection() {
+  const { t } = useI18n();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -427,10 +429,18 @@ export function RadarSection() {
         mutate({ radar: d.radar }, { revalidate: false });
         showToast(
           next ? "radar" : "info",
-          next ? "Radarul este activat ✅" : "Radarul este oprit",
           next
-            ? "Vei primi notificări pentru fiecare anunț nou din zona ta."
-            : "Nu vei mai primi notificări radar.",
+            ? t({ ro: "Radarul este activat ✅", en: "Radar is on ✅" })
+            : t({ ro: "Radarul este oprit", en: "Radar is off" }),
+          next
+            ? t({
+                ro: "Vei primi notificări pentru fiecare anunț nou din zona ta.",
+                en: "You'll get notified for every new listing in your area.",
+              })
+            : t({
+                ro: "Nu vei mai primi notificări radar.",
+                en: "You'll no longer receive radar notifications.",
+              }),
         );
       } else {
         // revert on error
@@ -505,7 +515,7 @@ export function RadarSection() {
             className={`w-5 h-5  ${active ? "text-lime-500" : "text-slate-400"}`}
           />
           <h2 className="text-lg font-extrabold text-slate-900 tracking-tight">
-            Radar
+            {t({ ro: "Radar", en: "Radar" })}
           </h2>
         </div>
         <div className="flex items-center gap-2">
@@ -535,9 +545,9 @@ export function RadarSection() {
                 {toggling ? (
                   <Loader2 className="w-3 h-3 animate-spin inline" />
                 ) : active ? (
-                  "Activ"
+                  t({ ro: "Activ", en: "On" })
                 ) : (
-                  "Oprit"
+                  t({ ro: "Oprit", en: "Off" })
                 )}
               </span>
             </button>
@@ -546,8 +556,10 @@ export function RadarSection() {
       </div>
 
       <p className="text-sm text-slate-600 mb-4">
-        Setează-ți centrul de monitorizare și raza pentru a primi alerte cu
-        fiecare anunț nou din zona ta.
+        {t({
+          ro: "Setează-ți centrul de monitorizare și raza pentru a primi alerte cu fiecare anunț nou din zona ta.",
+          en: "Set your monitoring center and radius to get alerts for every new listing in your area.",
+        })}
       </p>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -561,7 +573,10 @@ export function RadarSection() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
-                placeholder="Caută o adresă…"
+                placeholder={t({
+                  ro: "Caută o adresă…",
+                  en: "Search for an address…",
+                })}
                 className="w-full pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none bg-white transition-shadow"
               />
               {(searchLoading || reverseLoading) && (
@@ -606,7 +621,7 @@ export function RadarSection() {
               onClick={handleGPS}
               disabled={geoLoading}
               className="w-11 h-11 rounded-xl border border-[#123424]/20 hover:bg-[#123424]/10 bg-white flex items-center justify-center transition-all disabled:opacity-50 cursor-pointer shrink-0"
-              title="Folosește locația mea"
+              title={t({ ro: "Folosește locația mea", en: "Use my location" })}
             >
               {geoLoading ? (
                 <Loader2 className="w-4.5 h-4.5 animate-spin text-[#123424]" />
@@ -657,7 +672,7 @@ export function RadarSection() {
               >
                 <div className="bg-white rounded-xl px-4 py-2 shadow-md flex items-center gap-2 text-sm text-slate-600 font-medium">
                   <Loader2 className="w-4 h-4 animate-spin text-[#123424]" />
-                  Se obține adresa...
+                  {t({ ro: "Se obține adresa...", en: "Getting the address..." })}
                 </div>
               </div>
             )}
@@ -674,7 +689,10 @@ export function RadarSection() {
                 className="flex justify-center pointer-events-none"
               >
                 <div className="bg-black/60 backdrop-blur text-white text-xs font-semibold px-3 py-1.5 rounded-full">
-                  Apasă pe hartă pentru a selecta centrul
+                  {t({
+                    ro: "Apasă pe hartă pentru a selecta centrul",
+                    en: "Tap the map to select the center",
+                  })}
                 </div>
               </div>
             )}
@@ -685,7 +703,7 @@ export function RadarSection() {
         <div className="space-y-3 flex flex-col">
           <div className="bg-white border border-slate-100 rounded-2xl p-4">
             <p className="text-sm font-semibold text-slate-500 mb-3">
-              Raza de monitorizare
+              {t({ ro: "Raza de monitorizare", en: "Monitoring radius" })}
             </p>
             <div className="grid grid-cols-2 gap-1.5">
               {RADII.map((r) => (
@@ -732,10 +750,13 @@ export function RadarSection() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-slate-800">
-                  Email delivery
+                  {t({ ro: "Notificări email", en: "Email delivery" })}
                 </p>
                 <p className="text-xs text-slate-400 mr-2">
-                  Primește email la fiecare anunț nou din zona ta.
+                  {t({
+                    ro: "Primește email la fiecare anunț nou din zona ta.",
+                    en: "Get an email for every new listing in your area.",
+                  })}
                 </p>
               </div>
             </div>

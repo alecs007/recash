@@ -10,6 +10,7 @@ import { Pagination } from "@/app/components/UI/Pagination";
 import { useRecashSocket } from "@/hooks/useRecashSocket";
 import { useNotificationBell } from "@/hooks/useNotificationBell";
 import { PageTransition } from "@/app/components/UI/PageTransition";
+import { useI18n, type Locale } from "@/context/I18nContext";
 
 type ApiResponse = {
   notifications: Notification[];
@@ -20,25 +21,30 @@ type ApiResponse = {
 };
 
 const FILTERS = [
-  { value: "all", label: "Toate" },
-  { value: "unread", label: "Necitite" },
+  { value: "all", label: { ro: "Toate", en: "All" } },
+  { value: "unread", label: { ro: "Necitite", en: "Unread" } },
 ];
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-function timeAgo(dateStr: Date): string {
+function timeAgo(dateStr: Date, locale: Locale): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "acum";
-  if (mins < 60) return `acum ${mins} min`;
+  if (mins < 1) return locale === "ro" ? "acum" : "now";
+  if (mins < 60)
+    return locale === "ro" ? `acum ${mins} min` : `${mins} min ago`;
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `acum ${hours}h`;
+  if (hours < 24)
+    return locale === "ro" ? `acum ${hours}h` : `${hours}h ago`;
   const days = Math.floor(hours / 24);
-  if (days < 7) return `acum ${days}z`;
-  return new Date(dateStr).toLocaleDateString("ro-RO", {
-    day: "numeric",
-    month: "short",
-  });
+  if (days < 7) return locale === "ro" ? `acum ${days}z` : `${days}d ago`;
+  return new Date(dateStr).toLocaleDateString(
+    locale === "ro" ? "ro-RO" : "en-GB",
+    {
+      day: "numeric",
+      month: "short",
+    },
+  );
 }
 
 function NotificationCard({
@@ -48,6 +54,7 @@ function NotificationCard({
   notif: Notification;
   onClick: (id: string) => void;
 }) {
+  const { locale } = useI18n();
   const cfg = NOTIF_CONFIG[notif.type] ?? NOTIF_CONFIG.SYSTEM;
   const Icon = cfg.Icon;
 
@@ -77,7 +84,7 @@ function NotificationCard({
             {notif.title}
           </p>
           <span className="shrink-0 text-[10px] text-slate-400 mt-0.5 whitespace-nowrap">
-            {timeAgo(notif.createdAt)}
+            {timeAgo(notif.createdAt, locale)}
           </span>
         </div>
         <p className="text-xs text-slate-700 mt-0.5 leading-relaxed">
@@ -120,6 +127,7 @@ function Skeleton() {
 }
 
 export default function NotificationsPage() {
+  const { t } = useI18n();
   const [page, setPage] = useState(1);
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const [markingAll, setMarkingAll] = useState(false);
@@ -215,7 +223,7 @@ export default function NotificationsPage() {
             <ArrowLeft className="w-4 h-4 text-slate-600" />
           </Link>
           <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-            Notificări
+            {t({ ro: "Notificări", en: "Notifications" })}
           </h1>
         </div>
 
@@ -230,7 +238,7 @@ export default function NotificationsPage() {
             ) : (
               <CheckCheck className="w-3.5 h-3.5" />
             )}
-            Marchează toate ca citite
+            {t({ ro: "Marchează toate ca citite", en: "Mark all as read" })}
           </button>
         )}
       </div>
@@ -249,7 +257,7 @@ export default function NotificationsPage() {
                 : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
             }`}
           >
-            {f.label}
+            {t(f.label)}
             {f.value === "unread" && unreadCount > 0 && (
               <span className="ml-1.5 bg-lime-400 text-[#123424] text-[9px] font-black px-1.5 py-0.5 rounded-full">
                 {unreadCount}
@@ -272,13 +280,22 @@ export default function NotificationsPage() {
             </div>
             <p className="font-bold text-slate-900 text-lg mb-1">
               {filter === "unread"
-                ? "Nicio notificare necitită"
-                : "Nicio notificare"}
+                ? t({
+                    ro: "Nicio notificare necitită",
+                    en: "No unread notifications",
+                  })
+                : t({ ro: "Nicio notificare", en: "No notifications" })}
             </p>
             <p className="text-sm text-slate-500">
               {filter === "unread"
-                ? "Ești la curent cu tot ce se întâmplă."
-                : "Notificările vor apărea după prima activitate."}
+                ? t({
+                    ro: "Ești la curent cu tot ce se întâmplă.",
+                    en: "You're all caught up.",
+                  })
+                : t({
+                    ro: "Notificările vor apărea după prima activitate.",
+                    en: "Notifications will appear after your first activity.",
+                  })}
             </p>
           </div>
         ) : (

@@ -7,6 +7,7 @@ import { ArrowLeft, MapPin } from "lucide-react";
 import { Pagination } from "@/app/components/UI/Pagination";
 import { PageTransition } from "@/app/components/UI/PageTransition";
 import useSWR from "swr";
+import { useI18n, type Locale } from "@/context/I18nContext";
 
 type Transaction = {
   id: string;
@@ -26,20 +27,24 @@ type Transaction = {
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 const ROLE_FILTERS = [
-  { value: "all", label: "Toate" },
-  { value: "poster", label: "Drept autor" },
-  { value: "collector", label: "Drept colector" },
+  { value: "all", label: { ro: "Toate", en: "All" } },
+  { value: "poster", label: { ro: "Drept autor", en: "As author" } },
+  { value: "collector", label: { ro: "Drept colector", en: "As collector" } },
 ];
 
-function getEmptyTitle(filter: string) {
-  switch (filter) {
-    case "poster":
-      return "Nicio tranzacție drept autor";
-    case "collector":
-      return "Nicio tranzacție drept colector";
-    default:
-      return "Nicio tranzacție găsită";
-  }
+function getEmptyTitle(filter: string, locale: Locale) {
+  const map: Record<string, { ro: string; en: string }> = {
+    poster: {
+      ro: "Nicio tranzacție drept autor",
+      en: "No transactions as author",
+    },
+    collector: {
+      ro: "Nicio tranzacție drept colector",
+      en: "No transactions as collector",
+    },
+    all: { ro: "Nicio tranzacție găsită", en: "No transactions found" },
+  };
+  return (map[filter] ?? map.all)[locale];
 }
 
 function Stars({ rating }: { rating: number }) {
@@ -87,6 +92,7 @@ function Skeleton() {
 }
 
 export default function AllTransactionsPage({ userId }: { userId: string }) {
+  const { t: tr, fmt, locale } = useI18n();
   const [page, setPage] = useState(1);
   const [roleFilter, setRoleFilter] = useState("all");
 
@@ -112,7 +118,7 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
         </Link>
         <div>
           <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-            Tranzacțiile mele
+            {tr({ ro: "Tranzacțiile mele", en: "My transactions" })}
           </h1>
         </div>
       </div>
@@ -128,7 +134,7 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
                 : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
             }`}
           >
-            {f.label}
+            {tr(f.label)}
           </button>
         ))}
       </div>
@@ -139,21 +145,30 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
           <div className="text-center py-16">
             <Image
               src="/images/bottle-sad.svg"
-              alt="Nicio postare"
+              alt={tr({ ro: "Nicio tranzacție", en: "No transactions" })}
               width={64}
               height={64}
               priority
               className="mx-auto h-24 w-24"
             />
             <p className="font-bold text-slate-900 text-lg mb-2">
-              {getEmptyTitle(roleFilter)}
+              {getEmptyTitle(roleFilter, locale)}
             </p>
             <p className="text-slate-500 text-sm">
               {roleFilter === "all"
-                ? "Tranzacțiile vor apărea după finalizarea primului schimb."
+                ? tr({
+                    ro: "Tranzacțiile vor apărea după finalizarea primului schimb.",
+                    en: "Transactions will appear after your first completed exchange.",
+                  })
                 : roleFilter === "poster"
-                  ? "Nu ai finalizat niciun schimb drept autor."
-                  : "Nu ai finalizat niciun schimb drept colector."}
+                  ? tr({
+                      ro: "Nu ai finalizat niciun schimb drept autor.",
+                      en: "You haven't completed any exchange as an author.",
+                    })
+                  : tr({
+                      ro: "Nu ai finalizat niciun schimb drept colector.",
+                      en: "You haven't completed any exchange as a collector.",
+                    })}
             </p>
           </div>
         ) : (
@@ -195,30 +210,42 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
 
                       <div className="min-w-0 flex-1">
                         <div className="font-semibold text-sm text-slate-900 truncate">
-                          {other?.name ?? "Utilizator necunoscut"}
+                          {other?.name ??
+                            tr({
+                              ro: "Utilizator necunoscut",
+                              en: "Unknown user",
+                            })}
                         </div>
                         <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
                           <MapPin className="w-3 h-3 shrink-0" />
                           <span className="truncate">
-                            {t.post.locationName ?? "Locație necunoscută"}
+                            {t.post.locationName ??
+                              tr({
+                                ro: "Locație necunoscută",
+                                en: "Unknown location",
+                              })}
                           </span>
                         </div>
                         <div className="text-xs text-slate-400 mt-0.5">
-                          {new Date(t.completedAt).toLocaleDateString("ro-RO", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })}
+                          {new Date(t.completedAt).toLocaleDateString(
+                            locale === "ro" ? "ro-RO" : "en-GB",
+                            {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            },
+                          )}
                         </div>
                       </div>
                     </div>
 
                     <div className="text-right shrink-0">
                       <div className="text-lg font-black text-lime-600">
-                        +{earning.toFixed(2)} RON
+                        {fmt(earning, { sign: true })}
                       </div>
                       <div className="text-xs text-slate-500">
-                        {t.bottleCount} sticle | {t.actualValue.toFixed(2)} RON
+                        {t.bottleCount} {tr({ ro: "sticle", en: "bottles" })} |{" "}
+                        {fmt(t.actualValue)}
                       </div>
 
                       <div className="flex flex-col items-end gap-1 mt-1.5">

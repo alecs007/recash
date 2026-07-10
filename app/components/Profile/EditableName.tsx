@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { flushSync } from "react-dom";
 import { Pencil, Check, X, Loader2 } from "lucide-react";
 import { VerifiedBadge } from "../UI/VerifiedBadge";
+import { useI18n } from "@/context/I18nContext";
 
 interface Props {
   initialName: string | null;
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function EditableName({ initialName, certified }: Props) {
+  const { t } = useI18n();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(initialName ?? "");
   const [saving, setSaving] = useState(false);
@@ -57,7 +59,12 @@ export function EditableName({ initialName, certified }: Props) {
   const save = async () => {
     const trimmed = name.trim();
     if (!trimmed || trimmed.length > 100) {
-      setError("Numele trebuie să aibă între 1 și 100 de caractere.");
+      setError(
+        t({
+          ro: "Numele trebuie să aibă între 1 și 100 de caractere.",
+          en: "The name must be between 1 and 100 characters.",
+        }),
+      );
       return;
     }
     setSaving(true);
@@ -70,12 +77,14 @@ export function EditableName({ initialName, certified }: Props) {
       });
       if (!res.ok) {
         const j = await res.json();
-        setError(j.error ?? "Eroare la salvare.");
+        setError(
+          j.error ?? t({ ro: "Eroare la salvare.", en: "Failed to save." }),
+        );
         return;
       }
       setEditing(false);
     } catch {
-      setError("Eroare de rețea.");
+      setError(t({ ro: "Eroare de rețea.", en: "Network error." }));
     } finally {
       setSaving(false);
     }
@@ -97,7 +106,7 @@ export function EditableName({ initialName, certified }: Props) {
               if (e.key === "Escape") cancel();
             }}
             maxLength={100}
-            placeholder="Numele tău"
+            placeholder={t({ ro: "Numele tău", en: "Your name" })}
             className="text-[1rem] sm:text-lg font-extrabold text-white bg-white/10 border-2 border-lime-400/60 rounded-xl px-3 py-0.5 sm:py-1 outline-none focus:border-lime-400 transition-all w-full max-w-[180px] sm:max-w-xs placeholder:text-white/40 min-w-0"
           />
           <button
@@ -127,15 +136,15 @@ export function EditableName({ initialName, certified }: Props) {
   return (
     <div className="flex items-center gap-1 group/name min-h-[35px] sm:min-h-[45px]">
       <h1 className="text-xl sm:text-3xl font-extrabold text-white tracking-tight truncate">
-        {name || "Utilizator"}
+        {name || t({ ro: "Utilizator", en: "User" })}
       </h1>
       {certified && (
         <VerifiedBadge className="w-5 h-5 sm:w-7 sm:h-7 shrink-0" />
       )}
       <button
         onClick={handleEditClick}
-        title="Editează numele"
-        aria-label="Editează numele"
+        title={t({ ro: "Editează numele", en: "Edit name" })}
+        aria-label={t({ ro: "Editează numele", en: "Edit name" })}
         className="ml-1 shrink-0 w-7 h-7 rounded-lg bg-white/10 hover:bg-white/25 flex items-center justify-center cursor-pointer transition-all opacity-40 hover:opacity-100 group-hover/name:opacity-70 focus:opacity-100"
       >
         <Pencil className="w-3.5 h-3.5 text-white" />

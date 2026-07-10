@@ -26,15 +26,6 @@ function primeVideoCache(): Promise<string | null> {
 primeVideoCache();
 
 // ── Singleton overlay — shared across all Loading mounts ────────────────────
-//
-// The problem with creating a new overlay per mount:
-//   A→B navigation  →  Loading #1 mounts, creates overlay-1, shows it
-//   B loads quickly  →  Loading #1 unmounts, overlay-1 starts its 900ms exit
-//   B→C navigation  →  Loading #2 mounts, creates overlay-2
-//   User sees: overlay-1 disappears, overlay-2 appears  ← the flash
-//
-// Fix: one overlay div for the lifetime of the module.  A new mount cancels
-// any in-progress fade-out and resets the minimum-display timer.
 
 let _mountCount = 0;
 let _overlay: HTMLDivElement | null = null;
@@ -117,10 +108,6 @@ function _attachAndShow(src: string) {
   const overlay = _ensureOverlay();
   const video = overlay.querySelector("video");
 
-  // A video element already exists — either still visible, or mid fade-out
-  // from a navigation that just got superseded. Either way, just (re)show it:
-  // its "canplay" listener is { once: true } and has already fired, so this
-  // is the only thing that can bring a fading-out overlay back to opaque.
   if (video) {
     if (!_isVisible) {
       _isVisible = true;

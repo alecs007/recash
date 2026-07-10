@@ -1,10 +1,18 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import { cookies } from "next/headers";
 import "./globals.css";
 import { auth } from "@/auth";
 import { SessionProvider } from "./components/Providers/SessionProvider";
 import { LoadingProvider } from "@/context/LoadingContext";
 import { AuthModalProvider } from "@/context/AuthModalContext";
+import {
+  I18nProvider,
+  LOCALE_COOKIE,
+  CURRENCY_COOKIE,
+  type Locale,
+  type Currency,
+} from "@/context/I18nContext";
 import { AuthModal } from "./components/Auth/AuthModal";
 import { GoogleOneTap } from "./components/Auth/GoogleOneTap";
 import { Suspense } from "react";
@@ -17,10 +25,17 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Recash",
-  description: "Recash - Reciclează. Încasează. Repetă.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const store = await cookies();
+  const locale = store.get(LOCALE_COOKIE)?.value === "en" ? "en" : "ro";
+  return {
+    title: "Recash",
+    description:
+      locale === "en"
+        ? "Recash - Recycle. Cash in. Repeat."
+        : "Recash - Reciclează. Încasează. Repetă.",
+  };
+}
 
 export default async function RootLayout({
   children,
@@ -28,9 +43,17 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const session = await auth();
+  const store = await cookies();
+  const locale: Locale =
+    store.get(LOCALE_COOKIE)?.value === "en" ? "en" : "ro";
+  const currency: Currency =
+    store.get(CURRENCY_COOKIE)?.value === "EUR" ? "EUR" : "RON";
 
   return (
-    <html lang="ro" className={`${geistSans.variable} h-full antialiased`}>
+    <html
+      lang={locale}
+      className={`${geistSans.variable} h-full antialiased`}
+    >
       <head>
         <link
           rel="icon"
@@ -49,18 +72,20 @@ export default async function RootLayout({
         <link rel="manifest" href="/site.webmanifest" />
       </head>
       <body className="min-h-full flex flex-col">
-        <SessionProvider session={session}>
-          <Suspense>
-            <AuthModalProvider>
-              <LoadingProvider>
-                <NavigationProgress />
-                <SmoothScroll>{children}</SmoothScroll>
-                <AuthModal />
-                <GoogleOneTap />
-              </LoadingProvider>
-            </AuthModalProvider>
-          </Suspense>
-        </SessionProvider>
+        <I18nProvider initialLocale={locale} initialCurrency={currency}>
+          <SessionProvider session={session}>
+            <Suspense>
+              <AuthModalProvider>
+                <LoadingProvider>
+                  <NavigationProgress />
+                  <SmoothScroll>{children}</SmoothScroll>
+                  <AuthModal />
+                  <GoogleOneTap />
+                </LoadingProvider>
+              </AuthModalProvider>
+            </Suspense>
+          </SessionProvider>
+        </I18nProvider>
 
         <Toaster
           position="top-center"

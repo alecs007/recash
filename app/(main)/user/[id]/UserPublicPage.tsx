@@ -18,6 +18,7 @@ import { ProfileRankBadge } from "@/app/components/Profile/RankBadge";
 import { BadgeCard } from "@/app/components/UI/BadgeCard";
 import { BADGE_CONFIG } from "@/lib/constants/badges";
 import { VerifiedBadge } from "@/app/components/UI/VerifiedBadge";
+import { useI18n } from "@/context/I18nContext";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -69,6 +70,7 @@ interface PublicProfileData {
 }
 
 function RatingBreakdown({ reviews }: { reviews: Review[] }) {
+  const { t } = useI18n();
   const counts = useMemo(() => {
     const c = [0, 0, 0, 0, 0];
     reviews.forEach((r) => {
@@ -100,7 +102,10 @@ function RatingBreakdown({ reviews }: { reviews: Review[] }) {
             ))}
           </div>
           <span className="text-xs text-slate-400 mt-1">
-            {total} {total === 1 ? "recenzie" : "recenzii"}
+            {total}{" "}
+            {total === 1
+              ? t({ ro: "recenzie", en: "review" })
+              : t({ ro: "recenzii", en: "reviews" })}
           </span>
         </div>
 
@@ -144,6 +149,7 @@ function ReviewCard({
   review: Review;
   profileUserId: string;
 }) {
+  const { t, locale } = useI18n();
   const { reviewer } = review;
   const canLink = reviewer.id && reviewer.id !== profileUserId;
 
@@ -196,14 +202,14 @@ function ReviewCard({
                   href={`/user/${reviewer.id}`}
                   className="font-semibold text-sm text-slate-900 hover:text-lime-700 transition-colors flex items-center gap-0.5"
                 >
-                  {reviewer.name ?? "Utilizator"}{" "}
+                  {reviewer.name ?? t({ ro: "Utilizator", en: "User" })}{" "}
                   {reviewer.certified && (
                     <VerifiedBadge className="w-4 h-4 shrink-0" />
                   )}
                 </Link>
               ) : (
                 <span className="font-semibold text-sm text-slate-900 flex items-center gap-0.5">
-                  {reviewer.name ?? "Utilizator"}{" "}
+                  {reviewer.name ?? t({ ro: "Utilizator", en: "User" })}{" "}
                   {reviewer.certified && (
                     <VerifiedBadge className="w-4 h-4 shrink-0" />
                   )}
@@ -222,17 +228,20 @@ function ReviewCard({
                 </div>
                 <span className="text-[10px] text-slate-400 bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded-full">
                   {review.role === "poster"
-                    ? "Autorul anunțului"
-                    : "Colectorul sticlelor"}
+                    ? t({ ro: "Autorul anunțului", en: "Listing author" })
+                    : t({ ro: "Colectorul sticlelor", en: "Bottle collector" })}
                 </span>
               </div>
             </div>
             <span className="text-[10px] text-slate-400 shrink-0 mt-0.5">
-              {new Date(review.completedAt).toLocaleDateString("ro-RO", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              })}
+              {new Date(review.completedAt).toLocaleDateString(
+                locale === "ro" ? "ro-RO" : "en-GB",
+                {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                },
+              )}
             </span>
           </div>
 
@@ -415,6 +424,7 @@ function Skeleton() {
 }
 
 export default function UserPublicPage({ userId }: { userId: string }) {
+  const { t, fmt, locale, currency } = useI18n();
   const router = useRouter();
   const [visibleCount, setVisibleCount] = useState(REVIEWS_PER_PAGE);
 
@@ -437,16 +447,19 @@ export default function UserPublicPage({ userId }: { userId: string }) {
           <ShieldCheck className="w-8 h-8 text-slate-300" />
         </div>
         <p className="font-bold text-slate-700 text-lg">
-          Utilizator inexistent
+          {t({ ro: "Utilizator inexistent", en: "User not found" })}
         </p>
         <p className="text-sm text-slate-400 text-center">
-          Profilul nu există sau a fost eliminat.
+          {t({
+            ro: "Profilul nu există sau a fost eliminat.",
+            en: "This profile doesn't exist or has been removed.",
+          })}
         </p>
         <button
           onClick={() => router.back()}
           className="flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-800 transition-colors cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4" /> Înapoi
+          <ArrowLeft className="w-4 h-4" /> {t({ ro: "Înapoi", en: "Back" })}
         </button>
       </div>
     );
@@ -461,13 +474,17 @@ export default function UserPublicPage({ userId }: { userId: string }) {
     .join("")
     .toUpperCase();
 
-  const memberSince = new Date(user.createdAt).toLocaleDateString("ro-RO", {
-    month: "long",
-    year: "numeric",
-  });
+  const memberSince = new Date(user.createdAt).toLocaleDateString(
+    locale === "ro" ? "ro-RO" : "en-GB",
+    {
+      month: "long",
+      year: "numeric",
+    },
+  );
 
   const totalBottles = user.totalBottlesGiven + user.totalBottlesCollected;
   const totalEarning = user.totalEarned + user.totalSaved;
+  const totalEarningFormatted = fmt(totalEarning);
 
   const earnedBadges = badges.filter((b) => BADGE_CONFIG[b.type]);
   const visibleReviews = reviews.slice(0, visibleCount);
@@ -476,27 +493,30 @@ export default function UserPublicPage({ userId }: { userId: string }) {
   const stats = [
     {
       icon: "/images/icons/bottles-recycled.svg",
-      label: "Sticle reciclate",
-      value: totalBottles.toLocaleString("ro-RO"),
-      unit: "buc",
+      label: t({ ro: "Sticle reciclate", en: "Bottles recycled" }),
+      value: totalBottles.toLocaleString(locale === "ro" ? "ro-RO" : "en-GB"),
+      unit: t({ ro: "buc", en: "pcs" }),
     },
     {
       icon: "/images/icons/total-earnings.svg",
-      label: "Încasări totale",
-      value: totalEarning.toFixed(2),
-      unit: "RON",
+      label: t({ ro: "Încasări totale", en: "Total earnings" }),
+      value:
+        currency === "RON"
+          ? totalEarningFormatted.replace(/\s*RON$/, "")
+          : totalEarningFormatted,
+      unit: currency === "RON" ? "RON" : "",
     },
     {
       icon: "/images/icons/plastic.svg",
-      label: "Plastic recuperat",
+      label: t({ ro: "Plastic recuperat", en: "Plastic recovered" }),
       value: `${totalBottles > 0 ? "~" : ""}${(totalBottles * 0.033).toFixed(1)}`,
       unit: "kg",
     },
     {
       icon: "/images/icons/co2-footprint.svg",
-      label: "Amprentă CO₂",
+      label: t({ ro: "Amprentă CO₂", en: "CO₂ footprint" }),
       value: `${totalBottles > 0 ? "~" : ""}${(totalBottles * 0.12).toFixed(1)}`,
-      unit: "kg CO₂ redus",
+      unit: t({ ro: "kg CO₂ redus", en: "kg CO₂ saved" }),
     },
   ];
 
@@ -508,7 +528,7 @@ export default function UserPublicPage({ userId }: { userId: string }) {
           className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
-          Înapoi
+          {t({ ro: "Înapoi", en: "Back" })}
         </button>
       </div>
       <div className="bg-gradient-to-br from-[#123424] to-[#1a4d36] rounded-[2rem] mx-4 sm:mx-6 lg:mx-8 mb-6 px-6 sm:px-10 py-6 sm:py-8 relative overflow-hidden shadow">
@@ -539,7 +559,7 @@ export default function UserPublicPage({ userId }: { userId: string }) {
 
           <div className="flex-1 min-w-0">
             <h1 className="text-lg sm:text-3xl font-extrabold text-white tracking-tight truncate mb-0.5 flex items-center gap-1">
-              {user.name ?? "Utilizator"}
+              {user.name ?? t({ ro: "Utilizator", en: "User" })}
               {user.certified && (
                 <VerifiedBadge className="w-5 h-5 sm:w-7 sm:h-7 shrink-0" />
               )}
@@ -586,13 +606,19 @@ export default function UserPublicPage({ userId }: { userId: string }) {
               {user.ratingCount > 0 && (
                 <span className="text-xs text-slate-300">
                   ({user.ratingCount}{" "}
-                  {user.ratingCount === 1 ? "recenzie" : "recenzii"})
+                  {user.ratingCount === 1
+                    ? t({ ro: "recenzie", en: "review" })
+                    : t({ ro: "recenzii", en: "reviews" })}
+                  )
                 </span>
               )}
               {user.cancelledCount > 0 && (
                 <span className="flex items-center gap-1 text-xs font-semibold text-red-400 px-2">
-                  <FaBan className="w-3 h-3" /> {user.cancelledCount}{" "}
-                  {user.cancelledCount === 1 ? "anulare" : "anulări"} în progres
+                  <FaBan className="w-3 h-3" />{" "}
+                  {t({
+                    ro: `${user.cancelledCount} ${user.cancelledCount === 1 ? "anulare" : "anulări"} în progres`,
+                    en: `${user.cancelledCount} ${user.cancelledCount === 1 ? "cancellation" : "cancellations"} in progress`,
+                  })}
                 </span>
               )}
             </div>
@@ -610,11 +636,15 @@ export default function UserPublicPage({ userId }: { userId: string }) {
                 <span className="font-bold text-white mr-1">
                   {user._count.badges}
                 </span>
-                {user._count.badges === 1 ? "badge" : "badge-uri"}
+                {user._count.badges === 1
+                  ? t({ ro: "badge", en: "badge" })
+                  : t({ ro: "badge-uri", en: "badges" })}
               </div>
               <div className="flex items-center text-white/70 text-sm">
                 <Calendar className="w-4 h-4 text-lime-400 mr-1.5" />
-                <span className="mr-1">Membru din</span>
+                <span className="mr-1">
+                  {t({ ro: "Membru din", en: "Member since" })}
+                </span>
                 <span className="font-bold text-white">{memberSince}</span>
               </div>
               {/* <div className="flex items-center text-white/70 text-sm">
@@ -641,12 +671,16 @@ export default function UserPublicPage({ userId }: { userId: string }) {
               <span className="font-bold text-white mr-1">
                 {user._count.badges}
               </span>
-              {user._count.badges === 1 ? "badge" : "badge-uri"}
+              {user._count.badges === 1
+                ? t({ ro: "badge", en: "badge" })
+                : t({ ro: "badge-uri", en: "badges" })}
             </div>
           )}
           <div className="flex items-center text-white/70 text-xs">
             <Calendar className="w-3.5 h-3.5 text-lime-400 mr-1.5" />
-            <span className="mr-1">Membru din</span>
+            <span className="mr-1">
+              {t({ ro: "Membru din", en: "Member since" })}
+            </span>
             <span className="font-bold text-white">{memberSince}</span>
           </div>
         </div>
@@ -688,7 +722,7 @@ export default function UserPublicPage({ userId }: { userId: string }) {
       </div>
       <div className="mx-4 sm:mx-6 lg:mx-8 mb-8">
         <h2 className="text-lg font-extrabold text-slate-900 tracking-tight mb-4">
-          Recenzii primite
+          {t({ ro: "Recenzii primite", en: "Reviews received" })}
           {reviews.length > 0 && (
             <span className="ml-2 text-base font-semibold text-slate-400">
               ({reviews.length})
@@ -700,11 +734,13 @@ export default function UserPublicPage({ userId }: { userId: string }) {
           <div className="bg-white rounded-2xl border border-dashed border-slate-200 p-10 text-center">
             <Star className="w-8 h-8 text-slate-200 mx-auto mb-3" />
             <p className="text-sm font-semibold text-slate-500">
-              Nicio recenzie primită
+              {t({ ro: "Nicio recenzie primită", en: "No reviews received" })}
             </p>
             <p className="text-xs text-slate-400 mt-1">
-              Recenziile apar după finalizarea unei tranzacții
-              colector-utilizator.
+              {t({
+                ro: "Recenziile apar după finalizarea unei tranzacții colector-utilizator.",
+                en: "Reviews appear after a collector-user transaction is completed.",
+              })}
             </p>
           </div>
         ) : (
@@ -727,8 +763,12 @@ export default function UserPublicPage({ userId }: { userId: string }) {
                 className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-500 hover:border-lime-300 hover:text-lime-700 hover:bg-lime-50 transition-all cursor-pointer"
               >
                 <ChevronDown className="w-4 h-4" />
-                Vezi mai multe ({reviews.length - visibleCount}{" "}
-                {reviews.length - visibleCount === 1 ? "rămasă" : "rămase"})
+                {t({
+                  ro: `Vezi mai multe (${reviews.length - visibleCount} ${
+                    reviews.length - visibleCount === 1 ? "rămasă" : "rămase"
+                  })`,
+                  en: `See more (${reviews.length - visibleCount} left)`,
+                })}
               </button>
             )}
           </>
@@ -737,7 +777,7 @@ export default function UserPublicPage({ userId }: { userId: string }) {
       {earnedBadges.length > 0 && (
         <div className="mx-4 sm:mx-6 lg:mx-8 mb-8 p-4 sm:p-6 bg-slate-50 border border-slate-100 rounded-2xl">
           <h2 className="text-lg font-extrabold text-slate-900 tracking-tight mb-4">
-            Badge-uri obținute
+            {t({ ro: "Badge-uri obținute", en: "Badges earned" })}
             <span className="ml-2 text-sm font-semibold text-slate-400">
               ({earnedBadges.length})
             </span>

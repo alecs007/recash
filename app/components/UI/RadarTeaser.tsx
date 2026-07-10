@@ -4,10 +4,12 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { RadioTower, X } from "lucide-react";
+import { useI18n } from "@/context/I18nContext";
 
 const DISMISSED_KEY = "radar-teaser-dismissed";
 
 export function RadarTeaser() {
+  const { t } = useI18n();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -40,10 +42,13 @@ export function RadarTeaser() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-slate-900 leading-tight">
-                  Activează radarul
+                  {t({ ro: "Activează radarul", en: "Turn on the radar" })}
                 </p>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Notificări când apar sticle lângă tine
+                  {t({
+                    ro: "Notificări când apar sticle lângă tine",
+                    en: "Get notified when bottles appear near you",
+                  })}
                 </p>
               </div>
               <Link
@@ -51,12 +56,12 @@ export function RadarTeaser() {
                 onClick={dismiss}
                 className="shrink-0 text-xs font-bold text-[#123424] bg-lime-50 border border-lime-200 px-3 py-1.5 rounded-xl hover:bg-lime-100 transition-colors cursor-pointer"
               >
-                Setează
+                {t({ ro: "Setează", en: "Set up" })}
               </Link>
               <button
                 onClick={dismiss}
                 className="w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors cursor-pointer shrink-0"
-                aria-label="Închide"
+                aria-label={t({ ro: "Închide", en: "Close" })}
               >
                 <X className="w-3 h-3 text-slate-500" />
               </button>

@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { VerifiedBadge } from "../UI/VerifiedBadge";
+import { useI18n } from "@/context/I18nContext";
 
 export interface ProfileReview {
   id: string;
@@ -25,6 +26,7 @@ export interface ProfileReview {
 const REVIEWS_PER_PAGE = 3;
 
 function RatingBreakdown({ reviews }: { reviews: ProfileReview[] }) {
+  const { t } = useI18n();
   const counts = useMemo(() => {
     const c = [0, 0, 0, 0, 0];
     reviews.forEach((r) => {
@@ -56,7 +58,10 @@ function RatingBreakdown({ reviews }: { reviews: ProfileReview[] }) {
             ))}
           </div>
           <span className="text-xs text-slate-400 mt-1">
-            {total} {total === 1 ? "recenzie" : "recenzii"}
+            {total}{" "}
+            {total === 1
+              ? t({ ro: "recenzie", en: "review" })
+              : t({ ro: "recenzii", en: "reviews" })}
           </span>
         </div>
 
@@ -100,6 +105,7 @@ function ReviewCard({
   review: ProfileReview;
   userId: string;
 }) {
+  const { t, locale } = useI18n();
   const { reviewer } = review;
   const canLink = reviewer.id && reviewer.id !== userId;
 
@@ -150,14 +156,14 @@ function ReviewCard({
                   href={`/user/${reviewer.id}`}
                   className="font-semibold text-sm text-slate-900 hover:text-lime-700 transition-colors flex items-center gap-0.5"
                 >
-                  {reviewer.name ?? "Utilizator"}{" "}
+                  {reviewer.name ?? t({ ro: "Utilizator", en: "User" })}{" "}
                   {reviewer.certified && (
                     <VerifiedBadge className="w-4 h-4 shrink-0" />
                   )}
                 </Link>
               ) : (
                 <span className="font-semibold text-sm text-slate-900 flex items-center gap-0.5">
-                  {reviewer.name ?? "Utilizator"}{" "}
+                  {reviewer.name ?? t({ ro: "Utilizator", en: "User" })}{" "}
                   {reviewer.certified && (
                     <VerifiedBadge className="w-4 h-4 shrink-0" />
                   )}
@@ -176,17 +182,20 @@ function ReviewCard({
                 </div>
                 <span className="text-[10px] text-slate-400 bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded-full">
                   {review.role === "poster"
-                    ? "Autorul anunțului"
-                    : "Colectorul sticlelor"}
+                    ? t({ ro: "Autorul anunțului", en: "Listing author" })
+                    : t({ ro: "Colectorul sticlelor", en: "Bottle collector" })}
                 </span>
               </div>
             </div>
             <span className="text-[10px] text-slate-400 shrink-0 mt-0.5">
-              {new Date(review.completedAt).toLocaleDateString("ro-RO", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              })}
+              {new Date(review.completedAt).toLocaleDateString(
+                locale === "ro" ? "ro-RO" : "en-GB",
+                {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                },
+              )}
             </span>
           </div>
 
@@ -208,6 +217,7 @@ export function ReviewsSection({
   reviews: ProfileReview[];
   userId: string;
 }) {
+  const { t } = useI18n();
   const [visibleCount, setVisibleCount] = useState(REVIEWS_PER_PAGE);
 
   if (reviews.length === 0) return null;
@@ -219,7 +229,7 @@ export function ReviewsSection({
     <div className="mx-4 sm:mx-6 lg:mx-8 mb-8">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-extrabold text-slate-900 tracking-tight">
-          Recenzii primite
+          {t({ ro: "Recenzii primite", en: "Reviews received" })}
           <span className="ml-2 text-base font-semibold text-slate-400">
             ({reviews.length})
           </span>
@@ -240,8 +250,12 @@ export function ReviewsSection({
           className="mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-500 hover:border-lime-300 hover:text-lime-700 hover:bg-lime-50 transition-all cursor-pointer"
         >
           <ChevronDown className="w-4 h-4" />
-          Vezi mai multe ({reviews.length - visibleCount}{" "}
-          {reviews.length - visibleCount === 1 ? "rămasă" : "rămase"})
+          {t({
+            ro: `Vezi mai multe (${reviews.length - visibleCount} ${
+              reviews.length - visibleCount === 1 ? "rămasă" : "rămase"
+            })`,
+            en: `See more (${reviews.length - visibleCount} left)`,
+          })}
         </button>
       )}
     </div>

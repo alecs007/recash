@@ -8,9 +8,10 @@ import {
   BadgeCardSkeleton,
   BadgeData,
 } from "@/app/components/UI/BadgeCard";
-import { BADGE_CONFIG } from "@/lib/constants/badges";
+import { BADGE_CONFIG, BADGE_GROUPS } from "@/lib/constants/badges";
+import { useI18n } from "@/context/I18nContext";
 
-const GROUPS = ["Postări", "Colectări", "Eco", "Activitate", "Speciale"];
+const GROUP_KEYS = Object.keys(BADGE_GROUPS) as (keyof typeof BADGE_GROUPS)[];
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -43,6 +44,7 @@ function Skeleton() {
 }
 
 export default function AllBadgesPage() {
+  const { t } = useI18n();
   const {
     data: badges = [],
     isLoading,
@@ -72,7 +74,7 @@ export default function AllBadgesPage() {
           <ArrowLeft className="w-4 h-4 text-slate-600" />
         </Link>
         <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-          Badge-urile mele
+          {t({ ro: "Badge-urile mele", en: "My badges" })}
         </h1>
       </div>
 
@@ -88,21 +90,22 @@ export default function AllBadgesPage() {
               />
             </div>
             <p className="text-sm text-slate-500 mt-1.5 text-right">
-              <span className="font-bold text-lime-500">{earnedCount}</span> din{" "}
-              {total} obținute
+              <span className="font-bold text-lime-500">{earnedCount}</span>{" "}
+              {t({ ro: `din ${total} obținute`, en: `of ${total} earned` })}
             </p>
           </div>
 
           <div className="space-y-8">
-            {GROUPS.map((group) => {
+            {GROUP_KEYS.map((groupKey) => {
+              const group = BADGE_GROUPS[groupKey];
               const groupTypes = Object.entries(BADGE_CONFIG)
                 .filter(([, cfg]) => cfg.group === group)
                 .map(([type]) => type);
 
               return (
-                <div key={group}>
+                <div key={groupKey}>
                   <h2 className="font-bold text-slate-900 mb-3 tracking-wide">
-                    {group}
+                    {t(group)}
                   </h2>
                   <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
                     {groupTypes.map((type) => {

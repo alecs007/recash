@@ -16,6 +16,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNotificationBell } from "@/hooks/useNotificationBell";
 import { useActiveCounts } from "@/hooks/useActiveCounts";
 import { OverheaderAd } from "./OverheaderAd";
+import { LocaleSwitcher, PreferenceSwitcherInline } from "./LocaleSwitcher";
+import { useI18n } from "@/context/I18nContext";
 
 function ActiveIndicator({
   activePosts,
@@ -28,6 +30,7 @@ function ActiveIndicator({
   activePostId: string | null;
   activeCollectionId: string | null;
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const hasPosts = activePosts > 0;
@@ -98,7 +101,7 @@ function ActiveIndicator({
                     </motion.div>
                   </div>
                   <span className="text-xs font-bold text-slate-700 pr-2 whitespace-nowrap">
-                    Postare activă
+                    {t({ ro: "Postare activă", en: "Active post" })}
                   </span>
                 </Link>
                 <Link
@@ -115,7 +118,7 @@ function ActiveIndicator({
                     </motion.div>
                   </div>
                   <span className="text-xs font-bold text-slate-700 pr-2 whitespace-nowrap">
-                    Colectare activă
+                    {t({ ro: "Colectare activă", en: "Active collection" })}
                   </span>
                 </Link>
               </motion.div>
@@ -177,6 +180,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const { open: openAuthModal } = useAuthModal();
   const { show } = useLoading();
+  const { t } = useI18n();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
@@ -261,7 +265,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                 <Link
                   href="/notificari"
                   className="relative grid place-items-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors"
-                  aria-label="Notificări"
+                  aria-label={t({ ro: "Notificări", en: "Notifications" })}
                 >
                   <FaRegBell className="w-5 h-5 text-slate-700" />
                   {unreadCount > 0 && (
@@ -286,7 +290,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                   <button
                     onClick={() => setDropdownOpen((v) => !v)}
                     className="flex items-center gap-2 pl-1 pr-2 py-1 -translate-x-1 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
-                    aria-label="Meniu profil"
+                    aria-label={t({ ro: "Meniu profil", en: "Profile menu" })}
                   >
                     {session.user.image ? (
                       <Image
@@ -322,7 +326,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                             className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                           >
                             <FaRegUser className="w-4 h-4 text-slate-600" />
-                            Profilul meu
+                            {t({ ro: "Profilul meu", en: "My profile" })}
                           </Link>
                           {activePosts === 0 && (
                             <Link
@@ -331,7 +335,10 @@ export default function Header({ children }: { children: React.ReactNode }) {
                               className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                             >
                               <FiPlusSquare className="w-4 h-4 text-slate-600" />
-                              Creează un anunț
+                              {t({
+                                ro: "Creează un anunț",
+                                en: "Create a listing",
+                              })}
                             </Link>
                           )}
                           {activeCollections === 0 && (
@@ -341,20 +348,31 @@ export default function Header({ children }: { children: React.ReactNode }) {
                               className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                             >
                               <TbTruckDelivery className="w-4 h-4 text-slate-600" />
-                              Colectează sticle
+                              {t({
+                                ro: "Colectează sticle",
+                                en: "Collect bottles",
+                              })}
                             </Link>
                           )}
+                          <div className="border-t border-slate-100 mt-1 pt-1">
+                            <PreferenceSwitcherInline />
+                          </div>
                           <div className="border-t border-slate-100 mt-1 pt-1">
                             <button
                               onClick={() => {
                                 setDropdownOpen(false);
-                                show("Se deconectează...");
+                                show(
+                                  t({
+                                    ro: "Se deconectează...",
+                                    en: "Signing out...",
+                                  }),
+                                );
                                 signOut({ callbackUrl: "/" });
                               }}
                               className="flex items-center gap-3 w-full px-4 py-2.5 text-sm rounded-xl text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                             >
                               <MdLogout className="w-4 h-4" />
-                              Deconectează-te
+                              {t({ ro: "Deconectează-te", en: "Sign out" })}
                             </button>
                           </div>
                         </div>
@@ -364,12 +382,13 @@ export default function Header({ children }: { children: React.ReactNode }) {
                 </div>
               </>
             ) : (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
+                <LocaleSwitcher />
                 <button
                   onClick={openAuthModal}
                   className="hidden sm:flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors px-3 py-2 rounded-xl hover:bg-slate-50 cursor-pointer"
                 >
-                  Intră în cont
+                  {t({ ro: "Intră în cont", en: "Sign in" })}
                 </button>
 
                 <button

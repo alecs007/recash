@@ -9,48 +9,60 @@ import { Post } from "@/types";
 import { Pagination } from "@/app/components/UI/Pagination";
 import { PageTransition } from "@/app/components/UI/PageTransition";
 import useSWR from "swr";
+import { useI18n, type Locale } from "@/context/I18nContext";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 const STATUS_FILTERS = [
-  { value: "all", label: "Toate" },
-  { value: "active", label: "Active" },
-  { value: "COMPLETED", label: "Finalizate" },
-  { value: "CANCELLED", label: "Anulate" },
-  { value: "EXPIRED", label: "Expirate" },
+  { value: "all", label: { ro: "Toate", en: "All" } },
+  { value: "active", label: { ro: "Active", en: "Active" } },
+  { value: "COMPLETED", label: { ro: "Finalizate", en: "Completed" } },
+  { value: "CANCELLED", label: { ro: "Anulate", en: "Cancelled" } },
+  { value: "EXPIRED", label: { ro: "Expirate", en: "Expired" } },
 ];
 
-function getStatusLabel(filter: string, count: number) {
+function getStatusLabel(filter: string, count: number, locale: Locale) {
   const isSingular = count === 1;
-
-  switch (filter) {
-    case "active":
-      return isSingular ? "postare activă" : "postări active";
-    case "COMPLETED":
-      return isSingular ? "postare finalizată" : "postări finalizate";
-    case "CANCELLED":
-      return isSingular ? "postare anulată" : "postări anulate";
-    case "EXPIRED":
-      return isSingular ? "postare expirată" : "postări expirate";
-    case "all":
-    default:
-      return isSingular ? "postare" : "postări";
-  }
+  const ro = () => {
+    switch (filter) {
+      case "active":
+        return isSingular ? "postare activă" : "postări active";
+      case "COMPLETED":
+        return isSingular ? "postare finalizată" : "postări finalizate";
+      case "CANCELLED":
+        return isSingular ? "postare anulată" : "postări anulate";
+      case "EXPIRED":
+        return isSingular ? "postare expirată" : "postări expirate";
+      default:
+        return isSingular ? "postare" : "postări";
+    }
+  };
+  const en = () => {
+    switch (filter) {
+      case "active":
+        return isSingular ? "active post" : "active posts";
+      case "COMPLETED":
+        return isSingular ? "completed post" : "completed posts";
+      case "CANCELLED":
+        return isSingular ? "cancelled post" : "cancelled posts";
+      case "EXPIRED":
+        return isSingular ? "expired post" : "expired posts";
+      default:
+        return isSingular ? "post" : "posts";
+    }
+  };
+  return locale === "ro" ? ro() : en();
 }
 
-function getEmptyTitle(filter: string) {
-  switch (filter) {
-    case "active":
-      return "Nicio postare activă";
-    case "COMPLETED":
-      return "Nicio postare finalizată";
-    case "CANCELLED":
-      return "Nicio postare anulată";
-    case "EXPIRED":
-      return "Nicio postare expirată";
-    default:
-      return "Nicio postare găsită";
-  }
+function getEmptyTitle(filter: string, locale: Locale) {
+  const map: Record<string, { ro: string; en: string }> = {
+    active: { ro: "Nicio postare activă", en: "No active posts" },
+    COMPLETED: { ro: "Nicio postare finalizată", en: "No completed posts" },
+    CANCELLED: { ro: "Nicio postare anulată", en: "No cancelled posts" },
+    EXPIRED: { ro: "Nicio postare expirată", en: "No expired posts" },
+    all: { ro: "Nicio postare găsită", en: "No posts found" },
+  };
+  return (map[filter] ?? map.all)[locale];
 }
 
 function Skeleton() {
@@ -83,6 +95,7 @@ function Skeleton() {
 }
 
 export default function AllPostsPage() {
+  const { t, locale } = useI18n();
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -111,7 +124,7 @@ export default function AllPostsPage() {
             <ArrowLeft className="w-4 h-4 text-slate-600" />
           </Link>
           <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-            Postările mele
+            {t({ ro: "Postările mele", en: "My posts" })}
           </h1>
         </div>
         <Link
@@ -119,7 +132,7 @@ export default function AllPostsPage() {
           className="flex items-center gap-1.5 text-sm font-semibold bg-[#123424] text-white px-3 py-2 rounded-xl hover:bg-[#1a4d36] transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
-          Adaugă
+          {t({ ro: "Adaugă", en: "Add" })}
         </Link>
       </div>
 
@@ -134,7 +147,7 @@ export default function AllPostsPage() {
                 : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
             }`}
           >
-            {f.label}
+            {t(f.label)}
           </button>
         ))}
       </div>
@@ -146,33 +159,40 @@ export default function AllPostsPage() {
           <div className="text-center py-16">
             <Image
               src="/images/bottle-sad.svg"
-              alt="Nicio postare"
+              alt={t({ ro: "Nicio postare", en: "No posts" })}
               width={64}
               height={64}
               priority
               className="mx-auto h-24 w-24"
             />
             <p className="font-bold text-slate-900 text-lg mb-1">
-              {getEmptyTitle(statusFilter)}
+              {getEmptyTitle(statusFilter, locale)}
             </p>
             <p className="text-sm text-slate-500">
               {statusFilter === "all"
-                ? "Postează sticlele tale pentru a câștiga bani."
-                : "Nu există postări cu acest status."}
+                ? t({
+                    ro: "Postează sticlele tale pentru a câștiga bani.",
+                    en: "Post your bottles to earn money.",
+                  })
+                : t({
+                    ro: "Nu există postări cu acest status.",
+                    en: "There are no posts with this status.",
+                  })}
             </p>
             {statusFilter === "all" && (
               <Link
                 href="/post"
                 className="inline-flex items-center gap-2 bg-[#123424] text-white font-semibold px-5 py-2.5 rounded-full text-sm hover:bg-[#1a4d36] transition-colors mt-2"
               >
-                <Plus className="w-4 h-4" /> Postează acum
+                <Plus className="w-4 h-4" />{" "}
+                {t({ ro: "Postează acum", en: "Post now" })}
               </Link>
             )}
           </div>
         ) : (
           <div className="space-y-3">
             <p className="text-xs text-slate-400 font-medium px-1">
-              {total} {getStatusLabel(statusFilter, total)}
+              {total} {getStatusLabel(statusFilter, total, locale)}
             </p>
             {posts.map((post) => (
               <PostCard key={post.id} post={post} />

@@ -36,6 +36,7 @@ import { useSetActiveCounts } from "@/hooks/useActiveCounts";
 import { AiBottleAnalyzer } from "@/app/components/UI/AIBottleAnalyzer";
 import { scrollToTop } from "@/app/components/UX/SmoothScroll";
 import { createPortal } from "react-dom";
+import { useI18n } from "@/context/I18nContext";
 
 const API = process.env.NEXT_PUBLIC_API_VERSION ?? "v1";
 
@@ -81,16 +82,17 @@ interface GeocodeResult {
 
 const PRESETS = BOTTLE_PRESETS.filter((p) => p.value > 0);
 
-const EXPIRY_OPTIONS: { h: number | null; label: string }[] = [
-  { h: 12, label: "12h" },
-  { h: 24, label: "24h" },
-  { h: 48, label: "48h" },
-  { h: 72, label: "72h" },
-  { h: 168, label: "1 săpt." },
-  { h: 336, label: "2 săpt." },
-  { h: 720, label: "1 lună" },
-  { h: null, label: "Nelimitat" },
-];
+const EXPIRY_OPTIONS: { h: number | null; label: { ro: string; en: string } }[] =
+  [
+    { h: 12, label: { ro: "12h", en: "12h" } },
+    { h: 24, label: { ro: "24h", en: "24h" } },
+    { h: 48, label: { ro: "48h", en: "48h" } },
+    { h: 72, label: { ro: "72h", en: "72h" } },
+    { h: 168, label: { ro: "1 săpt.", en: "1 wk" } },
+    { h: 336, label: { ro: "2 săpt.", en: "2 wk" } },
+    { h: 720, label: { ro: "1 lună", en: "1 mo" } },
+    { h: null, label: { ro: "Nelimitat", en: "Unlimited" } },
+  ];
 
 const MIN_COLLECTOR_RON = 5;
 
@@ -159,13 +161,14 @@ function useLeaflet() {
 }
 
 const STEPS = [
-  { label: "Cantitate", Icon: FaWineBottle },
-  { label: "Locație", Icon: FaMapMarkerAlt },
-  { label: "Detalii", Icon: FaPercent },
-  { label: "Confirmare", Icon: FaCheckCircle },
+  { label: { ro: "Cantitate", en: "Quantity" }, Icon: FaWineBottle },
+  { label: { ro: "Locație", en: "Location" }, Icon: FaMapMarkerAlt },
+  { label: { ro: "Detalii", en: "Details" }, Icon: FaPercent },
+  { label: { ro: "Confirmare", en: "Confirm" }, Icon: FaCheckCircle },
 ];
 
 function StepIndicator({ current }: { current: number }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-start justify-between w-full mb-8 px-4">
       {STEPS.map((step, idx) => {
@@ -237,7 +240,7 @@ function StepIndicator({ current }: { current: number }) {
                 transition={{ duration: 0.25 }}
                 className="mt-2 text-[10px] font-semibold text-center leading-tight"
               >
-                {step.label}
+                {t(step.label)}
               </motion.span>
             </div>
 
@@ -281,6 +284,7 @@ function StepBottles({
   data: FormData;
   onChange: (d: Partial<FormData>) => void;
 }) {
+  const { t, fmt } = useI18n();
   const [showAi, setShowAi] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -324,7 +328,12 @@ function StepBottles({
   return (
     <div className="space-y-6">
       <div>
-        <FieldLabel>Câte sticle vei recicla?</FieldLabel>
+        <FieldLabel>
+          {t({
+            ro: "Câte sticle vei recicla?",
+            en: "How many bottles will you recycle?",
+          })}
+        </FieldLabel>
         <div className="flex items-center gap-3 bg-slate-50 rounded-2xl border border-slate-200 p-2">
           <motion.button
             type="button"
@@ -371,7 +380,7 @@ function StepBottles({
         <div className="mt-2 h-9 flex items-center justify-center">
           <div className="inline-flex items-center gap-1 rounded-full px-4 py-1.5">
             <span className="text-xs text-slate-500">
-              {data.bottleCount} × 0,50 RON =
+              {data.bottleCount} × {fmt(RON_PER_BOTTLE)} =
             </span>
             <AnimatePresence mode="popLayout">
               <motion.span
@@ -382,7 +391,7 @@ function StepBottles({
                 transition={{ duration: 0.1 }}
                 className="text-sm font-black text-lime-700 font-mono"
               >
-                {estimatedValue.toFixed(2)} RON
+                {fmt(estimatedValue)}
               </motion.span>
             </AnimatePresence>
           </div>
@@ -426,7 +435,12 @@ function StepBottles({
               <span
                 className={`text-xs font-bold leading-tight text-center transition-colors ${isActive ? "text-lime-800" : "text-slate-700"}`}
               >
-                {preset.label}
+                {preset.value === 0
+                  ? t({ ro: "Altul", en: "Other" })
+                  : t({
+                      ro: `~${preset.value} sticle`,
+                      en: `~${preset.value} bottles`,
+                    })}
               </span>
               <AnimatePresence>
                 {isActive && (
@@ -474,7 +488,10 @@ function StepBottles({
               d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"
             />
           </svg>
-          Estimează cu AI printr-o fotografie
+          {t({
+            ro: "Estimează cu AI printr-o fotografie",
+            en: "Estimate with AI from a photo",
+          })}
         </button>
       </div>
 
@@ -500,6 +517,7 @@ function StepLocation({
   data: FormData;
   onChange: (d: Partial<FormData>) => void;
 }) {
+  const { t } = useI18n();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
@@ -640,7 +658,12 @@ function StepLocation({
 
   const handleGPS = () => {
     if (!navigator.geolocation) {
-      setGeoError("GPS-ul nu este suportat de browser.");
+      setGeoError(
+        t({
+          ro: "GPS-ul nu este suportat de browser.",
+          en: "GPS is not supported by your browser.",
+        }),
+      );
       return;
     }
     setGeoLoading(true);
@@ -654,8 +677,14 @@ function StepLocation({
         setGeoLoading(false);
         setGeoError(
           err.code === 1
-            ? "Permisiunea pentru locație a fost refuzată."
-            : "Nu am putut determina locația.",
+            ? t({
+                ro: "Permisiunea pentru locație a fost refuzată.",
+                en: "Location permission was denied.",
+              })
+            : t({
+                ro: "Nu am putut determina locația.",
+                en: "We couldn't determine your location.",
+              }),
         );
       },
       { enableHighAccuracy: true, timeout: 10_000 },
@@ -665,7 +694,12 @@ function StepLocation({
   return (
     <div className="space-y-4">
       <div>
-        <FieldLabel>De unde vor fi preluate?</FieldLabel>
+        <FieldLabel>
+          {t({
+            ro: "De unde vor fi preluate?",
+            en: "Where will they be picked up?",
+          })}
+        </FieldLabel>
         <div className="relative">
           <div className="flex gap-2">
             <div className="flex-1 relative">
@@ -674,7 +708,10 @@ function StepLocation({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
-                placeholder="ex: Strada Victoriei, Cluj..."
+                placeholder={t({
+                  ro: "ex: Strada Victoriei, Cluj...",
+                  en: "e.g. Victoriei Street, Cluj...",
+                })}
                 className="w-full pl-9 pr-8 py-3 h-12 rounded-xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none bg-white transition-shadow"
               />
               {searchLoading && (
@@ -699,7 +736,7 @@ function StepLocation({
               onClick={handleGPS}
               disabled={geoLoading}
               className="w-12 h-12 rounded-xl border border-[#123424]/20 hover:bg-[#123424]/10 flex items-center justify-center transition-all disabled:opacity-50 cursor-pointer shrink-0"
-              title="Folosește GPS-ul"
+              title={t({ ro: "Folosește GPS-ul", en: "Use GPS" })}
             >
               {geoLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin text-[#123424]" />
@@ -766,14 +803,17 @@ function StepLocation({
             <div className="absolute inset-0 bg-white/50 backdrop-blur-[2px] flex items-center justify-center z-10">
               <div className="bg-white rounded-xl px-4 py-2 shadow-md flex items-center gap-2 text-sm text-slate-600 font-medium">
                 <Loader2 className="w-4 h-4 animate-spin text-[#123424]" />
-                Se obține adresa...
+                {t({ ro: "Se obține adresa...", en: "Getting the address..." })}
               </div>
             </div>
           )}
           {!data.latitude && leafletReady && (
             <div className="absolute bottom-3 inset-x-0 flex justify-center z-10 pointer-events-none">
               <div className="bg-black/65 backdrop-blur text-white text-xs font-semibold px-3 py-1.5 rounded-full">
-                Apasă pe hartă pentru a selecta locația
+                {t({
+                  ro: "Apasă pe hartă pentru a selecta locația",
+                  en: "Tap the map to select the location",
+                })}
               </div>
             </div>
           )}
@@ -830,6 +870,7 @@ function StepDetails({
   onChange: (d: Partial<FormData>) => void;
   originalPhone: string | null;
 }) {
+  const { t, fmt } = useI18n();
   const estimatedValue = parseFloat(
     (data.bottleCount * RON_PER_BOTTLE).toFixed(2),
   );
@@ -865,41 +906,59 @@ function StepDetails({
       return {
         key: "under-5",
         icon: <Coins className="w-5 h-5 text-amber-500" />,
-        text: "Valoarea totală este sub 5 RON. Recomandat ar fi să donezi întreaga sumă colectorului, întrucât valoarea este prea mică pentru a fi împărțită.",
+        text: t({
+          ro: `Valoarea totală este sub ${fmt(5)}. Recomandat ar fi să donezi întreaga sumă colectorului, întrucât valoarea este prea mică pentru a fi împărțită.`,
+          en: `The total value is under ${fmt(5)}. We recommend donating the whole amount to the collector, since it's too small to split.`,
+        }),
       };
     }
     if (displayCollectorPercent === 100) {
       return {
         key: "donation-100",
         icon: <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />,
-        text: "Toate sticlele merg ca donație! Oferta este de nerefuzat pentru colectori, iar preluarea va fi foarte rapidă.",
+        text: t({
+          ro: "Toate sticlele merg ca donație! Oferta este de nerefuzat pentru colectori, iar preluarea va fi foarte rapidă.",
+          en: "All the bottles go as a donation! It's an offer collectors can't refuse and pickup will be very fast.",
+        }),
       };
     }
     if (collectorRON < 5) {
       return {
         key: "low-offer",
         icon: <FcHighPriority className="w-5 h-5" />,
-        text: "Suma oferită colectorului este prea mică. S-ar putea ca preluarea să dureze mai mult.",
+        text: t({
+          ro: "Suma oferită colectorului este prea mică. S-ar putea ca preluarea să dureze mai mult.",
+          en: "The amount offered to the collector is too small. Pickup might take longer.",
+        }),
       };
     }
     if (displayCollectorPercent >= 50) {
       return {
         key: "generous",
         icon: <FcBullish className="w-5 h-5" />,
-        text: "Ești foarte generos! Suma oferită este atractivă și sigur va atrage colectorii din zonă.",
+        text: t({
+          ro: "Ești foarte generos! Suma oferită este atractivă și sigur va atrage colectorii din zonă.",
+          en: "Very generous! The amount is attractive and will surely draw collectors nearby.",
+        }),
       };
     }
     if (isGoodOffer) {
       return {
         key: "good-offer",
         icon: <FcIdea className="w-5 h-5" />,
-        text: "Ofertă foarte bună! Cu siguranță vei găsi un colector interesat de sticlele tale în scurt timp.",
+        text: t({
+          ro: "Ofertă foarte bună! Cu siguranță vei găsi un colector interesat de sticlele tale în scurt timp.",
+          en: "Great offer! You'll surely find an interested collector soon.",
+        }),
       };
     }
     return {
       key: "low-offer",
       icon: <FcHighPriority className="w-5 h-5" />,
-      text: "Suma oferită colectorului este prea mică. S-ar putea ca preluarea să dureze mai mult.",
+      text: t({
+        ro: "Suma oferită colectorului este prea mică. S-ar putea ca preluarea să dureze mai mult.",
+        en: "The amount offered to the collector is too small. Pickup might take longer.",
+      }),
     };
   };
 
@@ -948,7 +1007,12 @@ function StepDetails({
   return (
     <div className="space-y-6">
       <div>
-        <FieldLabel>Cum vrei să împarți valoarea?</FieldLabel>
+        <FieldLabel>
+          {t({
+            ro: "Cum vrei să împarți valoarea?",
+            en: "How do you want to split the value?",
+          })}
+        </FieldLabel>
         <div className="mt-4">
           <div className="relative h-6 flex items-center mb-4">
             <div className="absolute w-full h-3 rounded-full overflow-hidden flex shadow-inner bg-slate-200">
@@ -983,23 +1047,23 @@ function StepDetails({
           <div className="flex justify-between items-center mt-2">
             <div className="flex flex-col">
               <span className="text-[10px] tracking-wide text-slate-400 font-semibold">
-                Partea ta
+                {t({ ro: "Partea ta", en: "Your share" })}
               </span>
               <span className="text-lg font-black text-lime-600">
                 {displayPosterPercent}%
                 <span className="ml-1 text-xs font-semibold text-lime-600/60">
-                  ({posterRON.toFixed(2)} RON)
+                  ({fmt(posterRON)})
                 </span>
               </span>
             </div>
             <div className="flex flex-col items-end">
               <span className="text-[10px] tracking-wide text-slate-400 font-semibold">
-                Partea colectorului
+                {t({ ro: "Partea colectorului", en: "Collector's share" })}
               </span>
               <span className="text-lg font-black text-[#123424]">
                 {displayCollectorPercent}%{" "}
                 <span className="ml-1 text-xs font-semibold text-slate-400">
-                  ({collectorRON.toFixed(2)} RON)
+                  ({fmt(collectorRON)})
                 </span>
               </span>
             </div>
@@ -1026,7 +1090,9 @@ function StepDetails({
       </div>
 
       <div>
-        <FieldLabel>Detalii suplimentare</FieldLabel>
+        <FieldLabel>
+          {t({ ro: "Detalii suplimentare", en: "Additional details" })}
+        </FieldLabel>
 
         {(() => {
           const SENSITIVE_PATTERN =
@@ -1046,22 +1112,25 @@ function StepDetails({
             <>
               <div className="flex flex-wrap gap-1.5 mb-2.5">
                 {[
-                  "Cantitate aproximativă",
-                  "La intrarea în bloc",
-                  "Sticle curate",
-                  "Se pot duce cu mâna",
-                  "Este nevoie de mașină",
-                  "Sunt puse în saci",
-                ].map((chip) => (
-                  <button
-                    key={chip}
-                    type="button"
-                    onClick={() => appendChip(chip)}
-                    className="px-2.5 py-1 rounded-full border border-slate-200 bg-slate-50 text-xs font-medium text-slate-600 hover:border-lime-400 hover:bg-lime-50 hover:text-lime-800 transition-all cursor-pointer"
-                  >
-                    + {chip}
-                  </button>
-                ))}
+                  { ro: "Cantitate aproximativă", en: "Approximate quantity" },
+                  { ro: "La intrarea în bloc", en: "At the building entrance" },
+                  { ro: "Sticle curate", en: "Clean bottles" },
+                  { ro: "Se pot duce cu mâna", en: "Can be carried by hand" },
+                  { ro: "Este nevoie de mașină", en: "A car is needed" },
+                  { ro: "Sunt puse în saci", en: "Packed in bags" },
+                ].map((chip) => {
+                  const label = t(chip);
+                  return (
+                    <button
+                      key={chip.en}
+                      type="button"
+                      onClick={() => appendChip(label)}
+                      className="px-2.5 py-1 rounded-full border border-slate-200 bg-slate-50 text-xs font-medium text-slate-600 hover:border-lime-400 hover:bg-lime-50 hover:text-lime-800 transition-all cursor-pointer"
+                    >
+                      + {label}
+                    </button>
+                  );
+                })}
               </div>
 
               <div className="relative">
@@ -1071,7 +1140,10 @@ function StepDetails({
                     const val = e.target.value;
                     onChange({ description: val });
                   }}
-                  placeholder="ex: Sticle PET și doze de aluminiu, la intrarea în bloc, scara A..."
+                  placeholder={t({
+                    ro: "ex: Sticle PET și doze de aluminiu, la intrarea în bloc, scara A...",
+                    en: "e.g. PET bottles and aluminium cans, at the building entrance, stairwell A...",
+                  })}
                   rows={3}
                   maxLength={500}
                   className={`w-full px-4 py-3 pb-6 rounded-xl border focus:ring-2 outline-none bg-white transition-shadow ${
@@ -1095,8 +1167,10 @@ function StepDetails({
                     className="overflow-hidden text-xs text-red-500 font-medium mt-5 flex items-center gap-2"
                   >
                     <AlertTriangle className="w-4 h-4 shrink-0" />
-                    Descrierea nu poate conține numere de telefon, adrese de
-                    email sau linkuri.
+                    {t({
+                      ro: "Descrierea nu poate conține numere de telefon, adrese de email sau linkuri.",
+                      en: "The description can't contain phone numbers, email addresses or links.",
+                    })}
                   </motion.p>
                 )}
               </AnimatePresence>
@@ -1106,8 +1180,13 @@ function StepDetails({
       </div>
 
       <div>
-        <FieldLabel hint="Opțional, vizibil doar colectorului">
-          Telefon de contact
+        <FieldLabel
+          hint={t({
+            ro: "Opțional, vizibil doar colectorului",
+            en: "Optional, visible only to the collector",
+          })}
+        >
+          {t({ ro: "Telefon de contact", en: "Contact phone" })}
         </FieldLabel>
         <div className="relative">
           <input
@@ -1122,7 +1201,10 @@ function StepDetails({
               type="button"
               onClick={() => onChange({ phone: "" })}
               className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors cursor-pointer"
-              aria-label="Șterge numărul de telefon"
+              aria-label={t({
+              ro: "Șterge numărul de telefon",
+              en: "Clear phone number",
+            })}
             >
               <X className="w-3 h-3 text-slate-500" />
             </button>
@@ -1130,7 +1212,12 @@ function StepDetails({
         </div>
       </div>
       <div>
-        <FieldLabel>Cât timp vrei să fie valabil anunțul?</FieldLabel>
+        <FieldLabel>
+          {t({
+            ro: "Cât timp vrei să fie valabil anunțul?",
+            en: "How long should the listing stay active?",
+          })}
+        </FieldLabel>
         <div className="grid grid-cols-4 gap-2">
           {EXPIRY_OPTIONS.map(({ h, label }) => {
             const active = data.expiresInHours === h;
@@ -1149,10 +1236,10 @@ function StepDetails({
                 {h === null ? (
                   <>
                     <FaInfinity className="w-4 h-4 sm:hidden" />
-                    <span className="hidden sm:inline">{label}</span>
+                    <span className="hidden sm:inline">{t(label)}</span>
                   </>
                 ) : (
-                  label
+                  t(label)
                 )}
               </button>
             );
@@ -1165,12 +1252,21 @@ function StepDetails({
         <div className="flex items-center justify-between py-3 px-4 bg-slate-50 border border-slate-200 rounded-xl">
           <div>
             <p className="text-sm font-bold text-slate-800">
-              Program de disponibilitate
+              {t({
+                ro: "Program de disponibilitate",
+                en: "Availability schedule",
+              })}
             </p>
             <p className="text-xs text-slate-400 mt-0.5 mr-2">
               {data.availabilitySchedule
-                ? "Anunțul este disponibil doar în intervalele selectate"
-                : "Anunțul este disponibil oricând"}
+                ? t({
+                    ro: "Anunțul este disponibil doar în intervalele selectate",
+                    en: "The listing is available only during the selected time slots",
+                  })
+                : t({
+                    ro: "Anunțul este disponibil oricând",
+                    en: "The listing is available anytime",
+                  })}
             </p>
           </div>
           <button
@@ -1213,13 +1309,13 @@ function StepDetails({
                 {/* Day toggles */}
                 <div className="grid grid-cols-7 gap-1.5">
                   {[
-                    { value: 1, short: "L" },
-                    { value: 2, short: "Ma" },
-                    { value: 3, short: "Mi" },
-                    { value: 4, short: "J" },
-                    { value: 5, short: "V" },
-                    { value: 6, short: "S" },
-                    { value: 0, short: "D" },
+                    { value: 1, short: t({ ro: "L", en: "Mo" }) },
+                    { value: 2, short: t({ ro: "Ma", en: "Tu" }) },
+                    { value: 3, short: t({ ro: "Mi", en: "We" }) },
+                    { value: 4, short: t({ ro: "J", en: "Th" }) },
+                    { value: 5, short: t({ ro: "V", en: "Fr" }) },
+                    { value: 6, short: t({ ro: "S", en: "Sa" }) },
+                    { value: 0, short: t({ ro: "D", en: "Su" }) },
                   ].map(({ value, short }) => {
                     const active = data.availabilitySchedule!.some(
                       (s) => s.day === value,
@@ -1267,13 +1363,13 @@ function StepDetails({
                   .filter(Boolean)
                   .map((s) => {
                     const dayLabel = [
-                      { value: 1, long: "Luni" },
-                      { value: 2, long: "Marți" },
-                      { value: 3, long: "Miercuri" },
-                      { value: 4, long: "Joi" },
-                      { value: 5, long: "Vineri" },
-                      { value: 6, long: "Sâmbătă" },
-                      { value: 0, long: "Duminică" },
+                      { value: 1, long: t({ ro: "Luni", en: "Monday" }) },
+                      { value: 2, long: t({ ro: "Marți", en: "Tuesday" }) },
+                      { value: 3, long: t({ ro: "Miercuri", en: "Wednesday" }) },
+                      { value: 4, long: t({ ro: "Joi", en: "Thursday" }) },
+                      { value: 5, long: t({ ro: "Vineri", en: "Friday" }) },
+                      { value: 6, long: t({ ro: "Sâmbătă", en: "Saturday" }) },
+                      { value: 0, long: t({ ro: "Duminică", en: "Sunday" }) },
                     ].find((d) => d.value === s!.day)?.long;
                     return (
                       <div
@@ -1338,6 +1434,7 @@ function StepConfirm({
   submitting: boolean;
   error: string;
 }) {
+  const { t, fmt } = useI18n();
   const estimatedValue = parseFloat(
     (data.bottleCount * RON_PER_BOTTLE).toFixed(2),
   );
@@ -1358,38 +1455,54 @@ function StepConfirm({
     value: React.ReactNode;
     accent?: "green" | "lime" | "purple";
   }> = [
-    { label: "Număr sticle", value: `${data.bottleCount} buc` },
     {
-      label: "Valoare estimată SGR",
-      value: `${estimatedValue.toFixed(2)} RON`,
+      label: t({ ro: "Număr sticle", en: "Number of bottles" }),
+      value: `${data.bottleCount} ${t({ ro: "buc", en: "pcs" })}`,
     },
     {
-      label: "Tu primești",
-      value: `${posterEarning.toFixed(2)} RON (${posterPercent}%)`,
+      label: t({ ro: "Valoare estimată SGR", en: "Estimated SGR value" }),
+      value: fmt(estimatedValue),
+    },
+    {
+      label: t({ ro: "Tu primești", en: "You get" }),
+      value: `${fmt(posterEarning)} (${posterPercent}%)`,
       accent: collectorPercent === 100 ? "green" : "lime",
     },
     {
-      label: "Colectorul primește",
-      value: `${collectorEarning.toFixed(2)} RON (${collectorPercent}%)`,
+      label: t({ ro: "Colectorul primește", en: "The collector gets" }),
+      value: `${fmt(collectorEarning)} (${collectorPercent}%)`,
       accent: collectorPercent === 100 ? "purple" : "green",
     },
-    { label: "Locație", value: data.locationName || "Coordonate setate" },
-    ...(data.description
-      ? [{ label: "Detalii", value: data.description }]
-      : []),
-    ...(data.phone ? [{ label: "Telefon", value: data.phone }] : []),
     {
-      label: "Valabilitate",
+      label: t({ ro: "Locație", en: "Location" }),
+      value:
+        data.locationName ||
+        t({ ro: "Coordonate setate", en: "Coordinates set" }),
+    },
+    ...(data.description
+      ? [{ label: t({ ro: "Detalii", en: "Details" }), value: data.description }]
+      : []),
+    ...(data.phone
+      ? [{ label: t({ ro: "Telefon", en: "Phone" }), value: data.phone }]
+      : []),
+    {
+      label: t({ ro: "Valabilitate", en: "Validity" }),
       value:
         data.expiresInHours === null
-          ? "Nelimitată"
-          : (EXPIRY_OPTIONS.find((o) => o.h === data.expiresInHours)?.label ??
-            `${data.expiresInHours} ore`),
+          ? t({ ro: "Nelimitată", en: "Unlimited" })
+          : (() => {
+              const opt = EXPIRY_OPTIONS.find(
+                (o) => o.h === data.expiresInHours,
+              );
+              return opt
+                ? t(opt.label)
+                : `${data.expiresInHours} ${t({ ro: "ore", en: "hours" })}`;
+            })(),
     },
     ...(data.availabilitySchedule?.length
       ? [
           {
-            label: "Program",
+            label: t({ ro: "Program", en: "Schedule" }),
             value: (
               <div className="flex flex-col items-end gap-1.5">
                 {data.availabilitySchedule
@@ -1401,13 +1514,13 @@ function StepConfirm({
                   )
                   .map((s) => {
                     const d = [
-                      { v: 1, s: "Lun" },
-                      { v: 2, s: "Mar" },
-                      { v: 3, s: "Mie" },
-                      { v: 4, s: "Joi" },
-                      { v: 5, s: "Vin" },
-                      { v: 6, s: "Sâm" },
-                      { v: 0, s: "Dum" },
+                      { v: 1, s: t({ ro: "Lun", en: "Mon" }) },
+                      { v: 2, s: t({ ro: "Mar", en: "Tue" }) },
+                      { v: 3, s: t({ ro: "Mie", en: "Wed" }) },
+                      { v: 4, s: t({ ro: "Joi", en: "Thu" }) },
+                      { v: 5, s: t({ ro: "Vin", en: "Fri" }) },
+                      { v: 6, s: t({ ro: "Sâm", en: "Sat" }) },
+                      { v: 0, s: t({ ro: "Dum", en: "Sun" }) },
                     ].find((x) => x.v === s.day);
                     return (
                       <span
@@ -1428,7 +1541,9 @@ function StepConfirm({
 
   return (
     <div>
-      <FieldLabel>Rezumatul anunțului</FieldLabel>
+      <FieldLabel>
+        {t({ ro: "Rezumatul anunțului", en: "Listing summary" })}
+      </FieldLabel>
 
       <div className="rounded-2xl border border-slate-100 overflow-hidden">
         {rows.map(({ label, value, accent }, i) => (
@@ -1478,6 +1593,7 @@ function StepConfirm({
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 function ActivePostGuard({ children }: { children: React.ReactNode }) {
+  const { t } = useI18n();
   const { data, isLoading } = useSWR(`/api/${API}/posts/active`, fetcher);
 
   if (isLoading) {
@@ -1494,7 +1610,7 @@ function ActivePostGuard({ children }: { children: React.ReactNode }) {
         <div className="bg-slate-50 rounded-3xl p-8 flex flex-col items-center text-center">
           <Image
             src="/images/bottle-angry.svg"
-            alt="Anunț activ"
+            alt={t({ ro: "Anunț activ", en: "Active listing" })}
             width={160}
             height={160}
             priority
@@ -1502,11 +1618,16 @@ function ActivePostGuard({ children }: { children: React.ReactNode }) {
           />
 
           <h2 className="text-lg font-extrabold text-slate-900 mb-2">
-            Ai deja un anunț activ
+            {t({
+              ro: "Ai deja un anunț activ",
+              en: "You already have an active listing",
+            })}
           </h2>
           <p className="text-sm text-slate-600 mb-5">
-            Nu poți avea mai mult de un anunț activ. Finalizează sau anulează
-            anunțul curent înainte de a crea unul nou.
+            {t({
+              ro: "Nu poți avea mai mult de un anunț activ. Finalizează sau anulează anunțul curent înainte de a crea unul nou.",
+              en: "You can't have more than one active listing. Complete or cancel your current listing before creating a new one.",
+            })}
           </p>
           <div className="flex flex-col gap-2">
             <Link
@@ -1514,7 +1635,7 @@ function ActivePostGuard({ children }: { children: React.ReactNode }) {
               className="inline-flex items-center justify-center gap-2 bg-[#123424] text-white font-bold py-3 px-6 rounded-full hover:bg-[#1a4d36] transition-all shadow-[3px_3px_0px_#75a08c] active:translate-y-[3px] active:shadow-none"
             >
               <FaWineBottle className="w-4 h-4 text-lime-400" />
-              Vezi anunțul activ
+              {t({ ro: "Vezi anunțul activ", en: "View active listing" })}
             </Link>
           </div>
         </div>
@@ -1526,6 +1647,7 @@ function ActivePostGuard({ children }: { children: React.ReactNode }) {
 }
 
 function OnboardingSheet({ onDismiss }: { onDismiss: () => void }) {
+  const { t } = useI18n();
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onDismiss();
@@ -1543,7 +1665,10 @@ function OnboardingSheet({ onDismiss }: { onDismiss: () => void }) {
       icon: <FaCheckCircle className="w-4 h-4 text-lime-600 shrink-0 mt-0.5" />,
       label: (
         <>
-          Sticlele trebuie să fie valabile pentru RetuRO SGR, cu marcaj
+          {t({
+            ro: "Sticlele trebuie să fie valabile pentru RetuRO SGR, cu marcaj",
+            en: "Bottles must be eligible for RetuRO SGR, with the mark",
+          })}
           <Image
             src="/images/returo-mark.svg"
             alt="SGR"
@@ -1558,24 +1683,33 @@ function OnboardingSheet({ onDismiss }: { onDismiss: () => void }) {
       icon: (
         <FaExclamationTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
       ),
-      label: "Sticlele turtite, sparte sau murdare excesiv NU sunt acceptate.",
+      label: t({
+        ro: "Sticlele turtite, sparte sau murdare excesiv NU sunt acceptate.",
+        en: "Crushed, broken or excessively dirty bottles are NOT accepted.",
+      }),
     },
     {
       icon: (
         <FaMapMarkerAlt className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
       ),
-      label:
-        "Colectorii din zona ta vor cere preluarea sticlelor, iar tu îl aprobi pe cel care îți convine.",
+      label: t({
+        ro: "Colectorii din zona ta vor cere preluarea sticlelor, iar tu îl aprobi pe cel care îți convine.",
+        en: "Collectors near you will request the pickup, and you approve the one you prefer.",
+      }),
     },
     {
       icon: <Coins className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />,
-      label:
-        "Odată ajuns la tine, colectorul îți va oferi suma convenită și va prelua sticlele.",
+      label: t({
+        ro: "Odată ajuns la tine, colectorul îți va oferi suma convenită și va prelua sticlele.",
+        en: "Once they arrive, the collector pays you the agreed amount and takes the bottles.",
+      }),
     },
     {
       icon: <FaKey className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />,
-      label:
-        "Pentru a finaliza, îi vei arăta codul unic din pagina postării și totul este gata!",
+      label: t({
+        ro: "Pentru a finaliza, îi vei arăta codul unic din pagina postării și totul este gata!",
+        en: "To finish, you show them the unique code from the listing page and you're done!",
+      }),
     },
   ];
 
@@ -1604,10 +1738,13 @@ function OnboardingSheet({ onDismiss }: { onDismiss: () => void }) {
           <div className="p-6">
             <div className="mb-5">
               <p className="font-extrabold text-slate-900 text-base leading-tight">
-                Înainte să postezi...
+                {t({ ro: "Înainte să postezi...", en: "Before you post..." })}
               </p>
               <p className="text-xs text-slate-500 mt-0.5">
-                Câteva lucruri importante de știut
+                {t({
+                  ro: "Câteva lucruri importante de știut",
+                  en: "A few important things to know",
+                })}
               </p>
             </div>
 
@@ -1634,7 +1771,7 @@ function OnboardingSheet({ onDismiss }: { onDismiss: () => void }) {
               className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all cursor-pointer shadow-sm"
             >
               <FaCheckCircle className="w-4 h-4 text-lime-400" />
-              Am înțeles, continuă
+              {t({ ro: "Am înțeles, continuă", en: "Got it, continue" })}
             </motion.button>
           </div>
         </motion.div>
@@ -1649,6 +1786,7 @@ export default function PostCreationClient({
 }: {
   userPhone: string | null;
 }) {
+  const { t } = useI18n();
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(0);
@@ -1727,7 +1865,13 @@ export default function PostCreationClient({
       const json = await res.json();
 
       if (!res.ok) {
-        setError(json.error ?? "A apărut o eroare. Încearcă din nou.");
+        setError(
+          json.error ??
+            t({
+              ro: "A apărut o eroare. Încearcă din nou.",
+              en: "Something went wrong. Try again.",
+            }),
+        );
         setSubmitting(false);
         return;
       }
@@ -1743,14 +1887,22 @@ export default function PostCreationClient({
 
       showToast(
         "success",
-        "Anunțul a fost publicat!",
-        "Vei fi notificat atunci când un colector face o cerere.",
+        t({ ro: "Anunțul a fost publicat!", en: "Your listing is live!" }),
+        t({
+          ro: "Vei fi notificat atunci când un colector face o cerere.",
+          en: "You'll be notified when a collector makes a request.",
+        }),
       );
 
       setActiveCounts({ activePosts: 1, activePostId: json.id });
       router.push(`/post/${json.id}`);
     } catch {
-      setError("Eroare de rețea. Încearcă din nou.");
+      setError(
+        t({
+          ro: "Eroare de rețea. Încearcă din nou.",
+          en: "Network error. Try again.",
+        }),
+      );
       setSubmitting(false);
     }
   };
@@ -1814,7 +1966,8 @@ export default function PostCreationClient({
                   disabled={submitting}
                   className="flex items-center gap-2 px-5 py-3.5 rounded-full border-2 border-slate-200 text-slate-700 font-semibold text-sm hover:border-slate-300 transition-colors disabled:opacity-40 cursor-pointer"
                 >
-                  <ChevronLeft className="w-4 h-4" /> Înapoi
+                  <ChevronLeft className="w-4 h-4" />{" "}
+                  {t({ ro: "Înapoi", en: "Back" })}
                 </motion.button>
               )}
             </AnimatePresence>
@@ -1838,7 +1991,8 @@ export default function PostCreationClient({
                       : "bg-slate-100 text-slate-400 border-2 border-dashed border-slate-200 cursor-not-allowed"
                   }`}
                 >
-                  Continuă <ChevronRight className="w-4 h-4" />
+                  {t({ ro: "Continuă", en: "Continue" })}{" "}
+                  <ChevronRight className="w-4 h-4" />
                 </motion.button>
               ) : (
                 <motion.button
@@ -1864,7 +2018,7 @@ export default function PostCreationClient({
                         className="flex items-center gap-2"
                       >
                         <div className="w-4 h-4 border-2 border-black/40 border-t-black rounded-full animate-spin" />
-                        Se postează...
+                        {t({ ro: "Se postează...", en: "Posting..." })}
                       </motion.span>
                     ) : (
                       <motion.span

@@ -41,24 +41,39 @@ import { motion, AnimatePresence, Variants } from "framer-motion";
 import { isCurrentlyAvailable } from "@/lib/availability";
 import type { DaySchedule } from "@/lib/availability";
 import { VerifiedBadge } from "@/app/components/UI/VerifiedBadge";
+import { useI18n } from "@/context/I18nContext";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-const STATUS_CONFIG: Record<PostStatus, { label: string; className: string }> =
-  {
-    OPEN: { label: "Disponibil", className: "bg-emerald-100 text-emerald-700" },
-    CLAIMED: {
-      label: "Cerere în așteptare",
-      className: "bg-blue-100 text-blue-700",
-    },
-    IN_PROGRESS: {
-      label: "Colectare în desfăşurare",
-      className: "bg-amber-100 text-amber-700",
-    },
-    COMPLETED: { label: "Finalizat", className: "bg-lime-100 text-lime-700" },
-    CANCELLED: { label: "Anulat", className: "bg-red-100 text-red-600" },
-    EXPIRED: { label: "Expirat", className: "bg-slate-100 text-slate-500" },
-  };
+const STATUS_CONFIG: Record<
+  PostStatus,
+  { label: { ro: string; en: string }; className: string }
+> = {
+  OPEN: {
+    label: { ro: "Disponibil", en: "Available" },
+    className: "bg-emerald-100 text-emerald-700",
+  },
+  CLAIMED: {
+    label: { ro: "Cerere în așteptare", en: "Request pending" },
+    className: "bg-blue-100 text-blue-700",
+  },
+  IN_PROGRESS: {
+    label: { ro: "Colectare în desfăşurare", en: "Collection in progress" },
+    className: "bg-amber-100 text-amber-700",
+  },
+  COMPLETED: {
+    label: { ro: "Finalizat", en: "Completed" },
+    className: "bg-lime-100 text-lime-700",
+  },
+  CANCELLED: {
+    label: { ro: "Anulat", en: "Cancelled" },
+    className: "bg-red-100 text-red-600",
+  },
+  EXPIRED: {
+    label: { ro: "Expirat", en: "Expired" },
+    className: "bg-slate-100 text-slate-500",
+  },
+};
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -101,6 +116,7 @@ function MapQuickNav({
   isCollectorPending: boolean;
   status: PostStatus;
 }) {
+  const { t } = useI18n();
   if (status === "CANCELLED" || status === "EXPIRED") return null;
 
   if (!showExact) {
@@ -109,8 +125,14 @@ function MapQuickNav({
         <div className="flex items-start max-w-xs gap-2.5 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-xl px-3.5 py-3 text-xs text-slate-500 font-medium shadow-sm">
           <FaInfoCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-slate-400" />
           {isCollectorPending
-            ? "Locația exactă va fi disponibilă după ce autorul îți aprobă cererea."
-            : "Locația exactă este vizibilă doar participanților la această colectare."}
+            ? t({
+                ro: "Locația exactă va fi disponibilă după ce autorul îți aprobă cererea.",
+                en: "The exact location will be available after the author approves your request.",
+              })
+            : t({
+                ro: "Locația exactă este vizibilă doar participanților la această colectare.",
+                en: "The exact location is only visible to participants in this collection.",
+              })}
         </div>
       </div>
     );
@@ -176,6 +198,7 @@ function PostMap({
   locationName: string | null;
   showExact?: boolean;
 }) {
+  const { t } = useI18n();
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const [ready, setReady] = useState(false);
@@ -263,11 +286,15 @@ function PostMap({
 
       L.marker([displayLat, displayLng], { icon })
         .addTo(map)
-        .bindPopup("<strong>Locație aproximativă</strong>");
+        .bindPopup(
+          `<strong>${t({ ro: "Locație aproximativă", en: "Approximate location" })}</strong>`,
+        );
     } else {
       L.marker([lat, lng], { icon })
         .addTo(map)
-        .bindPopup(`<strong>${locationName ?? "Locația sticlelor"}</strong>`);
+        .bindPopup(
+          `<strong>${locationName ?? t({ ro: "Locația sticlelor", en: "Bottle location" })}</strong>`,
+        );
     }
     mapRef.current = map;
 
@@ -299,6 +326,7 @@ function PostMap({
 }
 
 function Countdown({ deadline }: { deadline: string }) {
+  const { t } = useI18n();
   const [ms, setMs] = useState(0);
   useEffect(() => {
     const tick = () =>
@@ -320,7 +348,11 @@ function Countdown({ deadline }: { deadline: string }) {
         <span
           className={`font-semibold ${expired ? "text-red-500" : urgent ? "text-orange-500" : "text-slate-700"}`}
         >
-          {expired ? "Timp expirat" : urgent ? "Grăbește-te!" : "Timp rămas"}
+          {expired
+            ? t({ ro: "Timp expirat", en: "Time's up" })
+            : urgent
+              ? t({ ro: "Grăbește-te!", en: "Hurry up!" })
+              : t({ ro: "Timp rămas", en: "Time left" })}
         </span>
         <motion.span
           key={`${mins}:${secs}`}
@@ -345,6 +377,7 @@ function Countdown({ deadline }: { deadline: string }) {
 }
 
 function CodeDisplay({ postId }: { postId: string }) {
+  const { t } = useI18n();
   const { data, error, isLoading, mutate } = useSWR(
     `/api/v1/posts/${postId}/code`,
     fetcher,
@@ -364,12 +397,17 @@ function CodeDisplay({ postId }: { postId: string }) {
   if (error || !data?.code)
     return (
       <div className="text-center">
-        <p className="text-sm text-red-500 mb-2">Nu s-a putut obține codul.</p>
+        <p className="text-sm text-red-500 mb-2">
+          {t({
+            ro: "Nu s-a putut obține codul.",
+            en: "Couldn't retrieve the code.",
+          })}
+        </p>
         <button
           onClick={() => mutate()}
           className="flex items-center gap-1 mx-auto text-xs text-slate-500 hover:text-slate-700"
         >
-          <RefreshCw className="w-3 h-3" /> Reîncearcă
+          <RefreshCw className="w-3 h-3" /> {t({ ro: "Reîncearcă", en: "Retry" })}
         </button>
       </div>
     );
@@ -396,7 +434,10 @@ function CodeDisplay({ postId }: { postId: string }) {
         ))}
       </div>
       <p className="text-xs text-slate-500 text-center">
-        Arată acest cod colectorului când ajunge la tine
+        {t({
+          ro: "Arată acest cod colectorului când ajunge la tine",
+          en: "Show this code to the collector when they arrive",
+        })}
       </p>
     </motion.div>
   );
@@ -409,6 +450,7 @@ function CodeEntry({
   postId: string;
   onComplete: () => void;
 }) {
+  const { t } = useI18n();
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -417,7 +459,12 @@ function CodeEntry({
   const submit = async () => {
     const c = code.trim().toUpperCase();
     if (c.length !== 4) {
-      setError("Introdu codul de 4 caractere.");
+      setError(
+        t({
+          ro: "Introdu codul de 4 caractere.",
+          en: "Enter the 4-character code.",
+        }),
+      );
       return;
     }
     setLoading(true);
@@ -430,14 +477,14 @@ function CodeEntry({
       });
       const j = await res.json();
       if (!res.ok) {
-        setError(j.error ?? "Eroare");
+        setError(j.error ?? t({ ro: "Eroare", en: "Error" }));
         setLoading(false);
         return;
       }
       setSuccess(true);
       setTimeout(() => onComplete(), 2800);
     } catch {
-      setError("Eroare de rețea.");
+      setError(t({ ro: "Eroare de rețea.", en: "Network error." }));
       setLoading(false);
     }
   };
@@ -471,7 +518,9 @@ function CodeEntry({
             >
               <CheckCircle className="w-5 h-5 text-lime-600" />
             </motion.div>
-            <span className="font-bold text-lime-700">Cod confirmat!</span>
+            <span className="font-bold text-lime-700">
+              {t({ ro: "Cod confirmat!", en: "Code confirmed!" })}
+            </span>
           </motion.div>
         ) : (
           <motion.div
@@ -532,7 +581,7 @@ function CodeEntry({
                     className="flex items-center gap-2"
                   >
                     <CheckCircle className="w-4 h-4" />
-                    Confirmă colectarea
+                    {t({ ro: "Confirmă colectarea", en: "Confirm collection" })}
                   </motion.span>
                 )}
               </AnimatePresence>
@@ -555,6 +604,7 @@ function ReviewForm({
   alreadyReviewed: boolean;
   onDone: () => void;
 }) {
+  const { t } = useI18n();
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [review, setReview] = useState("");
@@ -564,7 +614,7 @@ function ReviewForm({
   if (alreadyReviewed || done) return;
   const submit = async () => {
     if (!rating) {
-      setError("Alege un rating");
+      setError(t({ ro: "Alege un rating", en: "Choose a rating" }));
       return;
     }
     setLoading(true);
@@ -577,14 +627,14 @@ function ReviewForm({
       });
       const j = await res.json();
       if (!res.ok) {
-        setError(j.error ?? "Eroare");
+        setError(j.error ?? t({ ro: "Eroare", en: "Error" }));
         setLoading(false);
         return;
       }
       setDone(true);
       onDone();
     } catch {
-      setError("Eroare de rețea.");
+      setError(t({ ro: "Eroare de rețea.", en: "Network error." }));
       setLoading(false);
     }
   };
@@ -596,7 +646,18 @@ function ReviewForm({
       className="space-y-3 pt-2"
     >
       <p className="text-sm text-slate-600">
-        Cum a decurs experiența cu <strong>{targetName}</strong>?
+        {t({
+          ro: (
+            <>
+              Cum a decurs experiența cu <strong>{targetName}</strong>?
+            </>
+          ),
+          en: (
+            <>
+              How was your experience with <strong>{targetName}</strong>?
+            </>
+          ),
+        })}
       </p>
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((s) => (
@@ -617,7 +678,10 @@ function ReviewForm({
       <textarea
         value={review}
         onChange={(e) => setReview(e.target.value)}
-        placeholder="Lasă un comentariu (opțional)..."
+        placeholder={t({
+          ro: "Lasă un comentariu (opțional)...",
+          en: "Leave a comment (optional)...",
+        })}
         rows={2}
         maxLength={500}
         className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-lime-400 outline-none bg-white transition-colors"
@@ -640,7 +704,9 @@ function ReviewForm({
         whileTap={{ scale: 0.97 }}
         className="w-full py-3 rounded-xl bg-lime-400 text-black font-bold text-sm hover:bg-lime-300 disabled:opacity-40 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:cursor-not-allowed"
       >
-        {loading ? "Se trimite..." : "Trimite rating"}
+        {loading
+          ? t({ ro: "Se trimite...", en: "Sending..." })
+          : t({ ro: "Trimite rating", en: "Submit rating" })}
         {!loading && <GrSend className="w-4 h-4" />}
       </motion.button>
     </motion.div>
@@ -656,6 +722,7 @@ function CancelModal({
   onClose: () => void;
   isInProgress: boolean;
 }) {
+  const { t } = useI18n();
   return createPortal(
     <motion.div
       initial={{ opacity: 0 }}
@@ -675,7 +742,10 @@ function CancelModal({
       >
         <div className="flex items-start justify-between mb-4">
           <h3 className="font-bold text-slate-900">
-            Ești sigur că vrei să anulezi?
+            {t({
+              ro: "Ești sigur că vrei să anulezi?",
+              en: "Are you sure you want to cancel?",
+            })}
           </h3>
           <button
             onClick={onClose}
@@ -695,8 +765,10 @@ function CancelModal({
             >
               <div className="mb-4 flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5 text-xs text-red-600 font-medium">
                 <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                Anularea în timp ce colectarea este activă îți va afecta scorul
-                de reputație.
+                {t({
+                  ro: "Anularea în timp ce colectarea este activă îți va afecta scorul de reputație.",
+                  en: "Cancelling while the collection is active will affect your reputation score.",
+                })}
               </div>
             </motion.div>
           )}
@@ -706,14 +778,14 @@ function CancelModal({
             onClick={onClose}
             className="flex-1 py-2.5 rounded-xl border-2 border-slate-200 text-slate-700 font-semibold text-sm cursor-pointer hover:border-slate-300 transition-all"
           >
-            Înapoi
+            {t({ ro: "Înapoi", en: "Back" })}
           </button>
           <motion.button
             onClick={onConfirm}
             whileTap={{ scale: 0.96 }}
             className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-bold text-sm cursor-pointer hover:bg-red-600 transition-all"
           >
-            Anulează
+            {t({ ro: "Anulează", en: "Cancel" })}
           </motion.button>
         </div>
       </motion.div>
@@ -731,6 +803,7 @@ function PersonRow({
   role: string;
   showPhone?: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <motion.div
       initial={{ opacity: 0, x: -8 }}
@@ -764,7 +837,7 @@ function PersonRow({
             href={`/user/${user.id}`}
             className="text-sm font-semibold text-slate-900 hover:text-lime-700 transition-colors truncate flex items-center gap-0.5"
           >
-            {user.name ?? "Utilizator"}
+            {user.name ?? t({ ro: "Utilizator", en: "User" })}
             {user.certified && <VerifiedBadge className="w-4 h-4 shrink-0" />}
           </Link>
           <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full shrink-0">
@@ -793,28 +866,31 @@ function PersonRow({
 }
 
 function ExpiryText({ expiresAt }: { expiresAt: string | null }) {
+  const { t, locale } = useI18n();
   const [label, setLabel] = useState("");
   useEffect(() => {
     if (!expiresAt) return;
     const calc = () => {
       const diff = new Date(expiresAt).getTime() - Date.now();
       if (diff <= 0) {
-        setLabel("Expirat");
+        setLabel(t({ ro: "Expirat", en: "Expired" }));
         return;
       }
       const h = Math.floor(diff / 3600000);
       const m = Math.floor((diff % 3600000) / 60000);
       const d = Math.floor(h / 24);
+      const dU = locale === "ro" ? "z" : "d";
+      const prefix = t({ ro: "Expiră în", en: "Expires in" });
       setLabel(
         d > 0
-          ? `Expiră în ${d}z ${h % 24 > 0 ? `${h % 24}h ` : ""} ${m}min`
-          : `Expiră în ${h > 0 ? `${h}h ` : ""} ${m}min`,
+          ? `${prefix} ${d}${dU} ${h % 24 > 0 ? `${h % 24}h ` : ""} ${m}min`
+          : `${prefix} ${h > 0 ? `${h}h ` : ""} ${m}min`,
       );
     };
     calc();
     const id = setInterval(calc, 60000);
     return () => clearInterval(id);
-  }, [expiresAt]);
+  }, [expiresAt, t, locale]);
   if (!label) return null;
   return <span className="text-xs text-slate-400">{label}</span>;
 }
@@ -1003,6 +1079,7 @@ function DetailPanel({
   showExactLocation: boolean;
   isCollectorPending: boolean;
 }) {
+  const { t, fmt, locale } = useI18n();
   const [showCancel, setShowCancel] = useState(false);
   const [showCode, setShowCode] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -1035,10 +1112,19 @@ function DetailPanel({
   const isNonParticipant = !isAuthor && !isCollector;
 
   const statusCfg = isUnavailableNow
-    ? { label: "Indisponibil", className: "bg-orange-100 text-orange-700" }
+    ? {
+        label: t({ ro: "Indisponibil", en: "Unavailable" }),
+        className: "bg-orange-100 text-orange-700",
+      }
     : post.status === "COMPLETED" && isNonParticipant
-      ? { label: "Finalizat", className: "bg-slate-100 text-slate-500" }
-      : STATUS_CONFIG[post.status];
+      ? {
+          label: t({ ro: "Finalizat", en: "Completed" }),
+          className: "bg-slate-100 text-slate-500",
+        }
+      : {
+          label: t(STATUS_CONFIG[post.status].label),
+          className: STATUS_CONFIG[post.status].className,
+        };
   const posterPct = 100 - post.collectorSharePercent;
   const collectorEarning =
     Math.round(((post.estimatedValue * post.collectorSharePercent) / 100) * 2) /
@@ -1051,8 +1137,8 @@ function DetailPanel({
       : post.transaction.collectorEarning
     : null;
   const targetName = isAuthor
-    ? (post.collector?.name ?? "Colectorul")
-    : (post.author.name ?? "Autorul");
+    ? (post.collector?.name ?? t({ ro: "Colectorul", en: "The collector" }))
+    : (post.author.name ?? t({ ro: "Autorul", en: "The author" }));
 
   const ratingIGave = isAuthor
     ? post.transaction?.posterRating
@@ -1102,7 +1188,10 @@ function DetailPanel({
       const json = await res.json();
       if (!res.ok) {
         setShowClaimModal(false);
-        setClaimError(json.error ?? "Eroare la revendicare.");
+        setClaimError(
+          json.error ??
+            t({ ro: "Eroare la revendicare.", en: "Failed to claim." }),
+        );
         setClaiming(false);
         return;
       }
@@ -1111,7 +1200,12 @@ function DetailPanel({
       await mutate();
     } catch {
       setShowClaimModal(false);
-      setClaimError("Eroare de rețea. Încearcă din nou.");
+      setClaimError(
+        t({
+          ro: "Eroare de rețea. Încearcă din nou.",
+          en: "Network error. Try again.",
+        }),
+      );
       setClaiming(false);
     }
   };
@@ -1133,29 +1227,35 @@ function DetailPanel({
         });
         const j = await res.json();
         if (!res.ok) {
-          setActionError(j.error ?? "Eroare");
+          setActionError(j.error ?? t({ ro: "Eroare", en: "Error" }));
         } else if (action === "deny") {
           showToast(
             "info",
-            "Cerere refuzată",
-            "Anunțul tău este din nou disponibil pe hartă.",
+            t({ ro: "Cerere refuzată", en: "Request declined" }),
+            t({
+              ro: "Anunțul tău este din nou disponibil pe hartă.",
+              en: "Your listing is available on the map again.",
+            }),
           );
           mutate();
         } else {
           showToast(
             "success",
-            "Cerere aprobată!",
-            "Colectorul are 30 de minute să ajungă la tine.",
+            t({ ro: "Cerere aprobată!", en: "Request approved!" }),
+            t({
+              ro: "Colectorul are 30 de minute să ajungă la tine.",
+              en: "The collector has 30 minutes to reach you.",
+            }),
           );
           mutate();
         }
       } catch {
-        setActionError("Eroare de rețea.");
+        setActionError(t({ ro: "Eroare de rețea.", en: "Network error." }));
       } finally {
         setActionLoading(false);
       }
     },
-    [post.id, mutate],
+    [post.id, mutate, t],
   );
 
   const handleCancel = useCallback(async () => {
@@ -1171,7 +1271,7 @@ function DetailPanel({
       });
       const j = await res.json();
       if (!res.ok) {
-        setActionError(j.error ?? "Eroare");
+        setActionError(j.error ?? t({ ro: "Eroare", en: "Error" }));
       } else {
         if (isAuthor) {
           setActiveCounts({ activePosts: 0, activePostId: null });
@@ -1181,11 +1281,11 @@ function DetailPanel({
         onRedirect(post.status === "IN_PROGRESS" ? "/" : `/?toast=${toastKey}`);
       }
     } catch {
-      setActionError("Eroare de rețea.");
+      setActionError(t({ ro: "Eroare de rețea.", en: "Network error." }));
     } finally {
       setActionLoading(false);
     }
-  }, [post.id, post.status, isAuthor, onRedirect, setActiveCounts]);
+  }, [post.id, post.status, isAuthor, onRedirect, setActiveCounts, t]);
 
   return (
     <div className="h-full w-full relative">
@@ -1198,7 +1298,9 @@ function DetailPanel({
               className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-700 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
-              {isAuthor ? "Postările mele" : "Harta de colectare"}
+              {isAuthor
+                ? t({ ro: "Postările mele", en: "My posts" })
+                : t({ ro: "Harta de colectare", en: "Collection map" })}
             </Link>
             <AnimatePresence mode="wait">
               <motion.span
@@ -1228,8 +1330,14 @@ function DetailPanel({
               >
                 <p className="text-sm text-slate-600 leading-relaxed">
                   {isUnavailableNow
-                    ? "Anunțul tău se află în afara intervalului de disponibilitate și nu este vizibil colectorilor în acest moment."
-                    : "Anunțul tău este vizibil pe hartă. Vei fi notificat imediat ce un colector face o cerere."}
+                    ? t({
+                        ro: "Anunțul tău se află în afara intervalului de disponibilitate și nu este vizibil colectorilor în acest moment.",
+                        en: "Your listing is outside its availability window and isn't visible to collectors right now.",
+                      })
+                    : t({
+                        ro: "Anunțul tău este vizibil pe hartă. Vei fi notificat imediat ce un colector face o cerere.",
+                        en: "Your listing is visible on the map. You'll be notified as soon as a collector makes a request.",
+                      })}
                 </p>
                 <motion.button
                   onClick={() => setShowCancel(true)}
@@ -1237,7 +1345,7 @@ function DetailPanel({
                   whileTap={{ scale: 0.97 }}
                   className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
                 >
-                  Anulează anunțul
+                  {t({ ro: "Anulează anunțul", en: "Cancel listing" })}
                 </motion.button>
                 <div className="h-px bg-slate-100 mt-4" />
               </motion.div>
@@ -1284,7 +1392,8 @@ function DetailPanel({
                         href={`/user/${post.collector.id}`}
                         className="text-sm font-bold text-slate-900 truncate hover:text-lime-700 transition-colors flex items-center gap-0.5"
                       >
-                        {post.collector.name ?? "Colector"}
+                        {post.collector.name ??
+                          t({ ro: "Colector", en: "Collector" })}
                         {post.collector.certified && (
                           <VerifiedBadge className="w-4 h-4 shrink-0" />
                         )}
@@ -1300,8 +1409,10 @@ function DetailPanel({
                       </div>
                     </div>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Vrea să colecteze sticlele tale. Odată aprobat, va avea 60
-                      min la dispoziție să ajungă.
+                      {t({
+                        ro: "Vrea să colecteze sticlele tale. Odată aprobat, va avea 60 min la dispoziție să ajungă.",
+                        en: "Wants to collect your bottles. Once approved, they'll have 60 minutes to arrive.",
+                      })}
                     </p>
                   </div>
                 </motion.div>
@@ -1331,7 +1442,8 @@ function DetailPanel({
                     whileTap={{ scale: 0.96 }}
                     className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-slate-200 text-slate-700 font-semibold text-sm hover:border-red-200 hover:text-red-600 hover:bg-red-50 transition-all disabled:opacity-40 cursor-pointer"
                   >
-                    <XCircle className="w-4 h-4" /> Refuză
+                    <XCircle className="w-4 h-4" />{" "}
+                    {t({ ro: "Refuză", en: "Decline" })}
                   </motion.button>
                   <motion.button
                     onClick={() => handleApprove("approve")}
@@ -1358,7 +1470,7 @@ function DetailPanel({
                           className="flex items-center gap-2"
                         >
                           <CheckCircle className="w-4 h-4" />
-                          Aprobă
+                          {t({ ro: "Aprobă", en: "Approve" })}
                         </motion.span>
                       )}
                     </AnimatePresence>
@@ -1371,7 +1483,7 @@ function DetailPanel({
                   whileTap={{ scale: 0.97 }}
                   className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
                 >
-                  Anulează anunțul
+                  {t({ ro: "Anulează anunțul", en: "Cancel listing" })}
                 </motion.button>
                 <div className="h-px bg-slate-100 mt-2" />
               </motion.div>
@@ -1401,10 +1513,16 @@ function DetailPanel({
                   />
                   <div>
                     <p className="text-sm font-semibold text-slate-800">
-                      Cererea ta a fost trimisă
+                      {t({
+                        ro: "Cererea ta a fost trimisă",
+                        en: "Your request has been sent",
+                      })}
                     </p>
                     <p className="text-xs text-slate-500">
-                      Se așteaptă aprobarea autorului…
+                      {t({
+                        ro: "Se așteaptă aprobarea autorului…",
+                        en: "Waiting for the author's approval…",
+                      })}
                     </p>
                   </div>
                 </motion.div>
@@ -1425,7 +1543,7 @@ function DetailPanel({
                   disabled={actionLoading}
                   className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
                 >
-                  Anulează cererea
+                  {t({ ro: "Anulează cererea", en: "Cancel request" })}
                 </button>
                 <div className="h-px bg-slate-100 mt-2" />
               </motion.div>
@@ -1447,8 +1565,14 @@ function DetailPanel({
                   <div className="border-t border-[#123424]/10 pt-4">
                     <p className="text-sm font-medium text-[#123424] mb-3">
                       {isAuthor
-                        ? "Codul tău de confirmare"
-                        : "Introdu codul de confirmare"}
+                        ? t({
+                            ro: "Codul tău de confirmare",
+                            en: "Your confirmation code",
+                          })
+                        : t({
+                            ro: "Introdu codul de confirmare",
+                            en: "Enter the confirmation code",
+                          })}
                     </p>
 
                     <AnimatePresence mode="wait">
@@ -1476,7 +1600,7 @@ function DetailPanel({
                               whileTap={{ scale: 0.97 }}
                               className="w-full flex items-center justify-center py-3.5 rounded-xl bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all cursor-pointer"
                             >
-                              Afișează codul
+                              {t({ ro: "Afișează codul", en: "Show code" })}
                               <LockKeyholeOpen className="w-4 h-4 ml-2" />
                             </motion.button>
                           </motion.div>
@@ -1527,8 +1651,14 @@ function DetailPanel({
                       className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
                     >
                       {isAuthor
-                        ? "Anulează colectarea"
-                        : "Renunță la colectare"}
+                        ? t({
+                            ro: "Anulează colectarea",
+                            en: "Cancel collection",
+                          })
+                        : t({
+                            ro: "Renunță la colectare",
+                            en: "Give up collection",
+                          })}
                     </button>
                   </div>
                 </div>
@@ -1562,28 +1692,37 @@ function DetailPanel({
                     >
                       <CheckCircle className="w-4 h-4 text-lime-600" />
                       <span className="text-sm font-bold text-lime-800">
-                        Tranzacție finalizată
+                        {t({
+                          ro: "Tranzacție finalizată",
+                          en: "Transaction completed",
+                        })}
                       </span>
                       <span className="text-xs text-lime-500 ml-auto">
                         {new Date(
                           post.transaction.completedAt,
-                        ).toLocaleDateString("ro-RO", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
+                        ).toLocaleDateString(
+                          locale === "ro" ? "ro-RO" : "en-GB",
+                          {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          },
+                        )}
                       </span>
                     </motion.div>
                     {[
                       [
-                        "Sticle colectate",
-                        `${Math.round(post.transaction.actualValue / 0.5)} buc`,
+                        t({ ro: "Sticle colectate", en: "Bottles collected" }),
+                        `${Math.round(post.transaction.actualValue / 0.5)} ${t({ ro: "buc", en: "pcs" })}`,
                       ],
                       [
-                        "Valoare totală",
-                        `${post.transaction.actualValue.toFixed(2)} RON`,
+                        t({ ro: "Valoare totală", en: "Total value" }),
+                        fmt(post.transaction.actualValue),
                       ],
-                      ["Câștigul tău", `+${myActualEarning?.toFixed(2)} RON`],
+                      [
+                        t({ ro: "Câștigul tău", en: "Your earnings" }),
+                        fmt(myActualEarning ?? 0, { sign: true }),
+                      ],
                     ].map(([label, value], i) => (
                       <motion.div
                         key={label}
@@ -1619,7 +1758,7 @@ function DetailPanel({
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
                               <span className="text-sm text-slate-600">
-                                Rating-ul primit de la{" "}
+                                {t({ ro: "Rating-ul primit de la", en: "Rating received from" })}{" "}
                                 <span className="font-semibold text-slate-800">
                                   {targetName}
                                 </span>
@@ -1701,7 +1840,7 @@ function DetailPanel({
                             <div className="space-y-3">
                               <div className="flex items-center justify-between">
                                 <span className="text-sm text-slate-600">
-                                  Rating-ul tău pentru{" "}
+                                  {t({ ro: "Rating-ul tău pentru", en: "Your rating for" })}{" "}
                                   <span className="font-semibold text-slate-800">
                                     {targetName}
                                   </span>
@@ -1753,7 +1892,10 @@ function DetailPanel({
                                     className="flex items-center gap-2 text-[11px] text-lime-600 font-medium bg-lime-50 w-fit px-2 py-1 rounded-lg"
                                   >
                                     <CheckCircle className="w-3 h-3" />
-                                    Feedback trimis cu succes
+                                    {t({
+                                      ro: "Feedback trimis cu succes",
+                                      en: "Feedback sent successfully",
+                                    })}
                                   </motion.div>
                                 )}
                               </AnimatePresence>
@@ -1788,9 +1930,10 @@ function DetailPanel({
                         <div className="bg-white border border-slate-100 rounded-2xl p-4 space-y-2">
                           <div className="flex items-center justify-between">
                             <span className="text-sm text-slate-600">
-                              Rating-ul lui{" "}
+                              {t({ ro: "Rating-ul lui", en: "Rating for" })}{" "}
                               <span className="font-semibold text-slate-800">
-                                {post.author.name ?? "Autor"}
+                                {post.author.name ??
+                                  t({ ro: "Autor", en: "Author" })}
                               </span>
                             </span>
                             <div className="flex items-center gap-0.5">
@@ -1823,9 +1966,10 @@ function DetailPanel({
                         <div className="bg-white border border-slate-100 rounded-2xl p-4 space-y-2">
                           <div className="flex items-center justify-between">
                             <span className="text-sm text-slate-600">
-                              Rating-ul lui{" "}
+                              {t({ ro: "Rating-ul lui", en: "Rating for" })}{" "}
                               <span className="font-semibold text-slate-800">
-                                {post.collector?.name ?? "Colector"}
+                                {post.collector?.name ??
+                                  t({ ro: "Colector", en: "Collector" })}
                               </span>
                             </span>
                             <div className="flex items-center gap-0.5">
@@ -1873,15 +2017,14 @@ function DetailPanel({
                 <h1 className="text-4xl font-black text-[#123424] tracking-tight tabular-nums leading-none">
                   {post.bottleCount}
                 </h1>
-                <span className="text-lg text-slate-400">sticle</span>
+                <span className="text-lg text-slate-400">
+                  {t({ ro: "sticle", en: "bottles" })}
+                </span>
               </div>
               <div className="w-px h-8 bg-slate-200" />
               <div className="flex items-baseline gap-1.5">
                 <span className="text-3xl font-black text-lime-700 tabular-nums leading-none">
-                  {(post.bottleCount * 0.5).toFixed(2)}
-                </span>
-                <span className="text-sm text-slate-400 uppercase tracking-wider">
-                  ron
+                  {fmt(post.bottleCount * 0.5)}
                 </span>
               </div>
             </div>
@@ -1901,12 +2044,16 @@ function DetailPanel({
             )}
             <div className="flex items-center gap-4 text-xs text-slate-400 mt-4">
               <span className="flex items-center gap-1">
-                <Calendar className="w-3 h-3" /> Publicat în{" "}
-                {new Date(post.createdAt).toLocaleDateString("ro-RO", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
+                <Calendar className="w-3 h-3" />{" "}
+                {t({ ro: "Publicat în", en: "Posted on" })}{" "}
+                {new Date(post.createdAt).toLocaleDateString(
+                  locale === "ro" ? "ro-RO" : "en-GB",
+                  {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  },
+                )}
               </span>
               {post.status === "OPEN" && post.expiresAt && (
                 <div className="flex items-center gap-1.5 text-slate-400">
@@ -1917,11 +2064,14 @@ function DetailPanel({
               {post.completedAt && (
                 <span className="flex items-center gap-1">
                   <CheckCircle className="w-3 h-3 text-lime-400" />
-                  Finalizat în{" "}
-                  {new Date(post.completedAt).toLocaleDateString("ro-RO", {
-                    day: "numeric",
-                    month: "short",
-                  })}
+                  {t({ ro: "Finalizat în", en: "Completed on" })}{" "}
+                  {new Date(post.completedAt).toLocaleDateString(
+                    locale === "ro" ? "ro-RO" : "en-GB",
+                    {
+                      day: "numeric",
+                      month: "short",
+                    },
+                  )}
                 </span>
               )}
             </div>
@@ -1937,13 +2087,13 @@ function DetailPanel({
                   )
                   .map((s) => {
                     const d = [
-                      { v: 1, s: "Lun" },
-                      { v: 2, s: "Mar" },
-                      { v: 3, s: "Mie" },
-                      { v: 4, s: "Joi" },
-                      { v: 5, s: "Vin" },
-                      { v: 6, s: "Sâm" },
-                      { v: 0, s: "Dum" },
+                      { v: 1, s: t({ ro: "Lun", en: "Mon" }) },
+                      { v: 2, s: t({ ro: "Mar", en: "Tue" }) },
+                      { v: 3, s: t({ ro: "Mie", en: "Wed" }) },
+                      { v: 4, s: t({ ro: "Joi", en: "Thu" }) },
+                      { v: 5, s: t({ ro: "Vin", en: "Fri" }) },
+                      { v: 6, s: t({ ro: "Sâm", en: "Sat" }) },
+                      { v: 0, s: t({ ro: "Dum", en: "Sun" }) },
                     ].find((x) => x.v === s.day);
                     return (
                       <span
@@ -1997,14 +2147,20 @@ function DetailPanel({
                 {isUnavailableNow ? (
                   <>
                     <TbCancel className="w-4 h-4" />
-                    Indisponibil momentan
+                    {t({
+                      ro: "Indisponibil momentan",
+                      en: "Currently unavailable",
+                    })}
                   </>
                 ) : (
                   <>
                     <FaWineBottle className="w-4 h-4 text-lime-400" />
                     {isLoggedIn
-                      ? "Colectează sticlele"
-                      : "Conectează-te și colectează!"}
+                      ? t({ ro: "Colectează sticlele", en: "Collect the bottles" })
+                      : t({
+                          ro: "Conectează-te și colectează!",
+                          en: "Sign in and collect!",
+                        })}
                   </>
                 )}
               </motion.button>
@@ -2048,21 +2204,27 @@ function DetailPanel({
 
               const myLabel = isNonParticipant
                 ? post.status === "COMPLETED"
-                  ? "Colectorul a câștigat"
+                  ? t({ ro: "Colectorul a câștigat", en: "The collector earned" })
                   : isTerminated
-                    ? "Colectorul ar fi câștigat"
-                    : "Colectorul câștigă"
+                    ? t({
+                        ro: "Colectorul ar fi câștigat",
+                        en: "The collector would have earned",
+                      })
+                    : t({
+                        ro: "Colectorul câștigă",
+                        en: "The collector earns",
+                      })
                 : isAuthor
                   ? post.status === "COMPLETED"
-                    ? "ai primit"
+                    ? t({ ro: "ai primit", en: "you received" })
                     : isTerminated
-                      ? "Ai fi primit"
-                      : "Primești"
+                      ? t({ ro: "Ai fi primit", en: "You would have received" })
+                      : t({ ro: "Primești", en: "You receive" })
                   : post.status === "COMPLETED"
-                    ? "Ai câștigat"
+                    ? t({ ro: "Ai câștigat", en: "You earned" })
                     : isTerminated
-                      ? "Ai fi câștigat"
-                      : "Câștigi";
+                      ? t({ ro: "Ai fi câștigat", en: "You would have earned" })
+                      : t({ ro: "Câștigi", en: "You earn" });
 
               const displayEarning =
                 post.status === "COMPLETED" &&
@@ -2083,13 +2245,10 @@ function DetailPanel({
                       post.status !== "EXPIRED" && (
                         <>
                           <span className="text-xs sm:text-sm text-slate-500 mr-1 sm:mr-0">
-                            Plătești
+                            {t({ ro: "Plătești", en: "You pay" })}
                           </span>
                           <span className="text-2xl font-black leading-none text-slate-500">
-                            {posterEarning.toFixed(2)}
-                          </span>
-                          <span className="text-xs sm:text-sm text-slate-400 font-light">
-                            RON
+                            {fmt(posterEarning)}
                           </span>
                           <ArrowRight className="w-4 h-4 text-slate-400 shrink-0 mx-1 sm:mx-0" />
                         </>
@@ -2111,13 +2270,10 @@ function DetailPanel({
                         post.status !== "COMPLETED" &&
                         post.status !== "CANCELLED" &&
                         post.status !== "EXPIRED"
-                          ? `${post.estimatedValue.toFixed(2)}`
-                          : `${displayEarning.toFixed(2) !== "0.00" ? "+" : ""}${displayEarning.toFixed(2)}`}
+                          ? fmt(post.estimatedValue)
+                          : fmt(displayEarning, { sign: true })}
                       </motion.span>
                     </AnimatePresence>
-                    <span className="text-xs sm:text-sm text-slate-400 font-light">
-                      RON
-                    </span>
                   </div>
                   <div className="mt-3 h-2.5 bg-slate-100 rounded-full overflow-hidden flex">
                     <motion.div
@@ -2143,11 +2299,12 @@ function DetailPanel({
                   </div>
                   <div className="flex justify-between text-[10px] text-slate-400 mt-1">
                     <span>
-                      Autorul {posterPct}% ({posterEarning.toFixed(2)} RON)
+                      {t({ ro: "Autorul", en: "Author" })} {posterPct}% (
+                      {fmt(posterEarning)})
                     </span>
                     <span>
-                      Colectorul {post.collectorSharePercent}% (
-                      {collectorEarning.toFixed(2)} RON)
+                      {t({ ro: "Colectorul", en: "Collector" })}{" "}
+                      {post.collectorSharePercent}% ({fmt(collectorEarning)})
                     </span>
                   </div>
                 </>
@@ -2166,7 +2323,7 @@ function DetailPanel({
           >
             <PersonRow
               user={post.author}
-              role="Autor"
+              role={t({ ro: "Autor", en: "Author" })}
               showPhone={isCollector && post.status === "IN_PROGRESS"}
             />
             <AnimatePresence mode="wait">
@@ -2180,7 +2337,7 @@ function DetailPanel({
                 >
                   <PersonRow
                     user={post.collector}
-                    role="Colector"
+                    role={t({ ro: "Colector", en: "Collector" })}
                     showPhone={isAuthor && post.status === "IN_PROGRESS"}
                   />
                 </motion.div>
@@ -2205,7 +2362,10 @@ function DetailPanel({
                     <span className="text-slate-300 text-base">?</span>
                   </motion.div>
                   <span className="text-sm text-slate-400">
-                    Se așteaptă un colector...
+                    {t({
+                      ro: "Se așteaptă un colector...",
+                      en: "Waiting for a collector...",
+                    })}
                   </span>
                 </motion.div>
               ) : null}
@@ -2263,7 +2423,9 @@ function DetailPanel({
               isAuthor ? (post.collector?.image ?? null) : post.author.image
             }
             partnerRole={
-              isAuthor ? "Colectorul sticlelor" : "Autorul anunțului"
+              isAuthor
+                ? t({ ro: "Colectorul sticlelor", en: "Bottle collector" })
+                : t({ ro: "Autorul anunțului", en: "Listing author" })
             }
           />
         </>
@@ -2295,6 +2457,7 @@ export default function PostDetailClient({
   postId: string;
   userId: string;
 }) {
+  const { t } = useI18n();
   const router = useRouter();
   const { post, mutate, isLoading } = usePostLive(postId);
   const { on, off } = useRecashSocket();
@@ -2321,8 +2484,10 @@ export default function PostDetailClient({
     return (
       <div className="flex flex-col items-center">
         <FaWineBottle className="w-10 h-10 text-slate-300" />
-        <p className="text-slate-500 font-medium">Anunțul nu a fost găsit.</p>
-        <Link href="/map">Hartă</Link>
+        <p className="text-slate-500 font-medium">
+          {t({ ro: "Anunțul nu a fost găsit.", en: "Listing not found." })}
+        </p>
+        <Link href="/map">{t({ ro: "Hartă", en: "Map" })}</Link>
       </div>
     );
   }

@@ -1,6 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import { User, Trophy, Calendar } from "lucide-react";
 import { ProfileSummary } from "@/types";
+import { useI18n } from "@/context/I18nContext";
 import { StarRating } from "@/app/components/Profile/StarRating";
 import { StatsGrid } from "@/app/components/Profile/StatsGrid";
 import { PostsSection } from "@/app/components/Profile/PostsSection";
@@ -18,6 +21,7 @@ interface ExtendedSummary extends ProfileSummary {
 }
 
 export function ProfilePage({ summary }: { summary: ExtendedSummary }) {
+  const { t, locale } = useI18n();
   const {
     user,
     posts,
@@ -36,10 +40,13 @@ export function ProfilePage({ summary }: { summary: ExtendedSummary }) {
     .slice(0, 2)
     .join("")
     .toUpperCase();
-  const memberSince = new Date(user.createdAt).toLocaleDateString("ro-RO", {
-    month: "long",
-    year: "numeric",
-  });
+  const memberSince = new Date(user.createdAt).toLocaleDateString(
+    locale === "ro" ? "ro-RO" : "en-GB",
+    {
+      month: "long",
+      year: "numeric",
+    },
+  );
   const totalBottles =
     summaryTotalBottles ?? user.totalBottlesGiven + user.totalBottlesCollected;
 
@@ -106,11 +113,15 @@ export function ProfilePage({ summary }: { summary: ExtendedSummary }) {
                   <span className="font-bold text-white mr-1">
                     {user._count.badges}
                   </span>{" "}
-                  {user._count.badges === 1 ? "badge" : "badge-uri"}
+                  {user._count.badges === 1
+                    ? t({ ro: "badge", en: "badge" })
+                    : t({ ro: "badge-uri", en: "badges" })}
                 </div>
                 <div className="flex items-center text-white/80 text-sm">
                   <Calendar className="w-4 h-4 text-lime-400 mr-1.5" />
-                  <span className="mr-1">Membru din</span>
+                  <span className="mr-1">
+                    {t({ ro: "Membru din", en: "Member since" })}
+                  </span>
                   <span className="font-bold text-white">{memberSince}</span>
                 </div>
               </div>
@@ -126,13 +137,17 @@ export function ProfilePage({ summary }: { summary: ExtendedSummary }) {
                 <span className="font-bold text-white mr-1">
                   {user._count.badges}
                 </span>{" "}
-                {user._count.badges === 1 ? "badge" : "badge-uri"}
+                {user._count.badges === 1
+                  ? t({ ro: "badge", en: "badge" })
+                  : t({ ro: "badge-uri", en: "badges" })}
               </div>
             )}
 
             <div className="flex items-center text-white/80 text-xs">
               <Calendar className="w-4 h-4 text-lime-400 mr-1.5" />
-              <span className="mr-1">Membru din</span>
+              <span className="mr-1">
+                {t({ ro: "Membru din", en: "Member since" })}
+              </span>
               <span className="font-bold text-white">{memberSince}</span>
             </div>
           </div>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { BADGE_CONFIG, BADGE_COLORS } from "@/lib/constants/badges";
 import { BadgeModal } from "./BadgeModal";
+import { useI18n } from "@/context/I18nContext";
 
 export type BadgeData = {
   id: string;
@@ -27,6 +28,7 @@ async function markBadgeSeen(id: string) {
 }
 
 export function BadgeCard({ badge, onSeen, earned = true }: Props) {
+  const { t, locale } = useI18n();
   const [seen, setSeen] = useState(badge.seen);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -64,7 +66,7 @@ export function BadgeCard({ badge, onSeen, earned = true }: Props) {
       >
         {isNew && (
           <span className="absolute -top-2 -right-2 z-10 bg-lime-400 text-[#123424] text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none shadow-sm tracking-wide">
-            NOU
+            {t({ ro: "NOU", en: "NEW" })}
           </span>
         )}
 
@@ -95,7 +97,7 @@ export function BadgeCard({ badge, onSeen, earned = true }: Props) {
               priority
               draggable={false}
               src={cfg.image}
-              alt={cfg.label}
+              alt={t(cfg.label)}
               className="w-11 h-11 object-contain"
             />
           </div>
@@ -106,20 +108,25 @@ export function BadgeCard({ badge, onSeen, earned = true }: Props) {
             className="text-[11px] font-black leading-tight"
             style={{ color: earned ? color : "#64748b" }}
           >
-            {cfg.label}
+            {t(cfg.label)}
           </p>
-          <p className="text-[9px] text-slate-600 leading-snug">{cfg.desc}</p>
+          <p className="text-[9px] text-slate-600 leading-snug">
+            {t(cfg.desc)}
+          </p>
         </div>
 
         <div className="hidden sm:block w-full pt-2 border-t border-slate-100 text-center">
           <span className="text-[9px] font-semibold text-slate-600">
             {earned
-              ? new Date(badge.earnedAt).toLocaleDateString("ro-RO", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                })
-              : "Neobținut"}
+              ? new Date(badge.earnedAt).toLocaleDateString(
+                  locale === "ro" ? "ro-RO" : "en-GB",
+                  {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  },
+                )
+              : t({ ro: "Neobținut", en: "Not earned" })}
           </span>
         </div>
 
@@ -127,7 +134,9 @@ export function BadgeCard({ badge, onSeen, earned = true }: Props) {
           className="w-full py-1.5 rounded-xl text-[10px] font-bold text-white transition-all cursor-pointer hover:opacity-90 active:scale-[0.97] flex items-center justify-center"
           style={{ backgroundColor: earned ? color : "#94a3b8" }}
         >
-          {earned ? "Check it out!" : "Locked"}
+          {earned
+            ? t({ ro: "Vezi detalii", en: "Check it out!" })
+            : t({ ro: "Blocat", en: "Locked" })}
         </div>
       </div>
 

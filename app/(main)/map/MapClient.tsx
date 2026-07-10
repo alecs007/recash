@@ -16,6 +16,7 @@ import { FaWineBottle, FaRegCompass } from "react-icons/fa";
 import useSWR from "swr";
 import { useSetActiveCounts } from "@/hooks/useActiveCounts";
 import { isCurrentlyAvailable } from "@/lib/availability";
+import { useI18n } from "@/context/I18nContext";
 
 const API = process.env.NEXT_PUBLIC_API_VERSION ?? "v1";
 
@@ -281,6 +282,7 @@ function PostCard({
   isLoggedIn: boolean;
   isOwnPost: boolean;
 }) {
+  const { t, fmt } = useI18n();
   const collectorEarning =
     Math.round(((post.estimatedValue * post.collectorSharePercent) / 100) * 2) /
     2;
@@ -294,10 +296,14 @@ function PostCard({
     isLoggedIn && (isOwnPost || !canClaim || claiming === post.id);
 
   const buttonText = () => {
-    if (!isLoggedIn) return "Conectează-te și colectează!";
-    if (isOwnPost) return "Anunțul tău";
-    if (!canClaim) return "Colectare activă";
-    return "Colectează";
+    if (!isLoggedIn)
+      return t({
+        ro: "Conectează-te și colectează!",
+        en: "Sign in and collect!",
+      });
+    if (isOwnPost) return t({ ro: "Anunțul tău", en: "Your listing" });
+    if (!canClaim) return t({ ro: "Colectare activă", en: "Active collection" });
+    return t({ ro: "Colectează", en: "Collect" });
   };
 
   return (
@@ -336,7 +342,7 @@ function PostCard({
             onClick={(e) => e.stopPropagation()}
             className="text-sm font-bold text-slate-900 truncate leading-tight hover:text-lime-700 transition-colors block"
           >
-            {post.author.name ?? "Utilizator"}
+            {post.author.name ?? t({ ro: "Utilizator", en: "User" })}
           </Link>
           <div className="flex items-center gap-1">
             <Star className="w-2.5 h-2.5 text-[#FFDF00] fill-[#FFDF00]" />
@@ -354,7 +360,9 @@ function PostCard({
           <p className="text-xl font-black text-slate-900 leading-none">
             {post.bottleCount}
           </p>
-          <p className="text-[10px] text-slate-400 font-medium">sticle</p>
+          <p className="text-[10px] text-slate-400 font-medium">
+            {t({ ro: "sticle", en: "bottles" })}
+          </p>
         </div>
       </div>
 
@@ -379,16 +387,22 @@ function PostCard({
             <span className="font-black text-lime-600 text-sm">
               {post.collectorSharePercent}%
             </span>
-            <span className="text-slate-400"> pentru tine</span>
+            <span className="text-slate-400">
+              {" "}
+              {t({ ro: "pentru tine", en: "for you" })}
+            </span>
           </div>
           <div className="flex items-center gap-1.5">
             {urgent && timeLeft && (
               <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
-                {timeLeft.label} rămase
+                {t({
+                  ro: `${timeLeft.label} rămase`,
+                  en: `${timeLeft.label} left`,
+                })}
               </span>
             )}
             <span className="text-xs font-black text-lime-700">
-              +{collectorEarning.toFixed(2)} RON
+              {fmt(collectorEarning, { sign: true })}
             </span>
           </div>
         </div>
@@ -444,6 +458,7 @@ function SelectedPostOverlay({
   isLoggedIn: boolean;
   isOwnPost: boolean;
 }) {
+  const { t, fmt } = useI18n();
   const collectorEarning =
     Math.round(((post.estimatedValue * post.collectorSharePercent) / 100) * 2) /
     2;
@@ -457,10 +472,14 @@ function SelectedPostOverlay({
     isLoggedIn && (isOwnPost || !canClaim || claiming === post.id);
 
   const buttonText = () => {
-    if (!isLoggedIn) return "Conectează-te și colectează!";
-    if (isOwnPost) return "Anunțul tău";
-    if (!canClaim) return "Colectare activă";
-    return "Colectează";
+    if (!isLoggedIn)
+      return t({
+        ro: "Conectează-te și colectează!",
+        en: "Sign in and collect!",
+      });
+    if (isOwnPost) return t({ ro: "Anunțul tău", en: "Your listing" });
+    if (!canClaim) return t({ ro: "Colectare activă", en: "Active collection" });
+    return t({ ro: "Colectează", en: "Collect" });
   };
 
   return (
@@ -500,7 +519,7 @@ function SelectedPostOverlay({
               href={`/user/${post.author.id}`}
               className="text-sm font-bold text-slate-900 truncate leading-tight hover:text-lime-700 transition-colors block"
             >
-              {post.author.name ?? "Utilizator"}
+              {post.author.name ?? t({ ro: "Utilizator", en: "User" })}
             </Link>
             <div className="flex items-center gap-1">
               <Star className="w-2.5 h-2.5 text-[#FFDF00] fill-[#FFDF00]" />
@@ -518,7 +537,9 @@ function SelectedPostOverlay({
             <p className="text-xl font-black text-slate-900 leading-none">
               {post.bottleCount}
             </p>
-            <p className="text-[10px] text-slate-400 font-medium">sticle</p>
+            <p className="text-[10px] text-slate-400 font-medium">
+            {t({ ro: "sticle", en: "bottles" })}
+          </p>
           </div>
         </div>
 
@@ -543,7 +564,10 @@ function SelectedPostOverlay({
               <span className="font-black text-lime-600 text-sm">
                 {post.collectorSharePercent}%
               </span>
-              <span className="text-slate-400"> pentru tine</span>
+              <span className="text-slate-400">
+              {" "}
+              {t({ ro: "pentru tine", en: "for you" })}
+            </span>
             </div>
             <div className="flex items-center gap-1.5">
               {urgent && timeLeft && (
@@ -552,7 +576,7 @@ function SelectedPostOverlay({
                 </span>
               )}
               <span className="text-xs font-black text-lime-700">
-                +{collectorEarning.toFixed(2)} RON
+                {fmt(collectorEarning, { sign: true })}
               </span>
             </div>
           </div>
@@ -603,6 +627,7 @@ function PostMap({
   selectedId: string | null;
   onSelectPost: (id: string) => void;
 }) {
+  const { t } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const clusterGroupRef = useRef<LeafletLayer | null>(null);
@@ -730,7 +755,7 @@ function PostMap({
     } else {
       userMarkerRef.current = L.marker(userLocation, { icon: pulseIcon })
         .addTo(mapRef.current)
-        .bindPopup("Locația ta");
+        .bindPopup(t({ ro: "Locația ta", en: "Your location" }));
     }
 
     mapRef.current.setView(userLocation, 13, { animate: true });
@@ -931,7 +956,9 @@ function PostMap({
         <div className="absolute inset-0 bg-slate-100 flex items-center justify-center pointer-events-none">
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="w-8 h-8 text-slate-400 animate-spin" />
-            <p className="text-sm text-slate-400">Se încarcă harta...</p>
+            <p className="text-sm text-slate-400">
+              {t({ ro: "Se încarcă harta...", en: "Loading map..." })}
+            </p>
           </div>
         </div>
       )}
@@ -958,6 +985,7 @@ function CardSkeleton() {
 }
 
 export default function MapPage() {
+  const { t } = useI18n();
   const { data: session } = useSession();
   const { open: openAuthModal } = useAuthModal();
   const router = useRouter();
@@ -1131,14 +1159,19 @@ export default function MapPage() {
       if (post?.author.id === currentUserId) return;
 
       if (activeData?.activeCollection) {
-        setClaimError("Ai deja o colectare activă. Finalizează-o mai întâi.");
+        setClaimError(
+          t({
+            ro: "Ai deja o colectare activă. Finalizează-o mai întâi.",
+            en: "You already have an active collection. Finish it first.",
+          }),
+        );
         return;
       }
 
       setPendingClaimPostId(postId);
       setShowCollectModal(true);
     },
-    [isLoggedIn, activeData, openAuthModal, posts, currentUserId],
+    [isLoggedIn, activeData, openAuthModal, posts, currentUserId, t],
   );
 
   const handleCollectConfirmed = useCallback(async () => {
@@ -1157,7 +1190,10 @@ export default function MapPage() {
       if (!res.ok) {
         setShowCollectModal(false);
         setPendingClaimPostId(null);
-        setClaimError(json.error ?? "Eroare la revendicare.");
+        setClaimError(
+          json.error ??
+            t({ ro: "Eroare la revendicare.", en: "Failed to claim." }),
+        );
         setClaiming(null);
         return;
       }
@@ -1170,10 +1206,15 @@ export default function MapPage() {
     } catch {
       setShowCollectModal(false);
       setPendingClaimPostId(null);
-      setClaimError("Eroare de rețea. Încearcă din nou.");
+      setClaimError(
+        t({
+          ro: "Eroare de rețea. Încearcă din nou.",
+          en: "Network error. Try again.",
+        }),
+      );
       setClaiming(null);
     }
-  }, [pendingClaimPostId, mutate, router, setActiveCounts]);
+  }, [pendingClaimPostId, mutate, router, setActiveCounts, t]);
 
   const handleSelectPost = useCallback((id: string) => {
     setSelectedId((prev) => (prev === id ? null : id));
@@ -1203,7 +1244,10 @@ export default function MapPage() {
                 onFocus={() => {
                   if (search.trim().length >= 3) handleSearchChange(search);
                 }}
-                placeholder="Caută o locație..."
+                placeholder={t({
+                  ro: "Caută o locație...",
+                  en: "Search for a location...",
+                })}
                 className="w-full pl-9 pr-8 py-1.5 md:py-2 rounded-xl border border-slate-200 bg-white focus:border-lime-400 focus:ring-2 focus:ring-lime-100 outline-none transition-shadow"
               />
 
@@ -1264,7 +1308,7 @@ export default function MapPage() {
           <button
             onClick={handleGetLocation}
             disabled={geoLoading}
-            title="Folosește GPS-ul"
+            title={t({ ro: "Folosește GPS-ul", en: "Use GPS" })}
             className="p-2.5 md:p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-50 shrink-0 cursor-pointer"
           >
             {geoLoading ? (
@@ -1316,10 +1360,14 @@ export default function MapPage() {
           >
             <div className="flex items-center justify-between bg-amber-50 rounded-xl px-3 py-2 mt-2">
               <span className="text-xs font-semibold text-amber-700">
-                Ai o colectare în desfășurare
+                {t({
+                  ro: "Ai o colectare în desfășurare",
+                  en: "You have a collection in progress",
+                })}
               </span>
               <div className="flex items-center gap-0.5 text-xs font-bold text-amber-700">
-                Vezi live <ChevronRight className="w-4 h-4" />
+                {t({ ro: "Vezi live", en: "Watch live" })}{" "}
+                <ChevronRight className="w-4 h-4" />
               </div>
             </div>
           </Link>
@@ -1349,7 +1397,7 @@ export default function MapPage() {
         >
           <div className="max-w-7xl mx-auto bg-white px-4 py-3 flex items-center justify-center gap-2 flex-wrap">
             <span className="text-xs font-semibold text-slate-500">
-              Minim sticle:
+              {t({ ro: "Minim sticle:", en: "Min. bottles:" })}
             </span>
             {[0, 10, 25, 50, 100].map((n) => (
               <button
@@ -1361,7 +1409,7 @@ export default function MapPage() {
                     : "bg-white text-slate-600 border-slate-200 hover:border-slate-400 hover:bg-slate-50"
                 }`}
               >
-                {n === 0 ? "Toate" : `${n}+`}
+                {n === 0 ? t({ ro: "Toate", en: "All" }) : `${n}+`}
               </button>
             ))}
             {(minBottles > 0 || search) && (
@@ -1373,7 +1421,7 @@ export default function MapPage() {
                 }}
                 className="px-3 py-1 rounded-full text-xs font-semibold text-red-500 border border-red-200 hover:bg-red-50 transition-colors cursor-pointer"
               >
-                Resetează
+                {t({ ro: "Resetează", en: "Reset" })}
               </button>
             )}
           </div>
@@ -1393,15 +1441,18 @@ export default function MapPage() {
           <div className="shrink-0 p-4 bg-white border-b border-slate-100 flex items-center justify-between">
             <span className="text-xs text-slate-500">
               {isLoading ? (
-                "Se încarcă..."
+                t({ ro: "Se încarcă...", en: "Loading..." })
               ) : (
                 <>
                   <span className="font-bold text-slate-800">
                     {filtered.length}
                   </span>{" "}
                   {filtered.length === 1
-                    ? "anunț disponibil"
-                    : "anunțuri disponibile"}
+                    ? t({ ro: "anunț disponibil", en: "listing available" })
+                    : t({
+                        ro: "anunțuri disponibile",
+                        en: "listings available",
+                      })}
                 </>
               )}
             </span>
@@ -1410,7 +1461,8 @@ export default function MapPage() {
                 onClick={openAuthModal}
                 className="text-xs font-semibold text-lime-700 cursor-pointer flex items-center gap-1 hover:text-lime-800 transition-colors"
               >
-                Conectează-te <ChevronRight className="w-3 h-3 inline" />
+                {t({ ro: "Conectează-te", en: "Sign in" })}{" "}
+                <ChevronRight className="w-3 h-3 inline" />
               </button>
             )}
           </div>
@@ -1437,13 +1489,19 @@ export default function MapPage() {
                 />
                 <p className="font-bold text-slate-800 text-sm mb-1.5">
                   {search || minBottles > 0
-                    ? "Niciun rezultat"
-                    : "Niciun anunț activ"}
+                    ? t({ ro: "Niciun rezultat", en: "No results" })
+                    : t({ ro: "Niciun anunț activ", en: "No active listings" })}
                 </p>
                 <p className="text-xs text-slate-400 leading-relaxed">
                   {search || minBottles > 0
-                    ? "Încearcă să schimbi filtrele de căutare."
-                    : "Momentan nu există sticle de colectat."}
+                    ? t({
+                        ro: "Încearcă să schimbi filtrele de căutare.",
+                        en: "Try changing your search filters.",
+                      })
+                    : t({
+                        ro: "Momentan nu există sticle de colectat.",
+                        en: "There are no bottles to collect right now.",
+                      })}
                 </p>
                 {(search || minBottles > 0) && (
                   <button
@@ -1454,7 +1512,7 @@ export default function MapPage() {
                     }}
                     className="mt-3 text-xs font-semibold text-lime-700 hover:underline cursor-pointer"
                   >
-                    Resetează filtrele
+                    {t({ ro: "Resetează filtrele", en: "Reset filters" })}
                   </button>
                 )}
               </div>
@@ -1514,10 +1572,16 @@ export default function MapPage() {
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="bg-white/90 backdrop-blur-sm rounded-2xl px-6 py-4 shadow-lg border border-slate-200 text-center">
                 <p className="text-sm font-bold text-slate-700">
-                  Niciun anunț disponibil
+                  {t({
+                    ro: "Niciun anunț disponibil",
+                    en: "No listings available",
+                  })}
                 </p>
                 <p className="text-xs text-slate-400 mt-1">
-                  Revino mai târziu sau postează tu sticle.
+                  {t({
+                    ro: "Revino mai târziu sau postează tu sticle.",
+                    en: "Come back later or post your own bottles.",
+                  })}
                 </p>
               </div>
             </div>

@@ -1,118 +1,133 @@
 export type BadgeCfg = {
   image: string;
-  label: string;
-  desc: string;
-  group: string;
+  label: { ro: string; en: string };
+  desc: { ro: string; en: string };
+  group: { ro: string; en: string };
 };
+
+export const BADGE_GROUPS = {
+  posts: { ro: "Postări", en: "Posts" },
+  collections: { ro: "Colectări", en: "Collections" },
+  eco: { ro: "Eco", en: "Eco" },
+  activity: { ro: "Activitate", en: "Activity" },
+  special: { ro: "Speciale", en: "Special" },
+} as const;
+
+export type BadgeGroupKey = keyof typeof BADGE_GROUPS;
+
+const GROUPS = BADGE_GROUPS;
 
 export const BADGE_CONFIG: Record<string, BadgeCfg> = {
   FIRST_POST: {
     image: "/images/badges/prima-postare.avif",
-    label: "Prima Postare",
-    desc: "Ai postat pentru prima dată",
-    group: "Postări",
+    label: { ro: "Prima Postare", en: "First Post" },
+    desc: { ro: "Ai postat pentru prima dată", en: "You posted for the first time" },
+    group: GROUPS.posts,
   },
   POST_VETERAN_10: {
     image: "/images/badges/10-postari.avif",
-    label: "10 Postări",
-    desc: "Ai publicat 10 anunțuri",
-    group: "Postări",
+    label: { ro: "10 Postări", en: "10 Posts" },
+    desc: { ro: "Ai publicat 10 anunțuri", en: "You published 10 listings" },
+    group: GROUPS.posts,
   },
   POST_VETERAN_50: {
     image: "/images/badges/50-postari.avif",
-    label: "50 Postări",
-    desc: "Ai publicat 50 de anunțuri",
-    group: "Postări",
+    label: { ro: "50 Postări", en: "50 Posts" },
+    desc: { ro: "Ai publicat 50 de anunțuri", en: "You published 50 listings" },
+    group: GROUPS.posts,
   },
   POST_VETERAN_100: {
     image: "/images/badges/100-postari.avif",
-    label: "100 Postări",
-    desc: "Maestru al postărilor",
-    group: "Postări",
+    label: { ro: "100 Postări", en: "100 Posts" },
+    desc: { ro: "Maestru al postărilor", en: "Master of posting" },
+    group: GROUPS.posts,
   },
   FIRST_COLLECTION: {
     image: "/images/badges/prima-colectare.avif",
-    label: "Prima Colectare",
-    desc: "Ai colectat pentru prima dată",
-    group: "Colectări",
+    label: { ro: "Prima Colectare", en: "First Collection" },
+    desc: {
+      ro: "Ai colectat pentru prima dată",
+      en: "You collected for the first time",
+    },
+    group: GROUPS.collections,
   },
   COLLECTOR_STARTER_10: {
     image: "/images/badges/10-colectari.avif",
-    label: "10 Colectări",
-    desc: "10 colectări finalizate",
-    group: "Colectări",
+    label: { ro: "10 Colectări", en: "10 Collections" },
+    desc: { ro: "10 colectări finalizate", en: "10 completed collections" },
+    group: GROUPS.collections,
   },
   COLLECTOR_PRO_50: {
     image: "/images/badges/50-colectari.avif",
-    label: "50 Colectări",
-    desc: "Colector profesionist",
-    group: "Colectări",
+    label: { ro: "50 Colectări", en: "50 Collections" },
+    desc: { ro: "Colector profesionist", en: "Professional collector" },
+    group: GROUPS.collections,
   },
   COLLECTOR_ELITE_100: {
     image: "/images/badges/100-colectari.avif",
-    label: "100 Colectări",
-    desc: "Colector de elită",
-    group: "Colectări",
+    label: { ro: "100 Colectări", en: "100 Collections" },
+    desc: { ro: "Colector de elită", en: "Elite collector" },
+    group: GROUPS.collections,
   },
   ECO_STARTER: {
     image: "/images/badges/50-sticle.avif",
-    label: "Eco Starter",
-    desc: "50 sticle reciclate",
-    group: "Eco",
+    label: { ro: "Eco Starter", en: "Eco Starter" },
+    desc: { ro: "50 sticle reciclate", en: "50 bottles recycled" },
+    group: GROUPS.eco,
   },
   ECO_WARRIOR: {
     image: "/images/badges/prima-postare.avif",
-    label: "Eco Warrior",
-    desc: "250 sticle reciclate",
-    group: "Eco",
+    label: { ro: "Eco Warrior", en: "Eco Warrior" },
+    desc: { ro: "250 sticle reciclate", en: "250 bottles recycled" },
+    group: GROUPS.eco,
   },
   ECO_CHAMPION: {
     image: "/images/badges/prima-postare.avif",
-    label: "Eco Champion",
-    desc: "1.000 sticle reciclate",
-    group: "Eco",
+    label: { ro: "Eco Champion", en: "Eco Champion" },
+    desc: { ro: "1.000 sticle reciclate", en: "1,000 bottles recycled" },
+    group: GROUPS.eco,
   },
   ECO_LEGEND: {
     image: "/images/badges/prima-postare.avif",
-    label: "Eco Legend",
-    desc: "5.000 sticle reciclate",
-    group: "Eco",
+    label: { ro: "Eco Legend", en: "Eco Legend" },
+    desc: { ro: "5.000 sticle reciclate", en: "5,000 bottles recycled" },
+    group: GROUPS.eco,
   },
   SPEED_DEMON: {
     image: "/images/badges/prima-postare.avif",
-    label: "Speed Demon",
-    desc: "Finalizat în sub 30 minute",
-    group: "Speciale",
+    label: { ro: "Speed Demon", en: "Speed Demon" },
+    desc: { ro: "Finalizat în sub 30 minute", en: "Completed in under 30 minutes" },
+    group: GROUPS.special,
   },
   FIRST_WEEK: {
     image: "/images/badges/prima-postare.avif",
-    label: "Newbie",
-    desc: "Activ în prima săptămână",
-    group: "Activitate",
+    label: { ro: "Newbie", en: "Newbie" },
+    desc: { ro: "Activ în prima săptămână", en: "Active in the first week" },
+    group: GROUPS.activity,
   },
   MONTHLY_ACTIVE: {
     image: "/images/badges/prima-postare.avif",
-    label: "Activ Lunar",
-    desc: "Activ luna aceasta",
-    group: "Activitate",
+    label: { ro: "Activ Lunar", en: "Monthly Active" },
+    desc: { ro: "Activ luna aceasta", en: "Active this month" },
+    group: GROUPS.activity,
   },
   VETERAN_1_YEAR: {
     image: "/images/badges/prima-postare.avif",
-    label: "Veteran",
-    desc: "1 an de activitate",
-    group: "Activitate",
+    label: { ro: "Veteran", en: "Veteran" },
+    desc: { ro: "1 an de activitate", en: "1 year of activity" },
+    group: GROUPS.activity,
   },
   CENTURION: {
     image: "/images/badges/prima-postare.avif",
-    label: "Centurion",
-    desc: "100 tranzacții finalizate",
-    group: "Speciale",
+    label: { ro: "Centurion", en: "Centurion" },
+    desc: { ro: "100 tranzacții finalizate", en: "100 completed transactions" },
+    group: GROUPS.special,
   },
   PERFECT_RATING: {
     image: "/images/badges/prima-postare.avif",
-    label: "Rating Perfect",
-    desc: "Media 5/5 după 10 tranzacții",
-    group: "Speciale",
+    label: { ro: "Rating Perfect", en: "Perfect Rating" },
+    desc: { ro: "Media 5/5 după 10 tranzacții", en: "5/5 average after 10 transactions" },
+    group: GROUPS.special,
   },
 };
 

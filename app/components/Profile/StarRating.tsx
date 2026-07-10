@@ -1,4 +1,7 @@
+"use client";
+
 import { FaBan } from "react-icons/fa";
+import { useI18n } from "@/context/I18nContext";
 
 export function StarRating({
   score,
@@ -9,6 +12,7 @@ export function StarRating({
   count: number;
   cancelledCount?: number;
 }) {
+  const { t } = useI18n();
   const full = Math.floor(score);
   const half = score - full >= 0.5;
   return (
@@ -48,13 +52,20 @@ export function StarRating({
       </span>
       {count > 0 && (
         <span className="text-xs text-slate-300">
-          ({count} {count === 1 ? "recenzie" : "recenzii"})
+          ({count}{" "}
+          {count === 1
+            ? t({ ro: "recenzie", en: "review" })
+            : t({ ro: "recenzii", en: "reviews" })}
+          )
         </span>
       )}
       {cancelledCount != 0 && (
         <span className="flex items-center gap-1 text-xs font-semibold text-red-400 px-2">
-          <FaBan className="w-3 h-3" /> {cancelledCount}{" "}
-          {cancelledCount === 1 ? "anulare" : "anulări"} în progres
+          <FaBan className="w-3 h-3" />{" "}
+          {t({
+            ro: `${cancelledCount} ${cancelledCount === 1 ? "anulare" : "anulări"} în progres`,
+            en: `${cancelledCount} ${cancelledCount === 1 ? "cancellation" : "cancellations"} in progress`,
+          })}
         </span>
       )}
     </div>

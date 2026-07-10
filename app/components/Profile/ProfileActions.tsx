@@ -18,6 +18,7 @@ import {
   Loader2,
   AlertTriangle,
 } from "lucide-react";
+import { useI18n } from "@/context/I18nContext";
 
 function DeleteModal({
   onConfirm,
@@ -30,6 +31,7 @@ function DeleteModal({
   loading: boolean;
   error: string;
 }) {
+  const { t } = useI18n();
   if (typeof document === "undefined") return null;
 
   return createPortal(
@@ -63,17 +65,25 @@ function DeleteModal({
         </div>
 
         <h3 className="text-lg font-extrabold text-slate-900 mb-1.5">
-          Șterge contul definitiv?
+          {t({
+            ro: "Șterge contul definitiv?",
+            en: "Delete your account permanently?",
+          })}
         </h3>
         <p className="text-sm text-slate-500 leading-relaxed mb-4">
-          Toate datele tale — postări, tranzacții, badge-uri și istoricul de
-          activitate — vor fi șterse permanent și nu vor putea fi recuperate.
+          {t({
+            ro: "Toate datele tale — postări, tranzacții, badge-uri și istoricul de activitate — vor fi șterse permanent și nu vor putea fi recuperate.",
+            en: "All your data — posts, transactions, badges and activity history — will be permanently deleted and cannot be recovered.",
+          })}
         </p>
 
         <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 mb-5">
           <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
           <p className="text-xs font-semibold text-amber-700">
-            Această acțiune este ireversibilă și nu poate fi anulată.
+            {t({
+              ro: "Această acțiune este ireversibilă și nu poate fi anulată.",
+              en: "This action is irreversible and cannot be undone.",
+            })}
           </p>
         </div>
 
@@ -97,7 +107,7 @@ function DeleteModal({
             disabled={loading}
             className="flex-1 py-3 rounded-xl border-2 border-slate-200 text-slate-700 font-semibold text-sm hover:border-slate-300 hover:bg-slate-50 transition-all disabled:opacity-40 cursor-pointer"
           >
-            Anulează
+            {t({ ro: "Anulează", en: "Cancel" })}
           </button>
           <motion.button
             onClick={onConfirm}
@@ -110,7 +120,7 @@ function DeleteModal({
             ) : (
               <>
                 <Trash2 className="w-3.5 h-3.5" />
-                Șterge contul
+                {t({ ro: "Șterge contul", en: "Delete account" })}
               </>
             )}
           </motion.button>
@@ -125,6 +135,7 @@ const ROW_BASE =
   "flex items-center gap-3 px-5 py-4 hover:bg-slate-50 transition-colors";
 
 export function ProfileActions() {
+  const { t } = useI18n();
   const { show } = useLoading();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -137,13 +148,24 @@ export function ProfileActions() {
       const res = await fetch("/api/v1/profile", { method: "DELETE" });
       if (!res.ok) {
         const j = await res.json();
-        setDeleteError(j.error ?? "Eroare la ștergerea contului.");
+        setDeleteError(
+          j.error ??
+            t({
+              ro: "Eroare la ștergerea contului.",
+              en: "Failed to delete the account.",
+            }),
+        );
         setDeleting(false);
         return;
       }
       await signOut({ callbackUrl: "/" });
     } catch {
-      setDeleteError("Eroare de rețea. Încearcă din nou.");
+      setDeleteError(
+        t({
+          ro: "Eroare de rețea. Încearcă din nou.",
+          en: "Network error. Try again.",
+        }),
+      );
       setDeleting(false);
     }
   };
@@ -157,7 +179,7 @@ export function ProfileActions() {
               <FileText className="w-4 h-4 text-slate-600" />
             </div>
             <span className="text-sm font-semibold text-slate-700 flex-1">
-              Termeni și Condiții
+              {t({ ro: "Termeni și Condiții", en: "Terms & Conditions" })}
             </span>
             <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
           </Link>
@@ -167,7 +189,10 @@ export function ProfileActions() {
               <Lock className="w-4 h-4 text-slate-600" />
             </div>
             <span className="text-sm font-semibold text-slate-700 flex-1">
-              Politica de confidențialitate
+              {t({
+                ro: "Politica de confidențialitate",
+                en: "Privacy Policy",
+              })}
             </span>
             <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
           </Link>
@@ -180,7 +205,7 @@ export function ProfileActions() {
               <Bug className="w-4 h-4 text-slate-600" />
             </div>
             <span className="text-sm font-semibold text-slate-700 flex-1">
-              Raportează o problemă
+              {t({ ro: "Raportează o problemă", en: "Report a problem" })}
             </span>
             <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
           </a>
@@ -193,14 +218,14 @@ export function ProfileActions() {
               <HelpCircle className="w-4 h-4 text-slate-600" />
             </div>
             <span className="text-sm font-semibold text-slate-700 flex-1">
-              Suport utilizatori
+              {t({ ro: "Suport utilizatori", en: "User support" })}
             </span>
             <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
           </a>
 
           <button
             onClick={() => {
-              show("Se deconectează...");
+              show(t({ ro: "Se deconectează...", en: "Signing out..." }));
               signOut({ callbackUrl: "/" });
             }}
             className={`w-full ${ROW_BASE} hover:!bg-red-50 cursor-pointer`}
@@ -209,7 +234,7 @@ export function ProfileActions() {
               <LogOut className="w-4 h-4 text-red-500" />
             </div>
             <span className="text-sm font-semibold text-red-500 flex-1 text-left">
-              Deconectează-te
+              {t({ ro: "Deconectează-te", en: "Sign out" })}
             </span>
           </button>
 

@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useI18n } from "@/context/I18nContext";
 
 export interface SponsorAd {
   /** Unique key for React list rendering */
@@ -49,10 +52,14 @@ interface SectionDividerProps {
  * <SectionDivider />
  */
 export const SectionDivider = ({ ad, variant = 0 }: SectionDividerProps) => {
+  const { t } = useI18n();
   return (
     <div
       className="my-12 lg:my-20 -mx-[calc(50vw-50%)] bg-slate-50"
-      aria-label={`Reclamă sponsor ${variant + 1}`}
+      aria-label={t({
+        ro: `Reclamă sponsor ${variant + 1}`,
+        en: `Sponsor ad ${variant + 1}`,
+      })}
       role="complementary"
     >
       <div className="py-3 lg:py-4 px-4 sm:px-6 lg:px-8">
@@ -80,7 +87,10 @@ export const SectionDivider = ({ ad, variant = 0 }: SectionDividerProps) => {
             <div className="relative w-full aspect-[6/2] lg:aspect-[6/1] rounded-2xl overflow-hidden border border-slate-200 bg-white flex items-center justify-center">
               <Image
                 src="/images/ad-placeholder.avif"
-                alt="Spațiu publicitar disponibil"
+                alt={t({
+                  ro: "Spațiu publicitar disponibil",
+                  en: "Ad space available",
+                })}
                 fill
                 className="h-full object-contain opacity-30 grayscale contrast-100 py-4 lg:py-6"
               />
