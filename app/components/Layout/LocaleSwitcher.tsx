@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { HiOutlineGlobeAlt } from "react-icons/hi2";
+import { IoLanguageSharp } from "react-icons/io5";
 import { useI18n, type Locale, type Currency } from "@/context/I18nContext";
 
 function RoFlag({ className = "w-full h-full" }: { className?: string }) {
@@ -155,14 +155,9 @@ export function LocaleSwitcher() {
           ro: "Limbă și monedă",
           en: "Language and currency",
         })}
-        className="flex items-center gap-1.5 h-10 px-3 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
+        className="flex items-center gap-1.5 h-10 px-2.5 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
       >
-        <HiOutlineGlobeAlt className="w-4.5 h-4.5 text-slate-700" />
-        <span className="text-xs font-bold text-slate-700 tracking-tight">
-          {locale.toUpperCase()}
-          <span className="text-slate-400 mx-1">·</span>
-          {currency === "EUR" ? "€" : "RON"}
-        </span>
+        <IoLanguageSharp className="w-5 h-5 text-lime-600" />
       </button>
 
       <AnimatePresence>
@@ -172,7 +167,7 @@ export function LocaleSwitcher() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="absolute right-0 top-full mt-0 pt-2 w-56 origin-top-right z-[1002]"
+            className="absolute -right-23 top-full mt-0 pt-2 w-56 origin-top-right z-[1002]"
           >
             <div className="bg-white rounded-3xl border border-slate-200 py-1">
               <PreferenceSwitcherInline />
