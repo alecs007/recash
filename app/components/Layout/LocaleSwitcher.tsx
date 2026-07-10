@@ -155,7 +155,7 @@ export function LocaleSwitcher() {
           ro: "Limbă și monedă",
           en: "Language and currency",
         })}
-        className="flex items-center gap-1.5 h-10 px-2.5 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
+        className="flex items-center gap-1.5 h-10 px-2.5 rounded-full bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
       >
         <IoLanguageSharp className="w-5 h-5 text-lime-600" />
       </button>
