@@ -8,8 +8,7 @@ import { notifyPostCompleted } from "@/lib/notifications";
 import { invalidate, CacheKey } from "@/lib/cache";
 import { checkPostBadges, checkTransactionBadges } from "@/lib/badges";
 import { publishPostCompleted, publishPostStatus } from "@/lib/pubsub";
-
-const SGR_VALUE_PER_BOTTLE = 0.5;
+import { computeEarnings } from "@/lib/earnings";
 
 export async function POST(
   req: Request,
@@ -86,10 +85,10 @@ export async function POST(
     }
 
     const bottleCount = post.bottleCount;
-    const actualValue = bottleCount * SGR_VALUE_PER_BOTTLE;
-    const collectorEarning =
-      Math.round(((actualValue * post.collectorSharePercent) / 100) * 2) / 2;
-    const posterEarning = actualValue - collectorEarning;
+    const { actualValue, collectorEarning, posterEarning } = computeEarnings(
+      bottleCount,
+      post.collectorSharePercent,
+    );
 
     try {
       await prisma.$transaction(async (tx) => {

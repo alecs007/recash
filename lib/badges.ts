@@ -23,6 +23,94 @@ const BADGE_LABELS: Record<BadgeType, string> = {
   PERFECT_RATING: "Rating Perfect",
 };
 
+// ─── Pure badge-threshold logic ───────────────────────────────────────────────
+// These functions decide *which* badges a user qualifies for given already
+// fetched counts. They perform no I/O so they can be unit-tested directly; the
+// async `check*` functions below fetch the counts and delegate here.
+
+const ECO_THRESHOLDS: ReadonlyArray<readonly [number, BadgeType]> = [
+  [50, "ECO_STARTER"],
+  [250, "ECO_WARRIOR"],
+  [1000, "ECO_CHAMPION"],
+  [5000, "ECO_LEGEND"],
+];
+
+/** Milestones based on how many posts a user has authored. */
+export function evaluatePostBadges(
+  postCount: number,
+  isFirstWeekEligible = false,
+): BadgeType[] {
+  const badges: BadgeType[] = [];
+  if (postCount >= 1) {
+    badges.push("FIRST_POST");
+    if (isFirstWeekEligible) badges.push("FIRST_WEEK");
+  }
+  if (postCount >= 10) badges.push("POST_VETERAN_10");
+  if (postCount >= 50) badges.push("POST_VETERAN_50");
+  if (postCount >= 100) badges.push("POST_VETERAN_100");
+  return badges;
+}
+
+/** Eco badges earned by cumulative bottle throughput (given + collected). */
+function evaluateEcoBadges(totalBottles: number): BadgeType[] {
+  return ECO_THRESHOLDS.filter(([min]) => totalBottles >= min).map(
+    ([, badge]) => badge,
+  );
+}
+
+/** Poster-side badges awarded when one of their posts is completed. */
+export function evaluatePosterTransactionBadges(opts: {
+  txCount: number;
+  totalBottles: number;
+  isFirstWeekEligible: boolean;
+}): BadgeType[] {
+  const badges: BadgeType[] = [];
+  if (opts.txCount >= 1 && opts.isFirstWeekEligible) badges.push("FIRST_WEEK");
+  if (opts.txCount >= 100) badges.push("CENTURION");
+  badges.push(...evaluateEcoBadges(opts.totalBottles));
+  return badges;
+}
+
+/** Collector-side badges awarded when they complete a collection. */
+export function evaluateCollectorTransactionBadges(opts: {
+  txCount: number;
+  totalBottles: number;
+  isFirstWeekEligible: boolean;
+  completedWithinSpeedWindow: boolean;
+}): BadgeType[] {
+  const badges: BadgeType[] = [];
+  if (opts.txCount >= 1 && opts.isFirstWeekEligible) badges.push("FIRST_WEEK");
+  if (opts.txCount >= 1) badges.push("FIRST_COLLECTION");
+  if (opts.txCount >= 10) badges.push("COLLECTOR_STARTER_10");
+  if (opts.txCount >= 50) badges.push("COLLECTOR_PRO_50");
+  if (opts.txCount >= 100) {
+    badges.push("COLLECTOR_ELITE_100");
+    badges.push("CENTURION");
+  }
+  badges.push(...evaluateEcoBadges(opts.totalBottles));
+  if (opts.completedWithinSpeedWindow) badges.push("SPEED_DEMON");
+  return badges;
+}
+
+/** SPEED_DEMON window: completed within 30 minutes of being claimed. */
+export function isWithinSpeedWindow(
+  claimedAt: Date | null | undefined,
+  now: Date = new Date(),
+): boolean {
+  if (!claimedAt) return false;
+  return now.getTime() - claimedAt.getTime() <= 30 * 60 * 1000;
+}
+
+/** PERFECT_RATING: at least 10 ratings and a flawless 5.0 average. */
+export function qualifiesForPerfectRating(
+  ratingCount: number,
+  reputationScore: number,
+): boolean {
+  return ratingCount >= 10 && reputationScore >= 5.0;
+}
+
+// ─── I/O wrappers ─────────────────────────────────────────────────────────────
+
 export async function awardBadge(
   userId: string,
   type: BadgeType,
@@ -68,18 +156,10 @@ export async function awardBadge(
 
 export async function checkPostBadges(userId: string): Promise<void> {
   const count = await prisma.post.count({ where: { authorId: userId } });
-  const candidates: BadgeType[] = [];
+  const isFirstWeekEligible =
+    count >= 1 ? await checkFirstWeekEligibility(userId) : false;
 
-  if (count >= 1) {
-    candidates.push("FIRST_POST");
-    if (await checkFirstWeekEligibility(userId)) {
-      candidates.push("FIRST_WEEK");
-    }
-  }
-
-  if (count >= 10) candidates.push("POST_VETERAN_10");
-  if (count >= 50) candidates.push("POST_VETERAN_50");
-  if (count >= 100) candidates.push("POST_VETERAN_100");
+  const candidates = evaluatePostBadges(count, isFirstWeekEligible);
 
   await Promise.all(candidates.map((t) => awardBadge(userId, t)));
 }
@@ -110,44 +190,23 @@ export async function checkTransactionBadges(
     (collectorUser?.totalBottlesGiven ?? 0) +
     (collectorUser?.totalBottlesCollected ?? 0);
 
-  const posterCandidates: BadgeType[] = [];
-  const collectorCandidates: BadgeType[] = [];
+  const [posterFirstWeek, collectorFirstWeek] = await Promise.all([
+    posterTxCount >= 1 ? checkFirstWeekEligibility(posterId) : false,
+    collectorTxCount >= 1 ? checkFirstWeekEligibility(collectorId) : false,
+  ]);
 
-  if (posterTxCount >= 1 && (await checkFirstWeekEligibility(posterId))) {
-    posterCandidates.push("FIRST_WEEK");
-  }
+  const posterCandidates = evaluatePosterTransactionBadges({
+    txCount: posterTxCount,
+    totalBottles: posterBottles,
+    isFirstWeekEligible: posterFirstWeek,
+  });
 
-  if (collectorTxCount >= 1 && (await checkFirstWeekEligibility(collectorId))) {
-    collectorCandidates.push("FIRST_WEEK");
-  }
-
-  // Poster-side badges
-  if (posterTxCount >= 100) posterCandidates.push("CENTURION");
-  if (posterBottles >= 50) posterCandidates.push("ECO_STARTER");
-  if (posterBottles >= 250) posterCandidates.push("ECO_WARRIOR");
-  if (posterBottles >= 1000) posterCandidates.push("ECO_CHAMPION");
-  if (posterBottles >= 5000) posterCandidates.push("ECO_LEGEND");
-
-  // Collector-side badges
-  if (collectorTxCount >= 1) collectorCandidates.push("FIRST_COLLECTION");
-  if (collectorTxCount >= 10) collectorCandidates.push("COLLECTOR_STARTER_10");
-  if (collectorTxCount >= 50) collectorCandidates.push("COLLECTOR_PRO_50");
-  if (collectorTxCount >= 100) {
-    collectorCandidates.push("COLLECTOR_ELITE_100");
-    collectorCandidates.push("CENTURION");
-  }
-  if (collectorBottles >= 50) collectorCandidates.push("ECO_STARTER");
-  if (collectorBottles >= 250) collectorCandidates.push("ECO_WARRIOR");
-  if (collectorBottles >= 1000) collectorCandidates.push("ECO_CHAMPION");
-  if (collectorBottles >= 5000) collectorCandidates.push("ECO_LEGEND");
-
-  // SPEED_DEMON: completed within 30 minutes of being claimed
-  if (claimedAt) {
-    const elapsedMs = Date.now() - claimedAt.getTime();
-    if (elapsedMs <= 30 * 60 * 1000) {
-      collectorCandidates.push("SPEED_DEMON");
-    }
-  }
+  const collectorCandidates = evaluateCollectorTransactionBadges({
+    txCount: collectorTxCount,
+    totalBottles: collectorBottles,
+    isFirstWeekEligible: collectorFirstWeek,
+    completedWithinSpeedWindow: isWithinSpeedWindow(claimedAt),
+  });
 
   await Promise.all([
     ...posterCandidates.map((t) => awardBadge(posterId, t)),
@@ -161,7 +220,7 @@ export async function checkRatingBadges(userId: string): Promise<void> {
     select: { reputationScore: true, ratingCount: true },
   });
 
-  if (user && user.ratingCount >= 10 && user.reputationScore >= 5.0) {
+  if (user && qualifiesForPerfectRating(user.ratingCount, user.reputationScore)) {
     await awardBadge(userId, "PERFECT_RATING");
   }
 }
