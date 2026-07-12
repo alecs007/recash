@@ -1,5 +1,9 @@
 import { PrismaClient, UserRole, PostStatus, BadgeType } from "@prisma/client";
 import { fakerRO as faker } from "@faker-js/faker";
+import dotenv from "dotenv";
+import path from "path";
+
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
 
 const prisma = new PrismaClient();
 
