@@ -121,3 +121,18 @@ textarea,
 ::-webkit-scrollbar-corner {
   background: #f8fafc;
 }
+
+:where(
+  a,
+  button,
+  input,
+  textarea,
+  select,
+  summary,
+  [role="button"],
+  [tabindex]:not([tabindex="-1"])
+):focus-visible {
+  outline: 2px solid #4d7c0f; /* lime-700 — meets contrast on white and lime */
+  outline-offset: 2px;
+  border-radius: 4px;
+}

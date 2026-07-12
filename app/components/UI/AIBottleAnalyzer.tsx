@@ -174,9 +174,10 @@ export function AiBottleAnalyzer({ onApply, onClose }: AiBottleAnalyzerProps) {
             </div>
             <button
               onClick={onClose}
+              aria-label={t({ ro: "Închide", en: "Close" })}
               className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors cursor-pointer shrink-0"
             >
-              <X className="w-4 h-4 text-slate-500" />
+              <X className="w-4 h-4 text-slate-500" aria-hidden="true" />
             </button>
           </div>
 
@@ -219,9 +220,10 @@ export function AiBottleAnalyzer({ onApply, onClose }: AiBottleAnalyzerProps) {
                       setResult(null);
                       setError("");
                     }}
+                    aria-label={t({ ro: "Elimină imaginea", en: "Remove image" })}
                     className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 hover:bg-black/80 flex items-center justify-center transition-colors cursor-pointer"
                   >
-                    <X className="w-3.5 h-3.5 text-white" />
+                    <X className="w-3.5 h-3.5 text-white" aria-hidden="true" />
                   </button>
                 </>
               ) : (

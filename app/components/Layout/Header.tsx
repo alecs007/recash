@@ -64,6 +64,8 @@ function ActiveIndicator({
         <motion.div key="dual" {...slideIn} className="relative" ref={ref}>
           <button
             onClick={() => setOpen((v) => !v)}
+            aria-label={t({ ro: "Activitate în curs", en: "Active activity" })}
+            aria-expanded={open}
             className="relative w-10 h-10 flex items-center justify-center cursor-pointer"
           >
             <div className="absolute -top-1 -right-1.5 z-[50] pointer-events-none">
@@ -291,6 +293,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                     onClick={() => setDropdownOpen((v) => !v)}
                     className="flex items-center gap-2 pl-1 pr-2 py-1 -translate-x-1 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
                     aria-label={t({ ro: "Meniu profil", en: "Profile menu" })}
+                    aria-expanded={dropdownOpen}
                   >
                     {session.user.image ? (
                       <Image

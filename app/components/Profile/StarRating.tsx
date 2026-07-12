@@ -15,9 +15,20 @@ export function StarRating({
   const { t } = useI18n();
   const full = Math.floor(score);
   const half = score - full >= 0.5;
+  const ratingLabel =
+    count > 0
+      ? t({
+          ro: `Rating ${score.toFixed(1)} din 5, din ${count} ${count === 1 ? "recenzie" : "recenzii"}`,
+          en: `Rating ${score.toFixed(1)} out of 5, from ${count} ${count === 1 ? "review" : "reviews"}`,
+        })
+      : t({ ro: "Fără recenzii încă", en: "No reviews yet" });
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      <div className="flex gap-0.5">
+    <div
+      className="flex flex-wrap items-center gap-1.5"
+      role="img"
+      aria-label={ratingLabel}
+    >
+      <div className="flex gap-0.5" aria-hidden="true">
         {[1, 2, 3, 4, 5].map((i) => (
           <svg key={i} className="w-4 h-4" viewBox="0 0 20 20">
             {i <= full ? (

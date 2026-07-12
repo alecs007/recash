@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { scrollToTop } from "@/app/components/UX/SmoothScroll";
+import { useI18n } from "@/context/I18nContext";
 
 export function Pagination({
   page,
@@ -10,6 +11,7 @@ export function Pagination({
   totalPages: number;
   onPageChange: (p: number) => void;
 }) {
+  const { t } = useI18n();
   const handlePageChange = (newPage: number) => {
     scrollToTop();
     setTimeout(() => {
@@ -24,9 +26,10 @@ export function Pagination({
           handlePageChange(Math.max(1, page - 1));
         }}
         disabled={page === 1}
+        aria-label={t({ ro: "Pagina anterioară", en: "Previous page" })}
         className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 border border-slate-200 hover:border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
       >
-        <ChevronLeft className="w-4 h-4" />
+        <ChevronLeft className="w-4 h-4" aria-hidden="true" />
       </button>
       <span className="text-sm text-slate-500 font-medium">
         {page} / {totalPages}
@@ -36,9 +39,10 @@ export function Pagination({
           handlePageChange(Math.min(totalPages, page + 1));
         }}
         disabled={page === totalPages}
+        aria-label={t({ ro: "Pagina următoare", en: "Next page" })}
         className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 border border-slate-200 hover:border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
       >
-        <ChevronRight className="w-4 h-4" />
+        <ChevronRight className="w-4 h-4" aria-hidden="true" />
       </button>
     </div>
   );

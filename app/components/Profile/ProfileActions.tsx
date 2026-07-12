@@ -58,9 +58,10 @@ function DeleteModal({
           <button
             onClick={onClose}
             disabled={loading}
+            aria-label={t({ ro: "Închide", en: "Close" })}
             className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 disabled:opacity-40 cursor-pointer transition-colors"
           >
-            <X className="w-3.5 h-3.5 text-slate-600" />
+            <X className="w-3.5 h-3.5 text-slate-600" aria-hidden="true" />
           </button>
         </div>
 
