@@ -9,7 +9,20 @@
     "ws:build": "cd ws-server && npm run build",
     "prisma:push": "prisma db push",
     "prisma:seed": "tsx prisma/seed.ts",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:full": "playwright test --config=playwright.full.config.ts",
+    "load:smoke": "k6 run load/smoke.js",
+    "load": "k6 run load/load.js",
+    "load:stress": "k6 run load/stress.js",
+    "load:spike": "k6 run load/spike.js",
+    "load:ratelimit": "k6 run load/ratelimit.js"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
@@ -34,18 +47,23 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^10.4.0",
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@types/leaflet": "^1.9.21",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/ws": "^8.18.1",
+    "@vitest/coverage-v8": "^4.1.10",
     "concurrently": "^9.2.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
+    "ioredis-mock": "^8.13.1",
+    "mongodb-memory-server": "^11.2.0",
     "prisma": "^5.22.0",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }

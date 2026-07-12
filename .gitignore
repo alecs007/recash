@@ -41,3 +41,10 @@ yarn-error.log*
 next-env.d.ts
 
 /app/generated/prisma
+
+# E2E full-flow ephemeral state
+e2e-full/.state.json
+
+# Test artifacts
+test-results/
+playwright-report/

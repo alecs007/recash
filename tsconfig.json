@@ -37,6 +37,13 @@
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "vitest.config.ts",
+    "playwright.config.ts",
+    "playwright.full.config.ts",
+    "tests",
+    "e2e",
+    "e2e-full",
+    "load"
   ]
 }
