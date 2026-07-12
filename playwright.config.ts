@@ -18,9 +18,14 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
 
+  // CI runs a cold dev server and (in CI) a fast-failing DB, so give pages room.
+  timeout: 60_000,
+  expect: { timeout: 15_000 },
   use: {
     baseURL: BASE_URL,
     trace: "on-first-retry",
+    navigationTimeout: 45_000,
+    actionTimeout: 15_000,
   },
 
   projects: [
@@ -31,7 +36,12 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: `pnpm exec next dev --port ${PORT}`,
+    // In CI, serve a production build (`next build` runs as a separate CI step):
+    // no dev error overlay, and pages are prerendered so a missing DB doesn't
+    // surface as a render error. Locally, use dev for convenience.
+    command: process.env.CI
+      ? `pnpm exec next start --port ${PORT}`
+      : `pnpm exec next dev --port ${PORT}`,
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

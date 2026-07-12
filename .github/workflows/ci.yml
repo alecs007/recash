@@ -36,8 +36,11 @@ jobs:
     runs-on: ubuntu-latest
     env:
       AUTH_SECRET: ci-not-a-real-secret-0000000000000000
-      RECASH_DATABASE_URI: mongodb://127.0.0.1:27017/recash_ci
-      REDIS_URL: redis://127.0.0.1:6379
+      # This job has no database. Fail the DB connection fast (2s) instead of the
+      # 30s default so the home page's server-side leaderboard query degrades to
+      # an empty list quickly instead of hanging the page render.
+      RECASH_DATABASE_URI: "mongodb://127.0.0.1:27017/recash_ci?directConnection=true&serverSelectionTimeoutMS=2000&connectTimeoutMS=2000"
+      REDIS_MOCK: "1"
       NEXT_PUBLIC_API_VERSION: v1
     steps:
       - uses: actions/checkout@v4
@@ -56,6 +59,9 @@ jobs:
       - run: pnpm prisma generate
 
       - run: pnpm exec playwright install --with-deps chromium
+
+      # Build once; Playwright's webServer serves it with `next start` in CI.
+      - run: pnpm build
 
       - run: pnpm test:e2e
 
