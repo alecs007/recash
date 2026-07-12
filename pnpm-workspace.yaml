@@ -1,4 +1,9 @@
-ignoredBuiltDependencies:
-  - sharp
-  - unrs-resolver
-  - mongodb-memory-server
+allowBuilds:
+  "@prisma/client": true
+  "@prisma/engines": true
+  prisma: true
+  esbuild: true
+  sharp: true
+  unrs-resolver: true
+  # mongodb-memory-server downloads its mongod binary at runtime instead.
+  mongodb-memory-server: false
