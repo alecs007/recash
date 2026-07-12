@@ -407,7 +407,8 @@ function CodeDisplay({ postId }: { postId: string }) {
           onClick={() => mutate()}
           className="flex items-center gap-1 mx-auto text-xs text-slate-500 hover:text-slate-700"
         >
-          <RefreshCw className="w-3 h-3" /> {t({ ro: "Reîncearcă", en: "Retry" })}
+          <RefreshCw className="w-3 h-3" />{" "}
+          {t({ ro: "Reîncearcă", en: "Retry" })}
         </button>
       </div>
     );
@@ -1287,6 +1288,43 @@ function DetailPanel({
     }
   }, [post.id, post.status, isAuthor, onRedirect, setActiveCounts, t]);
 
+  interface RenderOptions {
+    makeSignBigger?: boolean;
+  }
+
+  const renderFormattedPrice = (
+    amount: number,
+    fmtFn: (value: number, ...args: any[]) => string,
+    options?: RenderOptions,
+  ): React.ReactNode => {
+    const formattedString = fmtFn(amount);
+    const match = formattedString.match(/^(.*?)\s*([a-zA-Z€]+)$/);
+
+    if (!match) return formattedString;
+
+    const [, value, symbol] = match;
+    const cleanSymbol = symbol.trim();
+
+    const isEuro = cleanSymbol.toUpperCase() === "EUR" || cleanSymbol === "€";
+    const shouldEnlarge = !!options?.makeSignBigger;
+
+    let sizeClass = "text-lg";
+
+    if (isEuro) {
+      sizeClass = shouldEnlarge ? "text-2xl" : "text-lg";
+    } else {
+      sizeClass = shouldEnlarge ? "text-lg" : "text-sm";
+    }
+    return (
+      <>
+        {value.trim()}
+        <span className={`font-normal text-slate-400 ml-1 ${sizeClass}`}>
+          {cleanSymbol}
+        </span>
+      </>
+    );
+  };
+
   return (
     <div className="h-full w-full relative">
       <div className="h-full overflow-y-auto" data-lenis-prevent>
@@ -1758,7 +1796,10 @@ function DetailPanel({
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
                               <span className="text-sm text-slate-600">
-                                {t({ ro: "Rating-ul primit de la", en: "Rating received from" })}{" "}
+                                {t({
+                                  ro: "Rating-ul primit de la",
+                                  en: "Rating received from",
+                                })}{" "}
                                 <span className="font-semibold text-slate-800">
                                   {targetName}
                                 </span>
@@ -1840,7 +1881,10 @@ function DetailPanel({
                             <div className="space-y-3">
                               <div className="flex items-center justify-between">
                                 <span className="text-sm text-slate-600">
-                                  {t({ ro: "Rating-ul tău pentru", en: "Your rating for" })}{" "}
+                                  {t({
+                                    ro: "Rating-ul tău pentru",
+                                    en: "Your rating for",
+                                  })}{" "}
                                   <span className="font-semibold text-slate-800">
                                     {targetName}
                                   </span>
@@ -2024,7 +2068,9 @@ function DetailPanel({
               <div className="w-px h-8 bg-slate-200" />
               <div className="flex items-baseline gap-1.5">
                 <span className="text-3xl font-black text-lime-700 tabular-nums leading-none">
-                  {fmt(post.bottleCount * 0.5)}
+                  {renderFormattedPrice(post.bottleCount * 0.5, fmt, {
+                    makeSignBigger: true,
+                  })}
                 </span>
               </div>
             </div>
@@ -2156,7 +2202,10 @@ function DetailPanel({
                   <>
                     <FaWineBottle className="w-4 h-4 text-lime-400" />
                     {isLoggedIn
-                      ? t({ ro: "Colectează sticlele", en: "Collect the bottles" })
+                      ? t({
+                          ro: "Colectează sticlele",
+                          en: "Collect the bottles",
+                        })
                       : t({
                           ro: "Conectează-te și colectează!",
                           en: "Sign in and collect!",
@@ -2204,7 +2253,10 @@ function DetailPanel({
 
               const myLabel = isNonParticipant
                 ? post.status === "COMPLETED"
-                  ? t({ ro: "Colectorul a câștigat", en: "The collector earned" })
+                  ? t({
+                      ro: "Colectorul a câștigat",
+                      en: "The collector earned",
+                    })
                   : isTerminated
                     ? t({
                         ro: "Colectorul ar fi câștigat",
@@ -2248,7 +2300,7 @@ function DetailPanel({
                             {t({ ro: "Plătești", en: "You pay" })}
                           </span>
                           <span className="text-2xl font-black leading-none text-slate-500">
-                            {fmt(posterEarning)}
+                            {renderFormattedPrice(posterEarning, fmt)}
                           </span>
                           <ArrowRight className="w-4 h-4 text-slate-400 shrink-0 mx-1 sm:mx-0" />
                         </>
@@ -2270,8 +2322,10 @@ function DetailPanel({
                         post.status !== "COMPLETED" &&
                         post.status !== "CANCELLED" &&
                         post.status !== "EXPIRED"
-                          ? fmt(post.estimatedValue)
-                          : fmt(displayEarning, { sign: true })}
+                          ? renderFormattedPrice(post.estimatedValue, fmt)
+                          : renderFormattedPrice(displayEarning, (val) =>
+                              fmt(val, { sign: true }),
+                            )}
                       </motion.span>
                     </AnimatePresence>
                   </div>

@@ -1,8 +1,3 @@
-// Pure earnings math for a completed collection, extracted from the
-// /posts/[id]/complete route so it can be unit-tested without I/O. The
-// collector's cut is rounded to the nearest 0.5 RON and the poster gets the
-// exact remainder, so the two shares always sum back to the total.
-
 export const RON_PER_BOTTLE = 0.5;
 export const SGR_VALUE_PER_BOTTLE = RON_PER_BOTTLE;
 
