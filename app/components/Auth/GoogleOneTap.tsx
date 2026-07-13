@@ -30,7 +30,19 @@ export function GoogleOneTap() {
         cancel_on_tap_outside: false,
         use_fedcm_for_prompt: true,
       });
-      window.google.accounts.id.prompt();
+      window.google.accounts.id.prompt(
+        process.env.NODE_ENV === "development"
+          ? (notification) => {
+              if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                console.warn(
+                  "[GoogleOneTap] prompt not shown:",
+                  notification.getMomentType(),
+                  "- check that this origin is registered as an Authorized JavaScript origin for the OAuth client, and that the browser is signed in to a Google account",
+                );
+              }
+            }
+          : undefined,
+      );
     };
 
     if (window.google?.accounts?.id) {

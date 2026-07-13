@@ -6,7 +6,13 @@ declare global {
       accounts: {
         id: {
           initialize: (config: any) => void;
-          prompt: () => void;
+          prompt: (
+            momentListener?: (notification: {
+              isNotDisplayed: () => boolean;
+              isSkippedMoment: () => boolean;
+              getMomentType: () => string;
+            }) => void,
+          ) => void;
           cancel: () => void;
         };
       };
