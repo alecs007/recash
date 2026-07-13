@@ -28,12 +28,38 @@ const geistSans = Geist({
 export async function generateMetadata(): Promise<Metadata> {
   const store = await cookies();
   const locale = store.get(LOCALE_COOKIE)?.value === "en" ? "en" : "ro";
+
+  const title = "Recash";
+  const description =
+    locale === "en"
+      ? "Recash - Recycle. Earn cash. Repeat."
+      : "Recash - Reciclează. Încasează. Repetă.";
+
   return {
-    title: "Recash",
-    description:
-      locale === "en"
-        ? "Recash - Recycle. Cash in. Repeat."
-        : "Recash - Reciclează. Încasează. Repetă.",
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: "https://recash.ro",
+      siteName: "Recash",
+      locale: locale === "en" ? "en_US" : "ro_RO",
+      type: "website",
+      images: [
+        {
+          url: `/images/og-image.png`,
+          width: 1200,
+          height: 630,
+          alt: description,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [`/images/og-image.png`],
+    },
   };
 }
 
@@ -44,16 +70,12 @@ export default async function RootLayout({
 }) {
   const session = await auth();
   const store = await cookies();
-  const locale: Locale =
-    store.get(LOCALE_COOKIE)?.value === "en" ? "en" : "ro";
+  const locale: Locale = store.get(LOCALE_COOKIE)?.value === "en" ? "en" : "ro";
   const currency: Currency =
     store.get(CURRENCY_COOKIE)?.value === "EUR" ? "EUR" : "RON";
 
   return (
-    <html
-      lang={locale}
-      className={`${geistSans.variable} h-full antialiased`}
-    >
+    <html lang={locale} className={`${geistSans.variable} h-full antialiased`}>
       <head>
         <link
           rel="icon"
