@@ -254,6 +254,42 @@ function computeTimeLeft(
   return { minutes: totalMinutes, label };
 }
 
+function AuthorAvatar({
+  name,
+  image,
+}: {
+  name: string | null;
+  image: string | null;
+}) {
+  const [loaded, setLoaded] = useState(false);
+
+  if (!image) {
+    return (
+      <span className="text-xs font-bold text-lime-700">
+        {name?.[0] ?? "?"}
+      </span>
+    );
+  }
+
+  return (
+    <span className="relative block w-full h-full">
+      {!loaded && (
+        <span className="absolute inset-0 rounded-full bg-slate-100 animate-pulse" />
+      )}
+      <Image
+        src={image}
+        alt={name ?? ""}
+        width={36}
+        height={36}
+        onLoad={() => setLoaded(true)}
+        className={`object-cover w-full h-full transition-opacity duration-200 ${
+          loaded ? "opacity-100" : "opacity-0"
+        }`}
+      />
+    </span>
+  );
+}
+
 function PostCard({
   post,
   selected,
@@ -313,19 +349,7 @@ function PostCard({
           onClick={(e) => e.stopPropagation()}
           className="w-9 h-9 rounded-full bg-lime-50 border border-lime-200 flex items-center justify-center overflow-hidden shrink-0 transition-all"
         >
-          {post.author.image ? (
-            <Image
-              src={post.author.image}
-              alt={post.author.name ?? ""}
-              width={36}
-              height={36}
-              className="object-cover"
-            />
-          ) : (
-            <span className="text-xs font-bold text-lime-700">
-              {post.author.name?.[0] ?? "?"}
-            </span>
-          )}
+          <AuthorAvatar name={post.author.name} image={post.author.image} />
         </Link>
 
         <div className="flex-1 min-w-0">
@@ -493,19 +517,7 @@ function SelectedPostOverlay({
             href={`/user/${post.author.id}`}
             className="w-9 h-9 rounded-full bg-lime-50 border border-lime-200 flex items-center justify-center overflow-hidden shrink-0 transition-all"
           >
-            {post.author.image ? (
-              <Image
-                src={post.author.image}
-                alt={post.author.name ?? ""}
-                width={36}
-                height={36}
-                className="object-cover"
-              />
-            ) : (
-              <span className="text-xs font-bold text-lime-700">
-                {post.author.name?.[0] ?? "?"}
-              </span>
-            )}
+            <AuthorAvatar name={post.author.name} image={post.author.image} />
           </Link>
           <div className="flex-1 min-w-0">
             <Link

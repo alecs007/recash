@@ -3,22 +3,20 @@ import { publishPostStatus } from "./pubsub";
 
 const INTERVAL_MS = 2 * 60 * 1000;
 
-let _started = false;
+const g = globalThis as unknown as { __recashExpiryLoop?: boolean };
 
 export function startExpiryLoop(): void {
-  if (_started) return;
-  _started = true;
+  if (g.__recashExpiryLoop) return;
+  g.__recashExpiryLoop = true;
 
   async function sweep() {
     try {
       const now = new Date();
 
-      // Fetch first so we can notify each author over WS after the update —
-      // the header's active indicator listens for post:status_changed.
       const expiring = await prisma.post.findMany({
         where: {
           status: "OPEN",
-          expiresAt: { lt: now },
+          expiresAt: { not: null, lt: now },
         },
         select: { id: true, authorId: true },
       });

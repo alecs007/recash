@@ -446,9 +446,11 @@ function CodeDisplay({ postId }: { postId: string }) {
 
 function CodeEntry({
   postId,
+  onSuccess,
   onComplete,
 }: {
   postId: string;
+  onSuccess: () => void;
   onComplete: () => void;
 }) {
   const { t } = useI18n();
@@ -483,17 +485,7 @@ function CodeEntry({
         return;
       }
       setSuccess(true);
-      // The IN_PROGRESS section (and the inline success message with it) can
-      // unmount at any moment once the post:completed WS event lands, so the
-      // durable confirmation is a toast that outlives this component.
-      showToast(
-        "success",
-        t({ ro: "Cod confirmat!", en: "Code confirmed!" }),
-        t({
-          ro: "Colectarea a fost finalizată cu succes.",
-          en: "The collection was completed successfully.",
-        }),
-      );
+      onSuccess();
       setTimeout(() => onComplete(), 2800);
     } catch {
       setError(t({ ro: "Eroare de rețea.", en: "Network error." }));
@@ -1073,7 +1065,7 @@ function getCancelToastKey(status: PostStatus, isAuthor: boolean): string {
 }
 
 function DetailPanel({
-  post,
+  post: livePost,
   userId,
   isAuthor,
   isCollector,
@@ -1098,6 +1090,12 @@ function DetailPanel({
   const [actionError, setActionError] = useState("");
   const [justReviewed, setJustReviewed] = useState(false);
   const setActiveCounts = useSetActiveCounts();
+
+  const [codeConfirmHold, setCodeConfirmHold] = useState(false);
+  const post: Post =
+    codeConfirmHold && livePost.status !== "IN_PROGRESS"
+      ? { ...livePost, status: "IN_PROGRESS" }
+      : livePost;
 
   const [chatOpen, setChatOpen] = useState(false);
 
@@ -1670,7 +1668,9 @@ function DetailPanel({
                         >
                           <CodeEntry
                             postId={post.id}
+                            onSuccess={() => setCodeConfirmHold(true)}
                             onComplete={() => {
+                              setCodeConfirmHold(false);
                               setActiveCounts({
                                 activeCollections: 0,
                                 activeCollectionId: null,
