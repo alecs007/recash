@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { redis } from "@/lib/redis";
 import { rateLimit, RL } from "@/lib/rate-limit";
 import { isValidObjectId } from "@/lib/validate";
+import { releaseTimedOutCollection } from "@/lib/collection-timeout";
 
 export async function GET(
   _req: Request,
@@ -31,6 +32,7 @@ export async function GET(
         authorId: true,
         collectorId: true,
         expiresAt: true,
+        listingExpiresAt: true,
       },
     });
 
@@ -53,7 +55,12 @@ export async function GET(
     }
 
     if (post.expiresAt && post.expiresAt < new Date()) {
-      await prisma.post.update({ where: { id }, data: { status: "EXPIRED" } });
+      await releaseTimedOutCollection({
+        id,
+        authorId: post.authorId,
+        collectorId: post.collectorId,
+        listingExpiresAt: post.listingExpiresAt,
+      });
       return NextResponse.json(
         { error: "Fereastra de colectare a expirat" },
         { status: 410 },

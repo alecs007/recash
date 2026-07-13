@@ -164,6 +164,10 @@ model Post {
   claimedAt   DateTime?
   completedAt DateTime?
   expiresAt   DateTime?
+  // Original listing expiry, preserved while `expiresAt` holds the 60-minute
+  // collection deadline (set at approval). Restored when the collection is
+  // released (timeout or collector cancel).
+  listingExpiresAt DateTime?
   availabilitySchedule Json?
 
   author      User       @relation("PostAuthor", fields: [authorId], references: [id], onDelete: Cascade)

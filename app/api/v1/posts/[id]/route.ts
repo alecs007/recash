@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { maybeExpirePost } from "@/lib/expiry";
+import { releaseTimedOutCollection } from "@/lib/collection-timeout";
 import { rateLimit, RL, getClientIp } from "@/lib/rate-limit";
 import { isValidObjectId } from "@/lib/validate";
 
@@ -93,6 +94,27 @@ export async function GET(
           author: { ...updated.author, phone: null },
           collector: null,
         });
+      }
+    }
+
+    if (
+      post.status === "IN_PROGRESS" &&
+      post.expiresAt &&
+      post.expiresAt < new Date()
+    ) {
+      const released = await releaseTimedOutCollection({
+        id: post.id,
+        authorId: post.authorId,
+        collectorId: post.collectorId,
+        listingExpiresAt: post.listingExpiresAt,
+      });
+      if (released) {
+        post.status = released;
+        post.expiresAt = post.listingExpiresAt;
+        post.listingExpiresAt = null;
+        post.collectorId = null;
+        post.collector = null;
+        post.claimedAt = null;
       }
     }
 

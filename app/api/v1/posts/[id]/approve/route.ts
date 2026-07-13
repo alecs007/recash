@@ -106,7 +106,11 @@ export async function POST(
       try {
         await prisma.post.update({
           where: { id, status: "CLAIMED", collectorId },
-          data: { status: "IN_PROGRESS", expiresAt: collectionDeadline },
+          data: {
+            status: "IN_PROGRESS",
+            expiresAt: collectionDeadline,
+            listingExpiresAt: post.expiresAt,
+          },
         });
       } catch (e) {
         if ((e as { code?: string }).code === "P2025") {

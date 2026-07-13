@@ -167,7 +167,8 @@ export async function POST(
                   status: "OPEN",
                   collectorId: null,
                   claimedAt: null,
-                  expiresAt: post.expiresAt,
+                  expiresAt: post.listingExpiresAt ?? post.expiresAt,
+                  listingExpiresAt: null,
                 }
               : { status: "CANCELLED" },
           }),

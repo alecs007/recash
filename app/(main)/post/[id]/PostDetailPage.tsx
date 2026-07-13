@@ -325,12 +325,29 @@ function PostMap({
   );
 }
 
-function Countdown({ deadline }: { deadline: string }) {
+function Countdown({
+  deadline,
+  onEnd,
+}: {
+  deadline: string;
+  onEnd?: () => void;
+}) {
   const { t } = useI18n();
   const [ms, setMs] = useState(0);
+  const endedRef = useRef(false);
+  const onEndRef = useRef(onEnd);
   useEffect(() => {
-    const tick = () =>
-      setMs(Math.max(0, new Date(deadline).getTime() - Date.now()));
+    onEndRef.current = onEnd;
+  }, [onEnd]);
+  useEffect(() => {
+    const tick = () => {
+      const left = Math.max(0, new Date(deadline).getTime() - Date.now());
+      setMs(left);
+      if (left === 0 && !endedRef.current) {
+        endedRef.current = true;
+        onEndRef.current?.();
+      }
+    };
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
@@ -1613,7 +1630,12 @@ function DetailPanel({
                 className="mb-7 space-y-5"
               >
                 <div className="bg-slate-50 border border-[#123424]/10 rounded-2xl p-5 space-y-5">
-                  {post.expiresAt && <Countdown deadline={post.expiresAt} />}
+                  {post.expiresAt && (
+                    <Countdown
+                      deadline={post.expiresAt}
+                      onEnd={() => setTimeout(() => mutate(), 1500)}
+                    />
+                  )}
 
                   <div className="border-t border-[#123424]/10 pt-4">
                     <p className="text-sm font-medium text-[#123424] mb-3">

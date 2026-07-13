@@ -9,6 +9,7 @@ import { invalidate, CacheKey } from "@/lib/cache";
 import { checkPostBadges, checkTransactionBadges } from "@/lib/badges";
 import { publishPostCompleted, publishPostStatus } from "@/lib/pubsub";
 import { computeEarnings } from "@/lib/earnings";
+import { releaseTimedOutCollection } from "@/lib/collection-timeout";
 
 export async function POST(
   req: Request,
@@ -76,8 +77,12 @@ export async function POST(
     }
 
     if (post.expiresAt && post.expiresAt < new Date()) {
-      await prisma.post.update({ where: { id }, data: { status: "EXPIRED" } });
-      await redis.del(`code:${id}`);
+      await releaseTimedOutCollection({
+        id,
+        authorId: post.authorId,
+        collectorId: post.collectorId,
+        listingExpiresAt: post.listingExpiresAt,
+      });
       return NextResponse.json(
         { error: "Fereastra de colectare a expirat" },
         { status: 410 },

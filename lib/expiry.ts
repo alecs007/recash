@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import { publishPostStatus } from "./pubsub";
+import { releaseTimedOutCollection } from "./collection-timeout";
 
 const INTERVAL_MS = 2 * 60 * 1000;
 
@@ -10,6 +11,36 @@ export function startExpiryLoop(): void {
   g.__recashExpiryLoop = true;
 
   async function sweep() {
+    // Stage 2: IN_PROGRESS collections whose 60-minute window lapsed are
+    // released (no-fault) — back to OPEN, or EXPIRED if the listing's own
+    // expiry has also passed.
+    try {
+      const timedOut = await prisma.post.findMany({
+        where: {
+          status: "IN_PROGRESS",
+          expiresAt: { not: null, lt: new Date() },
+        },
+        select: {
+          id: true,
+          authorId: true,
+          collectorId: true,
+          listingExpiresAt: true,
+        },
+      });
+      for (const p of timedOut) {
+        await releaseTimedOutCollection(p).catch((err) =>
+          console.error("[expiry] release error:", err),
+        );
+      }
+      if (timedOut.length > 0) {
+        console.log(
+          `[expiry] released ${timedOut.length} timed-out collection(s)`,
+        );
+      }
+    } catch (err) {
+      console.error("[expiry] timeout sweep error:", err);
+    }
+
     try {
       const now = new Date();
 
