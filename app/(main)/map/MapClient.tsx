@@ -108,86 +108,64 @@ type LeafletLib = {
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 let _leafletPromise: Promise<void> | null = null;
-let _clusterReady = false; // ← new
+
+function loadScript(src: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => {
+      script.remove();
+      reject(new Error(`[map] failed to load ${src}`));
+    };
+    document.head.appendChild(script);
+  });
+}
 
 function ensureLeaflet(): Promise<void> {
   if (typeof window === "undefined") return Promise.resolve();
 
   const w = window as unknown as { L?: LeafletLib };
 
-  if (w.L && _clusterReady) return Promise.resolve();
+  if (w.L?.markerClusterGroup) return Promise.resolve();
   if (_leafletPromise) return _leafletPromise;
 
-  _leafletPromise = new Promise<void>((resolve) => {
-    if (!document.querySelector('link[href*="leaflet.css"]')) {
-      const css = document.createElement("link");
-      css.rel = "stylesheet";
-      css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-      document.head.appendChild(css);
-    }
+  if (!document.querySelector('link[href*="leaflet.css"]')) {
+    const css = document.createElement("link");
+    css.rel = "stylesheet";
+    css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+    document.head.appendChild(css);
+  }
 
-    if (!document.querySelector('link[href*="MarkerCluster"]')) {
-      const css2 = document.createElement("link");
-      css2.rel = "stylesheet";
-      css2.href =
-        "https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css";
-      const css3 = document.createElement("link");
-      css3.rel = "stylesheet";
-      css3.href =
-        "https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css";
-      document.head.appendChild(css2);
-      document.head.appendChild(css3);
-    }
+  if (!document.querySelector('link[href*="MarkerCluster"]')) {
+    const css2 = document.createElement("link");
+    css2.rel = "stylesheet";
+    css2.href =
+      "https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css";
+    const css3 = document.createElement("link");
+    css3.rel = "stylesheet";
+    css3.href =
+      "https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css";
+    document.head.appendChild(css2);
+    document.head.appendChild(css3);
+  }
 
-    const loadCluster = () => {
-      if (_clusterReady) {
-        resolve();
-        return;
-      }
-      const existing = document.querySelector(
-        'script[src*="leaflet.markercluster"]',
+  _leafletPromise = (async () => {
+    if (!w.L) {
+      await loadScript("https://unpkg.com/leaflet@1.9.4/dist/leaflet.js");
+    }
+    if (!w.L?.markerClusterGroup) {
+      await loadScript(
+        "https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js",
       );
-      if (existing) {
-        const poll = setInterval(() => {
-          if (_clusterReady) {
-            clearInterval(poll);
-            resolve();
-          }
-        }, 50);
-        return;
-      }
-      const clusterScript = document.createElement("script");
-      clusterScript.src =
-        "https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js";
-      clusterScript.async = true;
-      clusterScript.onload = () => {
-        _clusterReady = true;
-        resolve();
-      };
-      clusterScript.onerror = () => {
-        console.warn(
-          "[map] MarkerCluster failed to load, falling back to ungrouped markers",
-        );
-        resolve();
-      };
-      document.head.appendChild(clusterScript);
-    };
-
-    if (w.L) {
-      loadCluster();
-      return;
     }
-
-    const script = document.createElement("script");
-    script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-    script.async = true;
-    script.onload = loadCluster;
-    script.onerror = (err) => {
-      _leafletPromise = null;
-      console.error("[map] Leaflet failed to load", err);
-      resolve();
-    };
-    document.head.appendChild(script);
+    if (!w.L?.markerClusterGroup) {
+      throw new Error("[map] MarkerCluster plugin did not register");
+    }
+  })().catch((err) => {
+    _leafletPromise = null;
+    throw err;
   });
 
   return _leafletPromise;
@@ -198,13 +176,26 @@ function useLeaflet() {
 
   useEffect(() => {
     let cancelled = false;
-    ensureLeaflet()
-      .then(() => {
-        if (!cancelled) setReady(true);
-      })
-      .catch(console.error);
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const attempt = () => {
+      ensureLeaflet()
+        .then(() => {
+          if (!cancelled) setReady(true);
+        })
+        .catch((err) => {
+          console.error(
+            "[map] Leaflet/MarkerCluster load failed, retrying…",
+            err,
+          );
+          if (!cancelled) retryTimer = setTimeout(attempt, 2000);
+        });
+    };
+    attempt();
+
     return () => {
       cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
     };
   }, []);
 
@@ -302,7 +293,8 @@ function PostCard({
         en: "Sign in and collect!",
       });
     if (isOwnPost) return t({ ro: "Anunțul tău", en: "Your listing" });
-    if (!canClaim) return t({ ro: "Colectare activă", en: "Active collection" });
+    if (!canClaim)
+      return t({ ro: "Colectare activă", en: "Active collection" });
     return t({ ro: "Colectează", en: "Collect" });
   };
 
@@ -478,7 +470,8 @@ function SelectedPostOverlay({
         en: "Sign in and collect!",
       });
     if (isOwnPost) return t({ ro: "Anunțul tău", en: "Your listing" });
-    if (!canClaim) return t({ ro: "Colectare activă", en: "Active collection" });
+    if (!canClaim)
+      return t({ ro: "Colectare activă", en: "Active collection" });
     return t({ ro: "Colectează", en: "Collect" });
   };
 
@@ -538,8 +531,8 @@ function SelectedPostOverlay({
               {post.bottleCount}
             </p>
             <p className="text-[10px] text-slate-400 font-medium">
-            {t({ ro: "sticle", en: "bottles" })}
-          </p>
+              {t({ ro: "sticle", en: "bottles" })}
+            </p>
           </div>
         </div>
 
@@ -565,9 +558,9 @@ function SelectedPostOverlay({
                 {post.collectorSharePercent}%
               </span>
               <span className="text-slate-400">
-              {" "}
-              {t({ ro: "pentru tine", en: "for you" })}
-            </span>
+                {" "}
+                {t({ ro: "pentru tine", en: "for you" })}
+              </span>
             </div>
             <div className="flex items-center gap-1.5">
               {urgent && timeLeft && (
@@ -655,7 +648,10 @@ function PostMap({
   useEffect(() => {
     if (!leafletReady || !containerRef.current || mapRef.current) return;
 
-    const L = (window as unknown as { L: LeafletLib }).L;
+    const L = (window as unknown as { L?: LeafletLib }).L;
+    // Clustering is mandatory: never build the map without the plugin.
+    if (!L?.markerClusterGroup) return;
+
     const map = L.map(containerRef.current, {
       center: [45.9432, 24.9668],
       zoom: 7,
@@ -680,35 +676,14 @@ function PostMap({
       );
     });
 
-    let clusterGroup: LeafletLayer;
-
-    if (L.markerClusterGroup) {
-      clusterGroup = L.markerClusterGroup({
-        chunkedLoading: true,
-        chunkInterval: 100,
-        maxClusterRadius: 60,
-        showCoverageOnHover: false,
-        zoomToBoundsOnClick: true,
-        spiderfyOnMaxZoom: true,
-      });
-    } else {
-      clusterGroup = {
-        addTo: (m: LeafletMap) => {
-          void m;
-          return clusterGroup;
-        },
-        addLayer: (marker: LeafletMarker) => {
-          marker.addTo(map);
-        },
-        removeLayer: (marker: LeafletMarker) => {
-          marker.remove();
-        },
-        clearLayers: () => {
-          markersRef.current.forEach((m) => m.remove());
-        },
-        hasLayer: () => false,
-      };
-    }
+    const clusterGroup = L.markerClusterGroup({
+      chunkedLoading: true,
+      chunkInterval: 100,
+      maxClusterRadius: 60,
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+      spiderfyOnMaxZoom: true,
+    });
 
     clusterGroup.addTo(map);
     clusterGroupRef.current = clusterGroup;
