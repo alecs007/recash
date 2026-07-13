@@ -151,10 +151,13 @@ export interface ChatMessagePayload {
 }
 
 export function publishChatMessage(
-  postId: string,
+  participantIds: (string | null)[],
   payload: ChatMessagePayload,
 ): void {
-  publishToPost(postId, { type: "chat:message" as WsEventType, payload });
+  const event = { type: "chat:message" as WsEventType, payload };
+  for (const uid of new Set(participantIds)) {
+    if (uid) publishToUser(uid, event);
+  }
 }
 
 export interface ChatTypingPayload {
@@ -164,8 +167,11 @@ export interface ChatTypingPayload {
 }
 
 export function publishChatTyping(
-  postId: string,
+  participantIds: (string | null)[],
   payload: ChatTypingPayload,
 ): void {
-  publishToPost(postId, { type: "chat:typing" as WsEventType, payload });
+  const event = { type: "chat:typing" as WsEventType, payload };
+  for (const uid of new Set(participantIds)) {
+    if (uid) publishToUser(uid, event);
+  }
 }

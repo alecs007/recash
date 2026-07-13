@@ -16,11 +16,21 @@ export async function GET() {
   if (!rl.ok) return rl.response;
 
   try {
+    const now = new Date();
     const [post, collection] = await Promise.all([
       prisma.post.findFirst({
+        // An OPEN post whose expiresAt has passed but which the expiry sweep
+        // hasn't updated yet is NOT active — otherwise the header indicator
+        // lingers for up to a sweep interval after expiry.
         where: {
           authorId: session.user.id,
-          status: { in: ACTIVE_STATUSES },
+          OR: [
+            { status: { in: ["CLAIMED", "IN_PROGRESS"] } },
+            {
+              status: "OPEN",
+              OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+            },
+          ],
         },
         select: { id: true },
       }),

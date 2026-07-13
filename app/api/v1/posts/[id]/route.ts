@@ -84,6 +84,7 @@ export async function GET(
         post.id,
         post.status,
         post.expiresAt,
+        post.authorId,
       );
       if (didExpire) {
         const updated = { ...post, status: "EXPIRED" as const };

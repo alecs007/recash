@@ -46,7 +46,7 @@ export async function POST(
     select: { name: true },
   });
 
-  publishChatTyping(postId, {
+  publishChatTyping([post.authorId, post.collectorId], {
     postId,
     senderId: session.user.id,
     senderName: user?.name ?? null,

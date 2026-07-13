@@ -49,9 +49,17 @@ export async function GET(
   if (!post)
     return NextResponse.json({ error: "Acces interzis" }, { status: 403 });
 
+  // No collector paired (e.g. reopened after a collector cancelled) → there is
+  // no thread to show. A previous pairing's messages stay hidden.
+  if (!post.collectorId) {
+    return NextResponse.json({ messages: [] });
+  }
+
   try {
     const messages = await prisma.chatMessage.findMany({
-      where: { postId },
+      // Scoped to the current (post, collector) pairing so a replacement
+      // collector never sees the previous collector's conversation.
+      where: { postId, collectorId: post.collectorId },
       orderBy: { createdAt: "asc" },
       take: MAX_MESSAGES,
       select: {
@@ -126,7 +134,14 @@ export async function POST(
   try {
     const [msg, sender] = await Promise.all([
       prisma.chatMessage.create({
-        data: { postId, senderId: session.user.id, text },
+        // Stamp the message with the current pairing's collector so the
+        // thread stays isolated if the post is later re-claimed.
+        data: {
+          postId,
+          senderId: session.user.id,
+          text,
+          collectorId: post.collectorId,
+        },
       }),
       prisma.user.findUnique({
         where: { id: session.user.id },
@@ -144,7 +159,7 @@ export async function POST(
       createdAt: msg.createdAt.toISOString(),
     };
 
-    publishChatMessage(postId, payload);
+    publishChatMessage([post.authorId, post.collectorId], payload);
 
     return NextResponse.json({ ok: true, message: payload }, { status: 201 });
   } catch (err) {

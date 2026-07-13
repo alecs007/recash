@@ -61,8 +61,8 @@ export function usePostChat(
   const [unread, setUnread] = useState(0);
   const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
+  const [prevPostId, setPrevPostId] = useState(postId);
 
-  const fetchedForPost = useRef<string | null>(null);
   const partnerTypingTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   );
@@ -82,13 +82,21 @@ export function usePostChat(
     }
   }
 
+  if (postId !== prevPostId) {
+    setPrevPostId(postId);
+    setMessages([]);
+    setLoading(true);
+    setUnread(0);
+    setIsPartnerTyping(false);
+  }
+
   useEffect(() => {
     if (!isParticipant) return;
-    if (fetchedForPost.current === postId) return;
-    fetchedForPost.current = postId;
 
-    setLoading(true);
-    setMessages([]);
+    // Guards against a slow response for a previous post landing in this
+    // post's chat after the postId changed (stale-response race). Also makes
+    // the effect re-runnable under StrictMode's mount/cleanup/mount cycle.
+    let stale = false;
 
     fetch(`/api/v1/posts/${postId}/chat`)
       .then((r) => {
@@ -96,7 +104,8 @@ export function usePostChat(
         return r.json() as Promise<{ messages?: ChatMessage[] }>;
       })
       .then((d) => {
-        const msgs = d.messages ?? [];
+        if (stale) return;
+        const msgs = (d.messages ?? []).filter((m) => m.postId === postId);
         setMessages(msgs);
 
         if (isOpenRef.current) {
@@ -113,7 +122,13 @@ export function usePostChat(
       .catch(() => {
         // Non-fatal — messages will still arrive via WS
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!stale) setLoading(false);
+      });
+
+    return () => {
+      stale = true;
+    };
   }, [postId, isParticipant, userId]);
 
   const handleMsg = useCallback(

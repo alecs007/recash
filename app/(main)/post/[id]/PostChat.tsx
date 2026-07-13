@@ -247,6 +247,7 @@ interface PostChatProps {
   partnerName: string | null;
   partnerImage: string | null;
   partnerRole: string;
+  readOnly?: boolean;
 }
 
 export function PostChat({
@@ -258,6 +259,7 @@ export function PostChat({
   partnerName,
   partnerImage,
   partnerRole,
+  readOnly = false,
 }: PostChatProps) {
   const { t } = useI18n();
   const [mounted, setMounted] = useState(false);
@@ -454,11 +456,11 @@ export function PostChat({
 
   // Focus on open
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !readOnly) {
       const t = setTimeout(() => textareaRef.current?.focus(), 300);
       return () => clearTimeout(t);
     }
-  }, [isOpen]);
+  }, [isOpen, readOnly]);
 
   // ── Send ──────────────────────────────────────────────────────────────────
 
@@ -657,7 +659,13 @@ export function PostChat({
 
                     <div>
                       <p className="text-xs text-slate-400 leading-relaxed max-w-[200px]">
-                        {t({
+                        {readOnly ? (
+                          t({
+                            ro: "Nu există mesaje în această conversație.",
+                            en: "There are no messages in this conversation.",
+                          })
+                        ) : (
+                        t({
                           ro: (
                             <>
                               Conversează cu{" "}
@@ -676,7 +684,8 @@ export function PostChat({
                               directly on Recash.
                             </>
                           ),
-                        })}
+                        })
+                        )}
                       </p>
                     </div>
                   </motion.div>
@@ -740,6 +749,16 @@ export function PostChat({
             </AnimatePresence>
 
             {/* ── Input bar ── */}
+            {readOnly ? (
+              <div className="shrink-0 border-t border-slate-100 px-5 py-4 bg-slate-50">
+                <p className="text-xs text-slate-400 text-center leading-relaxed">
+                  {t({
+                    ro: "Colectarea s-a încheiat. Conversația este disponibilă doar pentru citire.",
+                    en: "This collection has ended. The conversation is read-only.",
+                  })}
+                </p>
+              </div>
+            ) : (
             <div className="shrink-0 border-t border-slate-100 px-5 py-4 bg-white">
               <div className="flex items-center gap-2">
                 <div className="flex-1 relative">
@@ -816,6 +835,7 @@ export function PostChat({
                 </motion.button>
               </div>
             </div>
+            )}
           </motion.div>
         </>
       )}
@@ -833,12 +853,14 @@ export function ChatTriggerButton({
   partnerName,
   partnerImage,
   onClick,
+  readOnly = false,
 }: {
   isOpen: boolean;
   unread: number;
   partnerName: string | null;
   partnerImage?: string | null;
   onClick: () => void;
+  readOnly?: boolean;
 }) {
   const { t } = useI18n();
   const [mounted, setMounted] = useState(false);
@@ -894,7 +916,9 @@ export function ChatTriggerButton({
 
             <div className="flex flex-col items-start leading-none gap-[2px]">
               <span className="text-[10px] text-white/70 font-semibold">
-                {t({ ro: "Ia legătura cu", en: "Get in touch with" })}
+                {readOnly
+                  ? t({ ro: "Vezi conversația cu", en: "View conversation with" })
+                  : t({ ro: "Ia legătura cu", en: "Get in touch with" })}
               </span>
               <span className="text-sm font-bold whitespace-nowrap">
                 {partnerName ?? t({ ro: "Partener", en: "Partner" })}

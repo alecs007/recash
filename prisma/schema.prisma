@@ -277,15 +277,19 @@ model Notification {
 }
 
 model ChatMessage {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  postId    String   @db.ObjectId
-  senderId  String   @db.ObjectId
-  text      String
-  createdAt DateTime @default(now())
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  postId   String @db.ObjectId
+  senderId String @db.ObjectId
+  // The collector of the collection this message belongs to. Chat threads are
+  // scoped per (post, collector) pairing: if a collector cancels and another
+  // one claims, the new pairing must never see the previous conversation.
+  collectorId String?  @db.ObjectId
+  text        String
+  createdAt   DateTime @default(now())
 
   sender User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
 
-  @@index([postId, createdAt(sort: Asc)])
+  @@index([postId, collectorId, createdAt(sort: Asc)])
 }
 
 model Radar {

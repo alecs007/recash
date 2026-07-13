@@ -483,6 +483,17 @@ function CodeEntry({
         return;
       }
       setSuccess(true);
+      // The IN_PROGRESS section (and the inline success message with it) can
+      // unmount at any moment once the post:completed WS event lands, so the
+      // durable confirmation is a toast that outlives this component.
+      showToast(
+        "success",
+        t({ ro: "Cod confirmat!", en: "Code confirmed!" }),
+        t({
+          ro: "Colectarea a fost finalizată cu succes.",
+          en: "The collection was completed successfully.",
+        }),
+      );
       setTimeout(() => onComplete(), 2800);
     } catch {
       setError(t({ ro: "Eroare de rețea.", en: "Network error." }));
@@ -1090,10 +1101,16 @@ function DetailPanel({
 
   const [chatOpen, setChatOpen] = useState(false);
 
+  const chatVisible =
+    (isAuthor || isCollector) &&
+    !!post.collector &&
+    ["IN_PROGRESS", "COMPLETED", "CANCELLED", "EXPIRED"].includes(post.status);
+  const chatReadOnly = post.status !== "IN_PROGRESS";
+
   const { unread: chatUnread } = usePostChat(
     post.id,
     userId,
-    (isAuthor || isCollector) && post.status === "IN_PROGRESS",
+    chatVisible,
     chatOpen,
   );
 
@@ -2451,7 +2468,7 @@ function DetailPanel({
         </AnimatePresence>
       </div>
 
-      {post.status === "IN_PROGRESS" && (isAuthor || isCollector) && (
+      {chatVisible && (
         <>
           <ChatTriggerButton
             isOpen={chatOpen}
@@ -2463,6 +2480,7 @@ function DetailPanel({
               isAuthor ? (post.collector?.image ?? null) : post.author.image
             }
             onClick={() => setChatOpen(true)}
+            readOnly={chatReadOnly}
           />
           <PostChat
             postId={post.id}
@@ -2481,6 +2499,7 @@ function DetailPanel({
                 ? t({ ro: "Colectorul sticlelor", en: "Bottle collector" })
                 : t({ ro: "Autorul anunțului", en: "Listing author" })
             }
+            readOnly={chatReadOnly}
           />
         </>
       )}
