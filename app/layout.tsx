@@ -47,7 +47,7 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website",
       images: [
         {
-          url: `/images/og-image.png`,
+          url: `https://recash.ro/images/og-image.png`,
           width: 1200,
           height: 630,
           alt: description,
@@ -58,7 +58,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: "summary_large_image",
       title,
       description,
-      images: [`/images/og-image.png`],
+      images: [`https://recash.ro/images/og-image.png`],
     },
   };
 }
