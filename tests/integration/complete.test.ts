@@ -12,6 +12,7 @@ const h = vi.hoisted(() => ({
   },
   redis: { get: vi.fn(), del: vi.fn() },
   notifyPostCompleted: vi.fn(),
+  createNotification: vi.fn(),
   invalidate: vi.fn(),
   checkPostBadges: vi.fn(),
   checkTransactionBadges: vi.fn(),
@@ -28,6 +29,8 @@ vi.mock("@/lib/rate-limit", () => ({
 }));
 vi.mock("@/lib/notifications", () => ({
   notifyPostCompleted: h.notifyPostCompleted,
+  // Used by releaseTimedOutCollection when the window has expired.
+  createNotification: h.createNotification,
 }));
 vi.mock("@/lib/cache", () => ({
   invalidate: h.invalidate,
@@ -80,16 +83,19 @@ beforeEach(() => {
   h.redis.get.mockResolvedValue("AB12");
   h.redis.del.mockResolvedValue(1);
   h.notifyPostCompleted.mockResolvedValue(undefined);
+  h.createNotification.mockResolvedValue(undefined);
+  h.prisma.post.update.mockResolvedValue({});
   h.invalidate.mockResolvedValue(undefined);
   h.checkPostBadges.mockResolvedValue(undefined);
   h.checkTransactionBadges.mockResolvedValue(undefined);
   // $transaction executes its callback against a tx that mirrors prisma.
-  h.prisma.$transaction.mockImplementation(async (cb: (tx: unknown) => unknown) =>
-    cb({
-      post: { update: vi.fn().mockResolvedValue({}) },
-      transaction: { create: h.prisma.transaction.create },
-      user: { update: h.prisma.user.update },
-    }),
+  h.prisma.$transaction.mockImplementation(
+    async (cb: (tx: unknown) => unknown) =>
+      cb({
+        post: { update: vi.fn().mockResolvedValue({}) },
+        transaction: { create: h.prisma.transaction.create },
+        user: { update: h.prisma.user.update },
+      }),
   );
   h.prisma.transaction.create.mockResolvedValue({});
   h.prisma.user.update.mockResolvedValue({});
@@ -115,7 +121,9 @@ describe("POST /posts/[id]/complete", () => {
   });
 
   it("409s when the post is not in progress", async () => {
-    h.prisma.post.findUnique.mockResolvedValue(inProgressPost({ status: "OPEN" }));
+    h.prisma.post.findUnique.mockResolvedValue(
+      inProgressPost({ status: "OPEN" }),
+    );
     const res = await POST(makeReq({ code: "AB12" }), { params });
     expect(res.status).toBe(409);
   });
@@ -161,11 +169,25 @@ describe("POST /posts/[id]/complete", () => {
     expect(h.redis.del).toHaveBeenCalledWith(`code:${POST_ID}`);
   });
 
-  it("410s and clears the code when the collection window expired", async () => {
+  it("410s and releases the collection when the window expired", async () => {
     h.prisma.post.findUnique.mockResolvedValue(
-      inProgressPost({ expiresAt: new Date(Date.now() - 1000) }),
+      inProgressPost({
+        expiresAt: new Date(Date.now() - 1000),
+        listingExpiresAt: null,
+      }),
     );
     const res = await POST(makeReq({ code: "AB12" }), { params });
     expect(res.status).toBe(410);
+
+    expect(h.prisma.post.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: POST_ID, status: "IN_PROGRESS" }),
+        data: expect.objectContaining({ status: "OPEN", collectorId: null }),
+      }),
+    );
+    // The one-time code is invalidated.
+    expect(h.redis.del).toHaveBeenCalledWith(`code:${POST_ID}`);
+    // Both participants are notified.
+    expect(h.createNotification).toHaveBeenCalledTimes(2);
   });
 });
