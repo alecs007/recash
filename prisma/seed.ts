@@ -287,6 +287,126 @@ const locations = [
     lat: 47.7911,
     lng: 22.8811,
   },
+  {
+    name: "Cornișa",
+    address: "Strada Mioriței, Bacău",
+    lat: 46.5622,
+    lng: 26.9133,
+  },
+  {
+    name: "Micro 14",
+    address: "Bulevardul Unirii, Buzău",
+    lat: 45.1489,
+    lng: 26.8233,
+  },
+  {
+    name: "Tudor Vladimirescu",
+    address: "Bulevardul Mihai Eminescu, Botoșani",
+    lat: 47.7411,
+    lng: 26.6722,
+  },
+  {
+    name: "Tudor",
+    address: "Bulevardul 1 Decembrie 1918, Târgu Mureș",
+    lat: 46.5333,
+    lng: 24.5766,
+  },
+  {
+    name: "Săsar",
+    address: "Bulevardul Independenței, Baia Mare",
+    lat: 47.6622,
+    lng: 23.5744,
+  },
+  {
+    name: "Ostroveni",
+    address: "Bulevardul Tineretului, Râmnicu Vâlcea",
+    lat: 45.0911,
+    lng: 24.3722,
+  },
+  {
+    name: "Dărmănești",
+    address: "Bulevardul Decebal, Piatra Neamț",
+    lat: 46.9411,
+    lng: 26.3622,
+  },
+  {
+    name: "Crihala",
+    address: "Bulevardul Mihai Viteazul, Drobeta-Turnu Severin",
+    lat: 44.6311,
+    lng: 22.6566,
+  },
+  {
+    name: "Sud Focșani",
+    address: "Bulevardul București, Focșani",
+    lat: 45.6911,
+    lng: 27.1866,
+  },
+  {
+    name: "Micro 6",
+    address: "Bulevardul Unirii, Târgoviște",
+    lat: 44.9244,
+    lng: 25.4566,
+  },
+  {
+    name: "Cetate",
+    address: "Bulevardul Transilvaniei, Alba Iulia",
+    lat: 46.0733,
+    lng: 23.5766,
+  },
+  {
+    name: "Dorobanți",
+    address: "Bulevardul Decebal, Deva",
+    lat: 45.8766,
+    lng: 22.9133,
+  },
+  {
+    name: "Crișan",
+    address: "Strada Crișan, Slatina",
+    lat: 44.4311,
+    lng: 24.3622,
+  },
+  {
+    name: "Dumbrava",
+    address: "Bulevardul Mihai Viteazul, Zalău",
+    lat: 47.1866,
+    lng: 23.0566,
+  },
+  {
+    name: "Govândari",
+    address: "Bulevardul Republicii, Reșița",
+    lat: 45.2966,
+    lng: 21.8988,
+  },
+  {
+    name: "Unirea",
+    address: "Bulevardul Independenței, Bistrița",
+    lat: 47.1366,
+    lng: 24.4922,
+  },
+  {
+    name: "E3",
+    address: "Strada Babadag, Tulcea",
+    lat: 45.1766,
+    lng: 28.7911,
+  },
+  {
+    name: "Dallas",
+    address: "Bulevardul Republicii, Alexandria",
+    lat: 43.9744,
+    lng: 25.3311,
+  },
+  {
+    name: "Valea Trandafirilor",
+    address: "Strada Călugăreni, Giurgiu",
+    lat: 43.9033,
+    lng: 25.9699,
+  },
+  {
+    name: "Big",
+    address: "Bulevardul Traian, Hunedoara",
+    lat: 45.7566,
+    lng: 22.9033,
+  },
 ];
 
 const descriptions = [
@@ -363,22 +483,19 @@ const negativeReviews = [
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log("🧹 Resetting database...");
-  await prisma.chatMessage.deleteMany();
-  await prisma.notification.deleteMany();
-  await prisma.radar.deleteMany();
-  await prisma.transaction.deleteMany();
-  await prisma.badge.deleteMany();
-  await prisma.post.deleteMany();
-  await prisma.session.deleteMany();
-  await prisma.account.deleteMany();
-  await prisma.user.deleteMany();
+  console.log("ℹ️  Additive seed — existing data is kept.");
 
   // ── 1. Create users ────────────────────────────────────────────────────────
   const USER_COUNT = 80;
   console.log(`👤 Creating ${USER_COUNT} users...`);
 
-  const usedEmails = new Set<string>();
+  // Avoid unique-email collisions with users already in the database
+  const existingUsers = await prisma.user.findMany({
+    select: { email: true },
+  });
+  const usedEmails = new Set<string>(
+    existingUsers.map((u) => u.email?.toLowerCase()).filter(Boolean) as string[],
+  );
   const userIds: string[] = [];
 
   for (let i = 0; i < USER_COUNT; i++) {
@@ -706,21 +823,21 @@ async function main() {
   console.log("✅ Badges awarded.");
 
   // ── 6. Create active (OPEN) posts — main map feed ─────────────────────────
-  console.log("🗺️  Creating active OPEN posts...");
+  const OPEN_POST_COUNT = 121;
+  console.log(`🗺️  Creating ${OPEN_POST_COUNT} active OPEN posts...`);
 
-  // Every user gets 0-2 open posts (realistically capped at 1 active per user
-  // by the app logic, so we just give each user at most 1 open post)
-  let openCount = 0;
-  for (const posterId of userIds) {
-    // ~70% of users have an active open post
-    if (Math.random() > 0.7) continue;
+  // Exactly 121 open posts, spread across all cities and users,
+  // with no expiry (expiresAt: null = unlimited time).
+  for (let i = 0; i < OPEN_POST_COUNT; i++) {
+    const posterId = userIds[i % userIds.length];
 
     const bottleCount = pick([5, 10, 15, 20, 25, 30, 40, 50, 60, 80, 100]);
     const collectorSharePercent = pick([25, 30, 40, 50, 60, 75, 100]);
     const estimatedValue = bottleCount * 0.5;
-    const location = pick(locations);
+    // Cycle through locations so every city gets posts, then randomize extras
+    const location =
+      i < locations.length ? locations[i] : pick(locations);
     const createdAt = new Date(Date.now() - rand(0, 48) * 3600_000);
-    const expiresAt = new Date(createdAt.getTime() + 72 * 3600_000); // 72h
 
     await prisma.post.create({
       data: {
@@ -737,14 +854,12 @@ async function main() {
         address: location.address,
         createdAt,
         updatedAt: createdAt,
-        expiresAt,
+        expiresAt: null, // no expiry — unlimited time
       },
     });
-
-    openCount++;
   }
 
-  console.log(`✅ ${openCount} OPEN posts created.`);
+  console.log(`✅ ${OPEN_POST_COUNT} OPEN posts created.`);
 
   // ── 7. Create a few CLAIMED posts (waiting for approval) ──────────────────
   console.log("⏳ Creating CLAIMED posts...");

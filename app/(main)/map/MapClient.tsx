@@ -30,6 +30,7 @@ type Post = {
   latitude: number;
   longitude: number;
   locationName: string | null;
+  address: string | null;
   images: string[];
   createdAt: string;
   expiresAt: string | null;
@@ -1056,6 +1057,7 @@ export default function MapPage() {
           const q = search.toLowerCase();
           if (
             !p.locationName?.toLowerCase().includes(q) &&
+            !p.address?.toLowerCase().includes(q) &&
             !p.description?.toLowerCase().includes(q) &&
             !p.author.name?.toLowerCase().includes(q)
           )
@@ -1110,11 +1112,7 @@ export default function MapPage() {
     const lat = parseFloat(result.lat);
     const lng = parseFloat(result.lon);
 
-    const shortName = result.display_name
-      .split(",")
-      .slice(0, 2)
-      .join(", ")
-      .trim();
+    const shortName = result.display_name.split(",")[0].trim();
 
     setSearch(shortName);
     setGeoResults([]);

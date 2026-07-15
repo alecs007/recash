@@ -38,6 +38,7 @@ export async function GET(req: Request) {
         latitude: true,
         longitude: true,
         locationName: true,
+        address: true,
         images: true,
         createdAt: true,
         expiresAt: true,
