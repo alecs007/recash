@@ -50,7 +50,12 @@ export function Pagination({
   const go = (p: number) => {
     if (p === page || p < 1 || p > totalPages) return;
     scrollToTop();
-    onPageChange(p);
+
+    if (window.scrollY < 80) {
+      onPageChange(p);
+    } else {
+      setTimeout(() => onPageChange(p), 500);
+    }
   };
 
   const items = pageItems(page, totalPages, isDesktop ? 7 : 5);
