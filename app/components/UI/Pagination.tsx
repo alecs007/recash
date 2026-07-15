@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { scrollToTop } from "@/app/components/UX/SmoothScroll";
 import { useI18n } from "@/context/I18nContext";
@@ -46,15 +46,28 @@ export function Pagination({
 }) {
   const { t } = useI18n();
   const isDesktop = useIsDesktop();
+  const swapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (swapTimer.current) clearTimeout(swapTimer.current);
+    },
+    [],
+  );
 
   const go = (p: number) => {
     if (p === page || p < 1 || p > totalPages) return;
+
+    if (swapTimer.current) clearTimeout(swapTimer.current);
     scrollToTop();
 
     if (window.scrollY < 80) {
       onPageChange(p);
     } else {
-      setTimeout(() => onPageChange(p), 500);
+      swapTimer.current = setTimeout(() => {
+        swapTimer.current = null;
+        onPageChange(p);
+      }, 500);
     }
   };
 

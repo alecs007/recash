@@ -42,9 +42,7 @@ test.describe("Leaderboard pagination", () => {
     await page.goto("/leaderboard");
 
     // Page 1 content
-    await expect(
-      page.getByText("Reciclator 1", { exact: true }),
-    ).toBeVisible();
+    await expect(page.getByText("Reciclator 1", { exact: true })).toBeVisible();
 
     const nav = page.getByRole("navigation", NAV);
     await expect(nav).toBeVisible();
@@ -116,9 +114,7 @@ test.describe("Leaderboard pagination", () => {
     });
 
     await page.goto("/leaderboard");
-    await expect(
-      page.getByText("Reciclator 1", { exact: true }),
-    ).toBeVisible();
+    await expect(page.getByText("Reciclator 1", { exact: true })).toBeVisible();
 
     // Page 2 is prefetched right after page 1 loads
     await expect.poll(() => requested).toContain(2);
@@ -131,14 +127,15 @@ test.describe("Leaderboard pagination", () => {
     await page.setViewportSize({ width: 360, height: 740 });
     await page.goto("/leaderboard");
 
-    await expect(
-      page.getByText("Reciclator 1", { exact: true }),
-    ).toBeVisible();
+    await expect(page.getByText("Reciclator 1", { exact: true })).toBeVisible();
 
     const nav = page.getByRole("navigation", NAV);
 
     // Move to a middle page — mobile uses a 5-slot layout: < 1 … 5 … 13 >
     await nav.getByRole("button", { name: "Pagina 3", exact: true }).click();
+    await expect(
+      nav.getByRole("button", { name: "Pagina 3", exact: true }),
+    ).toHaveAttribute("aria-current", "page");
     for (const step of [4, 5]) {
       await nav.getByRole("button", { name: /următoare|next/i }).click();
       await expect(
