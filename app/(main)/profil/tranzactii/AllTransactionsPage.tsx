@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, MapPin } from "lucide-react";
 import { Pagination } from "@/app/components/UI/Pagination";
 import { PageTransition } from "@/app/components/UI/PageTransition";
-import useSWR from "swr";
+import { usePaginatedList } from "@/hooks/usePaginatedList";
 import { useI18n, type Locale } from "@/context/I18nContext";
 
 type Transaction = {
@@ -23,8 +23,6 @@ type Transaction = {
   poster: { id: string; name: string | null; image: string | null };
   collector: { id: string; name: string | null; image: string | null };
 };
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 const ROLE_FILTERS = [
   { value: "all", label: { ro: "Toate", en: "All" } },
@@ -96,11 +94,18 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
   const [page, setPage] = useState(1);
   const [roleFilter, setRoleFilter] = useState("all");
 
-  const apiUrl = `/api/v1/profile/transactions?page=${page}&limit=10&side=${roleFilter}`;
-  const { data, isLoading } = useSWR(apiUrl, fetcher);
+  const buildUrl = useCallback(
+    (p: number) =>
+      `/api/v1/profile/transactions?page=${p}&limit=10&side=${roleFilter}`,
+    [roleFilter],
+  );
+  const { data, isInitialLoading, isPageLoading, totalPages } =
+    usePaginatedList<{
+      transactions: Transaction[];
+      totalPages: number;
+    }>(buildUrl, page);
 
   const transactions: Transaction[] = data?.transactions ?? [];
-  const totalPages: number = data?.totalPages ?? 1;
 
   const handleFilterChange = (value: string) => {
     setRoleFilter(value);
@@ -138,8 +143,8 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
           </button>
         ))}
       </div>
-      <PageTransition page={isLoading ? -1 : page}>
-        {isLoading ? (
+      <PageTransition page={isInitialLoading ? -1 : `${roleFilter}:${page}`}>
+        {isInitialLoading ? (
           <Skeleton />
         ) : transactions.length === 0 ? (
           <div className="text-center py-16">
@@ -173,7 +178,12 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
           </div>
         ) : (
           <div className="space-y-3">
-            {transactions.map((t) => {
+            <div
+              className={`space-y-3 transition-opacity ${
+                isPageLoading ? "opacity-50 pointer-events-none" : ""
+              }`}
+            >
+              {transactions.map((t) => {
               const isPoster = t.posterId === userId;
               const other = isPoster ? t.collector : t.poster;
               const earning = isPoster ? t.posterEarning : t.collectorEarning;
@@ -272,6 +282,7 @@ export default function AllTransactionsPage({ userId }: { userId: string }) {
                 </Link>
               );
             })}
+            </div>
             {totalPages > 1 && (
               <Pagination
                 page={page}

@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Props {
-  page: number;
+  page: number | string;
   children: React.ReactNode;
 }
 

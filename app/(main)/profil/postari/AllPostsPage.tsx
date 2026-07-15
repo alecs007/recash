@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Plus } from "lucide-react";
@@ -8,10 +8,8 @@ import { PostCard } from "@/app/components/UI/PostCard";
 import { Post } from "@/types";
 import { Pagination } from "@/app/components/UI/Pagination";
 import { PageTransition } from "@/app/components/UI/PageTransition";
-import useSWR from "swr";
+import { usePaginatedList } from "@/hooks/usePaginatedList";
 import { useI18n, type Locale } from "@/context/I18nContext";
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 const STATUS_FILTERS = [
   { value: "all", label: { ro: "Toate", en: "All" } },
@@ -99,14 +97,22 @@ export default function AllPostsPage() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const apiUrl = `/api/v1/profile/posts?page=${page}&limit=10${
-    statusFilter !== "all" ? `&status=${statusFilter}` : ""
-  }`;
-  const { data, isLoading } = useSWR(apiUrl, fetcher);
+  const buildUrl = useCallback(
+    (p: number) =>
+      `/api/v1/profile/posts?page=${p}&limit=10${
+        statusFilter !== "all" ? `&status=${statusFilter}` : ""
+      }`,
+    [statusFilter],
+  );
+  const { data, isInitialLoading, isPageLoading, totalPages } =
+    usePaginatedList<{
+      posts: Post[];
+      total: number;
+      totalPages: number;
+    }>(buildUrl, page);
 
   const posts: Post[] = data?.posts ?? [];
   const total: number = data?.total ?? 0;
-  const totalPages: number = data?.totalPages ?? 1;
 
   const handleFilterChange = (value: string) => {
     setStatusFilter(value);
@@ -152,8 +158,8 @@ export default function AllPostsPage() {
         ))}
       </div>
 
-      <PageTransition page={isLoading ? -1 : page}>
-        {isLoading ? (
+      <PageTransition page={isInitialLoading ? -1 : `${statusFilter}:${page}`}>
+        {isInitialLoading ? (
           <Skeleton />
         ) : posts.length === 0 ? (
           <div className="text-center py-16">
@@ -191,12 +197,18 @@ export default function AllPostsPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="text-xs text-slate-400 font-medium px-1">
-              {total} {getStatusLabel(statusFilter, total, locale)}
-            </p>
-            {posts.map((post) => (
-              <PostCard key={post.id} post={post} />
-            ))}
+            <div
+              className={`space-y-3 transition-opacity ${
+                isPageLoading ? "opacity-50 pointer-events-none" : ""
+              }`}
+            >
+              <p className="text-xs text-slate-400 font-medium px-1">
+                {total} {getStatusLabel(statusFilter, total, locale)}
+              </p>
+              {posts.map((post) => (
+                <PostCard key={post.id} post={post} />
+              ))}
+            </div>
             {totalPages > 1 && (
               <Pagination
                 page={page}

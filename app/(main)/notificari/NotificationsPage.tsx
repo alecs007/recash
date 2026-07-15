@@ -3,10 +3,11 @@
 import { useState, useLayoutEffect, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { ArrowLeft, Bell, BellOff, CheckCheck, Loader2 } from "lucide-react";
-import useSWR, { mutate as globalMutate } from "swr";
+import { mutate as globalMutate } from "swr";
 import { NOTIF_CONFIG } from "@/lib/constants/notifications";
 import { Notification } from "@prisma/client";
 import { Pagination } from "@/app/components/UI/Pagination";
+import { usePaginatedList } from "@/hooks/usePaginatedList";
 import { useRecashSocket } from "@/hooks/useRecashSocket";
 import { useNotificationBell } from "@/hooks/useNotificationBell";
 import { PageTransition } from "@/app/components/UI/PageTransition";
@@ -24,8 +25,6 @@ const FILTERS = [
   { value: "all", label: { ro: "Toate", en: "All" } },
   { value: "unread", label: { ro: "Necitite", en: "Unread" } },
 ];
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 function timeAgo(dateStr: Date, locale: Locale): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -140,15 +139,20 @@ export default function NotificationsPage() {
     resetExtra();
   }, [resetExtra]);
 
-  const apiUrl = `/api/v1/profile/notifications?page=${page}&limit=15${filter === "unread" ? "&unread=true" : ""}`;
+  const buildUrl = useCallback(
+    (p: number) =>
+      `/api/v1/profile/notifications?page=${p}&limit=15${filter === "unread" ? "&unread=true" : ""}`,
+    [filter],
+  );
   const {
     data,
-    isLoading,
+    isInitialLoading,
+    isPageLoading,
+    totalPages,
     mutate: revalidate,
-  } = useSWR<ApiResponse>(apiUrl, fetcher, {
+  } = usePaginatedList<ApiResponse>(buildUrl, page, {
     refreshInterval: 0, // WS drives updates
     revalidateOnFocus: true,
-    keepPreviousData: true,
   });
 
   // When a new notification arrives via WS, refresh this list too
@@ -162,7 +166,6 @@ export default function NotificationsPage() {
   }, [on, off, handleNewNotif]);
 
   const notifications = data?.notifications ?? [];
-  const totalPages = data?.totalPages ?? 1;
   const unreadCount = data?.unreadCount ?? 0;
 
   const invalidateBell = () =>
@@ -266,8 +269,8 @@ export default function NotificationsPage() {
           </button>
         ))}
       </div>
-      <PageTransition page={isLoading ? -1 : page}>
-        {isLoading ? (
+      <PageTransition page={isInitialLoading ? -1 : `${filter}:${page}`}>
+        {isInitialLoading ? (
           <Skeleton />
         ) : notifications.length === 0 ? (
           <div className="text-center py-20">
@@ -300,7 +303,11 @@ export default function NotificationsPage() {
           </div>
         ) : (
           <div>
-            <div className="space-y-2.5">
+            <div
+              className={`space-y-2.5 transition-opacity ${
+                isPageLoading ? "opacity-50 pointer-events-none" : ""
+              }`}
+            >
               {notifications.map((n) => (
                 <NotificationCard
                   key={n.id}

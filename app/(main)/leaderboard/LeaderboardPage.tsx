@@ -3,15 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useCallback } from "react";
-import useSWR from "swr";
 import { FaWineBottle, FaMedal } from "react-icons/fa";
 import { ArrowLeft, Star } from "lucide-react";
 import { Pagination } from "@/app/components/UI/Pagination";
 import { PageTransition } from "@/app/components/UI/PageTransition";
 import { VerifiedBadge } from "@/app/components/UI/VerifiedBadge";
+import { usePaginatedList } from "@/hooks/usePaginatedList";
 import { useI18n } from "@/context/I18nContext";
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 interface LeaderboardEntry {
   rank: number;
@@ -160,13 +158,17 @@ export default function LeaderboardPage() {
   const { t } = useI18n();
   const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useSWR(
-    `/api/v1/leaderboard?page=${page}&limit=20`,
-    fetcher,
+  const buildUrl = useCallback(
+    (p: number) => `/api/v1/leaderboard?page=${p}&limit=20`,
+    [],
   );
+  const { data, isInitialLoading, isPageLoading, totalPages } =
+    usePaginatedList<{
+      entries: LeaderboardEntry[];
+      totalPages: number;
+    }>(buildUrl, page);
 
   const entries: LeaderboardEntry[] = data?.entries ?? [];
-  const totalPages: number = data?.totalPages ?? 1;
 
   const handlePageChange = useCallback((p: number) => setPage(p), []);
 
@@ -186,8 +188,8 @@ export default function LeaderboardPage() {
         </div>
       </div>
 
-      <PageTransition page={isLoading ? -1 : page}>
-        {isLoading ? (
+      <PageTransition page={isInitialLoading ? -1 : page}>
+        {isInitialLoading ? (
           <Skeleton />
         ) : entries.length === 0 ? (
           <div className="text-center py-20">
@@ -201,7 +203,11 @@ export default function LeaderboardPage() {
           </div>
         ) : (
           <>
-            <div className="space-y-2">
+            <div
+              className={`space-y-2 transition-opacity ${
+                isPageLoading ? "opacity-50 pointer-events-none" : ""
+              }`}
+            >
               {entries.map((entry) => (
                 <EntryRow key={entry.id} entry={entry} />
               ))}
