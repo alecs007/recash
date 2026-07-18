@@ -16,6 +16,129 @@ export interface OverheaderAdConfig {
 
 const DISMISS_PREFIX = "overheader-ad-dismissed:";
 
+type PhraseSegment = { text: string; className: string };
+
+const IE_PHRASES: Record<"ro" | "en", PhraseSegment[][]> = {
+  ro: [
+    [
+      { text: "un proiect pentru ", className: "text-slate-500" },
+      { text: "InfoEducație 2026", className: "text-lime-700 font-bold" },
+    ],
+    [
+      { text: "git commit -m ", className: "text-slate-500" },
+      { text: '"reciclarea, refactorizată"', className: "text-amber-600" },
+    ],
+    [
+      { text: "while (sticle) ", className: "text-slate-500" },
+      { text: "{ recash(); }", className: "text-lime-700" },
+    ],
+    [
+      { text: "sticle.map(", className: "text-slate-500" },
+      { text: "s => easy cash", className: "text-sky-600" },
+      { text: ")", className: "text-slate-500" },
+    ],
+  ],
+  en: [
+    [
+      { text: "a project for ", className: "text-slate-500" },
+      { text: "InfoEducație 2026", className: "text-lime-700 font-bold" },
+    ],
+    [
+      { text: "git commit -m ", className: "text-slate-500" },
+      { text: '"recycling, refactored"', className: "text-amber-600" },
+    ],
+    [
+      { text: "while (bottles) ", className: "text-slate-500" },
+      { text: "{ recash(); }", className: "text-lime-700" },
+    ],
+    [
+      { text: "bottles.map(", className: "text-slate-500" },
+      { text: "b => cash", className: "text-sky-600" },
+      { text: ")", className: "text-slate-500" },
+    ],
+  ],
+};
+
+const TYPE_MS = 46;
+const DELETE_MS = 17;
+const HOLD_MS = 2600;
+
+function InfoEducatieBanner() {
+  const { locale } = useI18n();
+  const [phraseIdx, setPhraseIdx] = useState(0);
+  const [chars, setChars] = useState(0);
+
+  const phrases = IE_PHRASES[locale === "en" ? "en" : "ro"];
+  const phrase = phrases[phraseIdx % phrases.length];
+  const fullLength = phrase.reduce((n, s) => n + s.text.length, 0);
+
+  useEffect(() => {
+    let visible = 0;
+    let deleting = false;
+    let timer: ReturnType<typeof setTimeout>;
+
+    const tick = () => {
+      if (!deleting) {
+        visible++;
+        setChars(visible);
+        if (visible >= fullLength) {
+          deleting = true;
+          timer = setTimeout(tick, HOLD_MS);
+        } else {
+          timer = setTimeout(tick, TYPE_MS + Math.random() * 50);
+        }
+      } else {
+        visible--;
+        setChars(visible);
+        if (visible <= 0) {
+          setPhraseIdx((p) => p + 1);
+        } else {
+          timer = setTimeout(tick, DELETE_MS);
+        }
+      }
+    };
+
+    timer = setTimeout(tick, 400);
+    return () => clearTimeout(timer);
+  }, [phraseIdx, fullLength]);
+
+  const segmentStarts = phrase.map((_, i) =>
+    phrase.slice(0, i).reduce((n, s) => n + s.text.length, 0),
+  );
+  const typed = phrase.map((seg, i) => (
+    <span key={i} className={seg.className}>
+      {seg.text.slice(0, Math.max(0, chars - segmentStarts[i]))}
+    </span>
+  ));
+
+  return (
+    <a
+      href="https://infoeducatie.ro"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="InfoEducație"
+      className="flex-1 min-w-0 h-full flex items-center justify-center group"
+    >
+      <style>{`
+        @keyframes ie-blink {
+          0%, 55% { opacity: 1; }
+          56%, 100% { opacity: 0; }
+        }
+      `}</style>
+
+      <span className="w-[270px] sm:w-[320px] flex items-center font-mono text-[11px] leading-none whitespace-nowrap overflow-hidden">
+        <span className="text-lime-600 font-bold mr-1.5 select-none">❯</span>
+        <span className="whitespace-pre">{typed}</span>
+        <span
+          aria-hidden
+          className="inline-block w-[6px] h-3 ml-0.5 bg-lime-500 rounded-[1px]"
+          style={{ animation: "ie-blink 1.1s steps(1) infinite" }}
+        />
+      </span>
+    </a>
+  );
+}
+
 export function OverheaderAd({
   ad,
   headerRef,
@@ -113,7 +236,7 @@ export function OverheaderAd({
   return (
     <div
       ref={adRef}
-      className={`bg-slate-50 border-b border-slate-100 ${!mounted ? "invisible" : ""}`}
+      className={`bg-gradient-to-r from-lime-50 via-white to-emerald-50 border-b border-lime-100 ${!mounted ? "invisible" : ""}`}
     >
       <div className="max-w-7xl mx-auto px-3 sm:px-4 flex items-center gap-2 h-9 sm:h-10">
         <button
@@ -149,17 +272,7 @@ export function OverheaderAd({
             )}
           </Link>
         ) : (
-          <div className="flex-1 min-w-0 flex items-center justify-center gap-2">
-            <span className="text-[10px] font-black tracking-widest uppercase text-slate-300 border border-slate-200 rounded px-1.5 py-0.5">
-              Ad
-            </span>
-            <span className="text-xs text-slate-400 truncate">
-              {t({
-                ro: "Spațiu publicitar disponibil",
-                en: "Ad space available",
-              })}
-            </span>
-          </div>
+          <InfoEducatieBanner />
         )}
       </div>
     </div>
