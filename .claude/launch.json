@@ -14,6 +14,12 @@
       "port": 3000
     },
     {
+      "name": "recash-dev-3300",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["exec", "next", "dev", "--port", "3300"],
+      "port": 3300
+    },
+    {
       "name": "recash-prod",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["exec", "next", "start", "--port", "3000"],

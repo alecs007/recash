@@ -1,5 +1,9 @@
 "use client";
 
+import "leaflet/dist/leaflet.css";
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
+
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -97,7 +101,13 @@ type LeafletLayer = {
 
 type LeafletLib = {
   map: (el: HTMLDivElement, opts: object) => LeafletMap;
-  tileLayer: (url: string, opts: object) => { addTo: (m: LeafletMap) => void };
+  tileLayer: (
+    url: string,
+    opts: object,
+  ) => {
+    addTo: (m: LeafletMap) => void;
+    on: (event: string, handler: () => void) => void;
+  };
   marker: (latlng: [number, number], opts: object) => LeafletMarker;
   divIcon: (opts: object) => LeafletIcon;
   markerClusterGroup?: (opts?: object) => LeafletLayer;
@@ -110,20 +120,6 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 let _leafletPromise: Promise<void> | null = null;
 
-function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = src;
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => {
-      script.remove();
-      reject(new Error(`[map] failed to load ${src}`));
-    };
-    document.head.appendChild(script);
-  });
-}
-
 function ensureLeaflet(): Promise<void> {
   if (typeof window === "undefined") return Promise.resolve();
 
@@ -132,35 +128,13 @@ function ensureLeaflet(): Promise<void> {
   if (w.L?.markerClusterGroup) return Promise.resolve();
   if (_leafletPromise) return _leafletPromise;
 
-  if (!document.querySelector('link[href*="leaflet.css"]')) {
-    const css = document.createElement("link");
-    css.rel = "stylesheet";
-    css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-    document.head.appendChild(css);
-  }
-
-  if (!document.querySelector('link[href*="MarkerCluster"]')) {
-    const css2 = document.createElement("link");
-    css2.rel = "stylesheet";
-    css2.href =
-      "https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css";
-    const css3 = document.createElement("link");
-    css3.rel = "stylesheet";
-    css3.href =
-      "https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css";
-    document.head.appendChild(css2);
-    document.head.appendChild(css3);
-  }
-
   _leafletPromise = (async () => {
-    if (!w.L) {
-      await loadScript("https://unpkg.com/leaflet@1.9.4/dist/leaflet.js");
-    }
-    if (!w.L?.markerClusterGroup) {
-      await loadScript(
-        "https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js",
-      );
-    }
+    const leaflet = (await import("leaflet")) as unknown as {
+      default?: LeafletLib;
+    };
+    w.L = leaflet.default ?? (leaflet as unknown as LeafletLib);
+
+    await import("leaflet.markercluster");
     if (!w.L?.markerClusterGroup) {
       throw new Error("[map] MarkerCluster plugin did not register");
     }
@@ -642,17 +616,7 @@ function PostMap({
   const onSelectRef = useRef(onSelectPost);
   const circlesRef = useRef<Map<string, any>>(new Map());
   const leafletReady = useLeaflet();
-
-  function postOffset(id: string): [number, number] {
-    let h = 5381;
-    for (let i = 0; i < id.length; i++) h = ((h << 5) + h) ^ id.charCodeAt(i);
-    h = Math.abs(h);
-    const angle = (h % 628) / 100;
-    const meters = 50 + (h % 50);
-    const latDeg = meters / 111320;
-    const lngDeg = meters / (111320 * Math.cos((45.9 * Math.PI) / 180));
-    return [Math.sin(angle) * latDeg, Math.cos(angle) * lngDeg];
-  }
+  const [mapReady, setMapReady] = useState(false);
 
   useEffect(() => {
     onSelectRef.current = onSelectPost;
@@ -673,10 +637,18 @@ function PostMap({
     });
     L.control.zoom({ position: "topright" }).addTo(map);
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "© <a href='https://openstreetmap.org'>OpenStreetMap</a>",
-      maxZoom: 19,
-    }).addTo(map);
+    const tiles = L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {
+        attribution: "© <a href='https://openstreetmap.org'>OpenStreetMap</a>",
+        maxZoom: 19,
+      },
+    );
+
+    const reveal = () => setMapReady(true);
+    tiles.on("load", reveal);
+    tiles.on("tileerror", reveal);
+    tiles.addTo(map);
 
     map.on("zoomend", () => {
       const zoom = (map as unknown as { getZoom: () => number }).getZoom();
@@ -940,8 +912,8 @@ function PostMap({
   return (
     <div className="relative w-full h-full">
       <div ref={containerRef} className="w-full h-full" />
-      {!leafletReady && (
-        <div className="absolute inset-0 bg-slate-100 flex items-center justify-center pointer-events-none">
+      {!mapReady && (
+        <div className="absolute inset-0 z-[800] bg-slate-100 flex items-center justify-center pointer-events-none">
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="w-8 h-8 text-slate-400 animate-spin" />
             <p className="text-sm text-slate-400">

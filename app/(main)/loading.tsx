@@ -101,62 +101,48 @@ function _ensureOverlay(): HTMLDivElement {
   return div;
 }
 
-function _attachAndShow(src: string) {
+function _show() {
   // A new navigation just started — cancel any in-progress hide
   _clearHide();
 
   const overlay = _ensureOverlay();
-  const video = overlay.querySelector("video");
 
-  if (video) {
-    if (!_isVisible) {
-      _isVisible = true;
-      requestAnimationFrame(() => {
-        if (_overlay) _overlay.style.opacity = "1";
-      });
-    }
-    _resetMinTimer();
-    return;
+  // Cover the page instantly (no fade-in): the overlay must never let the
+  // incoming page peek through while it waits for the video to be ready.
+  if (!_isVisible) {
+    _isVisible = true;
+    overlay.style.transition = "none";
+    overlay.style.opacity = "1";
+    void overlay.offsetHeight; // flush so the fade-out transition still works
+    overlay.style.transition = `opacity ${FADE_MS}ms ease`;
   }
+  _resetMinTimer();
 
-  // No video yet at all: create it once, show on canplay
-  const newVideo = document.createElement("video");
-  newVideo.src = src;
-  newVideo.width = 160;
-  newVideo.height = 160;
-  newVideo.autoplay = true;
-  newVideo.loop = true;
-  newVideo.muted = true;
-  newVideo.playsInline = true;
-  newVideo.playbackRate = 1.2;
-  newVideo.style.pointerEvents = "none";
-  newVideo.setAttribute("aria-hidden", "true");
-  overlay.appendChild(newVideo);
+  // The video is a progressive enhancement — attach it whenever it's ready.
+  primeVideoCache().then((src) => {
+    if (!src || !_overlay || _overlay !== overlay) return;
+    if (overlay.querySelector("video")) return;
 
-  newVideo.addEventListener(
-    "canplay",
-    () => {
-      if (_mountCount === 0) return; // page loaded before video was ready
-      _isVisible = true;
-      requestAnimationFrame(() => {
-        if (_overlay) _overlay.style.opacity = "1";
-      });
-      _resetMinTimer();
-    },
-    { once: true },
-  );
-
-  newVideo.play().catch(() => {});
+    const video = document.createElement("video");
+    video.src = src;
+    video.width = 160;
+    video.height = 160;
+    video.autoplay = true;
+    video.loop = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.playbackRate = 1.2;
+    video.style.pointerEvents = "none";
+    video.setAttribute("aria-hidden", "true");
+    overlay.appendChild(video);
+    video.play().catch(() => {});
+  });
 }
 
 export default function Loading() {
   useEffect(() => {
     _mountCount++;
-
-    primeVideoCache().then((src) => {
-      if (_mountCount === 0 || !src) return; // already unmounted or no video
-      _attachAndShow(src);
-    });
+    _show();
 
     return () => {
       _mountCount = Math.max(0, _mountCount - 1);
