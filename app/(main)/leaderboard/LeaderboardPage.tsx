@@ -8,6 +8,7 @@ import { ArrowLeft, Star } from "lucide-react";
 import { Pagination } from "@/app/components/UI/Pagination";
 import { PageTransition } from "@/app/components/UI/PageTransition";
 import { VerifiedBadge } from "@/app/components/UI/VerifiedBadge";
+import { UserHoverCard } from "@/app/components/UI/UserHoverCard";
 import { usePaginatedList } from "@/hooks/usePaginatedList";
 import { useI18n } from "@/context/I18nContext";
 
@@ -81,8 +82,9 @@ function EntryRow({ entry }: { entry: LeaderboardEntry }) {
   const { t, locale } = useI18n();
   const m = MEDAL_COLORS[entry.rank];
   return (
-    <Link
-      href={`/user/${entry.id}`}
+    <UserHoverCard userId={entry.id} className="block">
+      <Link
+        href={`/user/${entry.id}`}
       className={`flex items-center gap-3 rounded-2xl border px-4 py-3 transition-all hover:shadow-sm group ${
         m
           ? `${m.rowBg} ${m.rowBorder}`
@@ -129,7 +131,8 @@ function EntryRow({ entry }: { entry: LeaderboardEntry }) {
         </span>
         <FaWineBottle className="w-3 h-3 text-[#7EC3E5]" />
       </div>
-    </Link>
+      </Link>
+    </UserHoverCard>
   );
 }
 

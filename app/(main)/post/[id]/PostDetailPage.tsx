@@ -41,6 +41,7 @@ import { motion, AnimatePresence, Variants } from "framer-motion";
 import { isCurrentlyAvailable } from "@/lib/availability";
 import type { DaySchedule } from "@/lib/availability";
 import { VerifiedBadge } from "@/app/components/UI/VerifiedBadge";
+import { UserHoverCard } from "@/app/components/UI/UserHoverCard";
 import { useI18n } from "@/context/I18nContext";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -832,35 +833,39 @@ function PersonRow({
       transition={{ duration: 0.3, ease: EASE }}
       className="flex items-center gap-3"
     >
-      <Link
-        href={`/user/${user.id}`}
-        className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 hover:ring-2 hover:ring-lime-400 hover:ring-offset-1 transition-all"
-      >
-        {user.image ? (
-          <Image
-            src={user.image}
-            alt=""
-            width={40}
-            height={40}
-            priority
-            draggable={false}
-            className="object-cover w-full h-full"
-          />
-        ) : (
-          <span className="text-sm font-bold text-slate-500">
-            {user.name?.[0] ?? "?"}
-          </span>
-        )}
-      </Link>
+      <UserHoverCard userId={user.id}>
+        <Link
+          href={`/user/${user.id}`}
+          className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 hover:ring-2 hover:ring-lime-400 hover:ring-offset-1 transition-all"
+        >
+          {user.image ? (
+            <Image
+              src={user.image}
+              alt=""
+              width={40}
+              height={40}
+              priority
+              draggable={false}
+              className="object-cover w-full h-full"
+            />
+          ) : (
+            <span className="text-sm font-bold text-slate-500">
+              {user.name?.[0] ?? "?"}
+            </span>
+          )}
+        </Link>
+      </UserHoverCard>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <Link
-            href={`/user/${user.id}`}
-            className="text-sm font-semibold text-slate-900 hover:text-lime-700 transition-colors truncate flex items-center gap-0.5"
-          >
-            {user.name ?? t({ ro: "Utilizator", en: "User" })}
-            {user.certified && <VerifiedBadge className="w-4 h-4 shrink-0" />}
-          </Link>
+          <UserHoverCard userId={user.id}>
+            <Link
+              href={`/user/${user.id}`}
+              className="text-sm font-semibold text-slate-900 hover:text-lime-700 transition-colors truncate flex items-center gap-0.5"
+            >
+              {user.name ?? t({ ro: "Utilizator", en: "User" })}
+              {user.certified && <VerifiedBadge className="w-4 h-4 shrink-0" />}
+            </Link>
+          </UserHoverCard>
           <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full shrink-0">
             {role}
           </span>
@@ -1437,37 +1442,41 @@ function DetailPanel({
                   transition={{ delay: 0.1, duration: 0.35, ease: EASE }}
                   className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3"
                 >
-                  <Link
-                    href={`/user/${post.collector.id}`}
-                    className="w-11 h-11 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 hover:ring-2 hover:ring-lime-400 hover:ring-offset-1 transition-all"
-                  >
-                    {post.collector.image ? (
-                      <Image
-                        src={post.collector.image}
-                        alt={post.collector.name ?? ""}
-                        width={44}
-                        height={44}
-                        priority
-                        className="object-cover w-full h-full"
-                      />
-                    ) : (
-                      <span className="text-sm font-bold text-slate-500">
-                        {post.collector.name?.[0] ?? "?"}
-                      </span>
-                    )}
-                  </Link>
+                  <UserHoverCard userId={post.collector.id}>
+                    <Link
+                      href={`/user/${post.collector.id}`}
+                      className="w-11 h-11 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 hover:ring-2 hover:ring-lime-400 hover:ring-offset-1 transition-all"
+                    >
+                      {post.collector.image ? (
+                        <Image
+                          src={post.collector.image}
+                          alt={post.collector.name ?? ""}
+                          width={44}
+                          height={44}
+                          priority
+                          className="object-cover w-full h-full"
+                        />
+                      ) : (
+                        <span className="text-sm font-bold text-slate-500">
+                          {post.collector.name?.[0] ?? "?"}
+                        </span>
+                      )}
+                    </Link>
+                  </UserHoverCard>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <Link
-                        href={`/user/${post.collector.id}`}
-                        className="text-sm font-bold text-slate-900 truncate hover:text-lime-700 transition-colors flex items-center gap-0.5"
-                      >
-                        {post.collector.name ??
-                          t({ ro: "Colector", en: "Collector" })}
-                        {post.collector.certified && (
-                          <VerifiedBadge className="w-4 h-4 shrink-0" />
-                        )}
-                      </Link>
+                      <UserHoverCard userId={post.collector.id}>
+                        <Link
+                          href={`/user/${post.collector.id}`}
+                          className="text-sm font-bold text-slate-900 truncate hover:text-lime-700 transition-colors flex items-center gap-0.5"
+                        >
+                          {post.collector.name ??
+                            t({ ro: "Colector", en: "Collector" })}
+                          {post.collector.certified && (
+                            <VerifiedBadge className="w-4 h-4 shrink-0" />
+                          )}
+                        </Link>
+                      </UserHoverCard>
                       <div className="flex items-center gap-1 mt-0.5">
                         <Star className="w-3 h-3 text-[#FFDF00] fill-[#FFDF00]" />
                         <span className="text-xs text-slate-500">

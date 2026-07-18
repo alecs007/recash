@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { VerifiedBadge } from "../UI/VerifiedBadge";
+import { UserHoverCard } from "../UI/UserHoverCard";
 import { useI18n } from "@/context/I18nContext";
 
 export interface ProfileReview {
@@ -113,23 +114,25 @@ function ReviewCard({
     <div className="bg-white rounded-2xl border border-slate-100 p-4 hover:border-lime-200 hover:shadow-sm transition-all">
       <div className="flex items-start gap-3">
         {canLink ? (
-          <Link href={`/user/${reviewer.id}`} className="shrink-0">
-            <div className="w-10 h-10 rounded-full bg-lime-50 border border-lime-200 flex items-center justify-center overflow-hidden transition-all">
-              {reviewer.image ? (
-                <Image
-                  src={reviewer.image}
-                  alt={reviewer.name ?? ""}
-                  width={40}
-                  height={40}
-                  className="object-cover"
-                />
-              ) : (
-                <span className="text-sm font-bold text-lime-700">
-                  {reviewer.name?.[0] ?? "?"}
-                </span>
-              )}
-            </div>
-          </Link>
+          <UserHoverCard userId={reviewer.id!}>
+            <Link href={`/user/${reviewer.id}`} className="shrink-0">
+              <div className="w-10 h-10 rounded-full bg-lime-50 border border-lime-200 flex items-center justify-center overflow-hidden transition-all">
+                {reviewer.image ? (
+                  <Image
+                    src={reviewer.image}
+                    alt={reviewer.name ?? ""}
+                    width={40}
+                    height={40}
+                    className="object-cover"
+                  />
+                ) : (
+                  <span className="text-sm font-bold text-lime-700">
+                    {reviewer.name?.[0] ?? "?"}
+                  </span>
+                )}
+              </div>
+            </Link>
+          </UserHoverCard>
         ) : (
           <div className="shrink-0 w-10 h-10 rounded-full bg-lime-50 border border-lime-200 flex items-center justify-center overflow-hidden">
             {reviewer.image ? (
@@ -152,15 +155,17 @@ function ReviewCard({
           <div className="flex items-start justify-between gap-2">
             <div>
               {canLink ? (
-                <Link
-                  href={`/user/${reviewer.id}`}
-                  className="font-semibold text-sm text-slate-900 hover:text-lime-700 transition-colors flex items-center gap-0.5"
-                >
-                  {reviewer.name ?? t({ ro: "Utilizator", en: "User" })}{" "}
-                  {reviewer.certified && (
-                    <VerifiedBadge className="w-4 h-4 shrink-0" />
-                  )}
-                </Link>
+                <UserHoverCard userId={reviewer.id!}>
+                  <Link
+                    href={`/user/${reviewer.id}`}
+                    className="font-semibold text-sm text-slate-900 hover:text-lime-700 transition-colors flex items-center gap-0.5"
+                  >
+                    {reviewer.name ?? t({ ro: "Utilizator", en: "User" })}{" "}
+                    {reviewer.certified && (
+                      <VerifiedBadge className="w-4 h-4 shrink-0" />
+                    )}
+                  </Link>
+                </UserHoverCard>
               ) : (
                 <span className="font-semibold text-sm text-slate-900 flex items-center gap-0.5">
                   {reviewer.name ?? t({ ro: "Utilizator", en: "User" })}{" "}

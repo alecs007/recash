@@ -6,6 +6,7 @@ import { Star } from "lucide-react";
 import { FaWineBottle, FaMedal, FaArrowRight } from "react-icons/fa";
 import { GrTrophy } from "react-icons/gr";
 import { VerifiedBadge } from "@/app/components/UI/VerifiedBadge";
+import { UserHoverCard } from "@/app/components/UI/UserHoverCard";
 import { useI18n } from "@/context/I18nContext";
 
 export interface LeaderboardEntry {
@@ -139,9 +140,13 @@ export function LeaderboardList({ entries }: { entries: LeaderboardEntry[] }) {
               {entries.map((entry) => {
                 const m = MEDAL_COLORS[entry.rank];
                 return (
-                  <Link
+                  <UserHoverCard
                     key={entry.id}
-                    href={`/user/${entry.id}`}
+                    userId={entry.id}
+                    className="block"
+                  >
+                    <Link
+                      href={`/user/${entry.id}`}
                     className={`flex items-center gap-3 rounded-2xl border px-4 py-3 transition-all hover:shadow-sm group ${
                       m
                         ? `${m.rowBg} ${m.rowBorder}`
@@ -192,7 +197,8 @@ export function LeaderboardList({ entries }: { entries: LeaderboardEntry[] }) {
                       </span>
                       <FaWineBottle className="w-3 h-3 text-[#7EC3E5]" />
                     </div>
-                  </Link>
+                    </Link>
+                  </UserHoverCard>
                 );
               })}
 

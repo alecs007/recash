@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { CollectConfirmModal } from "@/app/components/UI/CollectConfirmModal";
+import { UserHoverCard } from "@/app/components/UI/UserHoverCard";
 import { MapPin, Search, Loader2, X, Star, ChevronRight } from "lucide-react";
 import { TbTruckDelivery } from "react-icons/tb";
 import { LuFilter } from "react-icons/lu";
@@ -319,22 +320,26 @@ function PostCard({
       }`}
     >
       <div className="flex items-center gap-2.5 mb-2.5">
-        <Link
-          href={`/user/${post.author.id}`}
-          onClick={(e) => e.stopPropagation()}
-          className="w-9 h-9 rounded-full bg-lime-50 border border-lime-200 flex items-center justify-center overflow-hidden shrink-0 transition-all"
-        >
-          <AuthorAvatar name={post.author.name} image={post.author.image} />
-        </Link>
-
-        <div className="flex-1 min-w-0">
+        <UserHoverCard userId={post.author.id}>
           <Link
             href={`/user/${post.author.id}`}
             onClick={(e) => e.stopPropagation()}
-            className="text-sm font-bold text-slate-900 truncate leading-tight hover:text-lime-700 transition-colors block"
+            className="w-9 h-9 rounded-full bg-lime-50 border border-lime-200 flex items-center justify-center overflow-hidden shrink-0 transition-all"
           >
-            {post.author.name ?? t({ ro: "Utilizator", en: "User" })}
+            <AuthorAvatar name={post.author.name} image={post.author.image} />
           </Link>
+        </UserHoverCard>
+
+        <div className="flex-1 min-w-0">
+          <UserHoverCard userId={post.author.id}>
+            <Link
+              href={`/user/${post.author.id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="text-sm font-bold text-slate-900 truncate leading-tight hover:text-lime-700 transition-colors block"
+            >
+              {post.author.name ?? t({ ro: "Utilizator", en: "User" })}
+            </Link>
+          </UserHoverCard>
           <div className="flex items-center gap-1">
             <Star className="w-2.5 h-2.5 text-[#FFDF00] fill-[#FFDF00]" />
             <span className="text-[10px] font-semibold text-slate-400">
@@ -488,19 +493,23 @@ function SelectedPostOverlay({
         </button>
 
         <div className="flex items-center gap-2.5 mb-2.5 pr-6">
-          <Link
-            href={`/user/${post.author.id}`}
-            className="w-9 h-9 rounded-full bg-lime-50 border border-lime-200 flex items-center justify-center overflow-hidden shrink-0 transition-all"
-          >
-            <AuthorAvatar name={post.author.name} image={post.author.image} />
-          </Link>
-          <div className="flex-1 min-w-0">
+          <UserHoverCard userId={post.author.id}>
             <Link
               href={`/user/${post.author.id}`}
-              className="text-sm font-bold text-slate-900 truncate leading-tight hover:text-lime-700 transition-colors block"
+              className="w-9 h-9 rounded-full bg-lime-50 border border-lime-200 flex items-center justify-center overflow-hidden shrink-0 transition-all"
             >
-              {post.author.name ?? t({ ro: "Utilizator", en: "User" })}
+              <AuthorAvatar name={post.author.name} image={post.author.image} />
             </Link>
+          </UserHoverCard>
+          <div className="flex-1 min-w-0">
+            <UserHoverCard userId={post.author.id}>
+              <Link
+                href={`/user/${post.author.id}`}
+                className="text-sm font-bold text-slate-900 truncate leading-tight hover:text-lime-700 transition-colors block"
+              >
+                {post.author.name ?? t({ ro: "Utilizator", en: "User" })}
+              </Link>
+            </UserHoverCard>
             <div className="flex items-center gap-1">
               <Star className="w-2.5 h-2.5 text-[#FFDF00] fill-[#FFDF00]" />
               <span className="text-[10px] font-semibold text-slate-400">
