@@ -1,34 +1,8 @@
-/**
- * ws-server/server.ts  (v4)
- *
- * Auth fix: uses Redis one-time tokens instead of Prisma session lookup.
- * NextAuth JWT strategy never writes to the Session table, so the old
- * prisma.session.findUnique() always returned null and every connection failed.
- *
- * Flow:
- *   1. Client calls GET /api/v1/auth/ws-token on the Next.js server
- *   2. Next.js writes  redis.set("ws-token:<random>", userId, EX 60)
- *      and returns the random token.
- *   3. Client connects  ws://server?token=<random>
- *   4. WS server calls  redis.getDel("ws-token:<random>")  → userId
- *      The key is deleted atomically (single-use).
- *   5. Connection is accepted with the resolved userId.
- *
- * Other changes vs v3:
- *   - Removed Prisma dependency entirely (no longer needed)
- *   - Two Redis clients: subscriber (pub/sub) + redisCli (getDel)
- *   - Uses PORT env (Railway injects this) with WS_PORT as local dev fallback
- *   - HTTP server for /health + noServer WebSocketServer on the same port
- *   - Origin validation in production via ALLOWED_ORIGIN env
- */
-
 import "dotenv/config";
 import { createServer, IncomingMessage, ServerResponse } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { createClient } from "redis";
 import { parse as parseUrl } from "url";
-
-// ─── Config ───────────────────────────────────────────────────────────────────
 
 const PORT = parseInt(process.env.PORT ?? process.env.WS_PORT ?? "4001", 10);
 const REDIS_URL = process.env.REDIS_URL;
