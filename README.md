@@ -3,7 +3,7 @@
 **Recash** is a peer-to-peer marketplace that connects people who want to recycle SGR bottles with **collectors** in their area, who pick them up in exchange for an agreed amount. No more waiting in line at the RVM machine — you post a listing, a collector claims it, you meet up, money and bottles change hands.
 
 <p align="center">
-  <img src="https://res.cloudinary.com/dqyq1oiwi/image/upload/v1784407719/exchange_1_cwfyoy.png" alt="Recash homepage" width="800"/>
+  <img src="https://res.cloudinary.com/dqyq1oiwi/image/upload/v1784458028/image_3_teiwqa.png" alt="Recash homepage" width="800"/>
 </p>
 
 ## 🧩 What the app does
