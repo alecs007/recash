@@ -180,7 +180,9 @@ function MessageBubble({
         damping: 28,
         delay: isPending ? 0.1 : 0,
       }}
-      className={`flex items-end gap-2 ${isMe ? "flex-row-reverse" : "flex-row"}`}
+      className={`flex items-end gap-2 ${isMe ? "flex-row-reverse" : "flex-row"} ${
+        isLastInGroup ? "" : "mb-[17px]"
+      }`}
       style={{ originX: isMe ? 1 : 0, originY: 1 }}
     >
       {!isMe && (
@@ -207,11 +209,7 @@ function MessageBubble({
         </div>
 
         {isLastInGroup && (
-          <span
-            className={`text-[10px] text-slate-400 px-1 tabular-nums ${
-              isMe ? "text-right" : "text-left"
-            }`}
-          >
+          <span className="h-3.5 flex items-center text-[10px] leading-none text-slate-400 px-1 tabular-nums">
             {formatTime(msg.createdAt, locale)}
           </span>
         )}
@@ -659,33 +657,31 @@ export function PostChat({
 
                     <div>
                       <p className="text-xs text-slate-400 leading-relaxed max-w-[200px]">
-                        {readOnly ? (
-                          t({
-                            ro: "Nu există mesaje în această conversație.",
-                            en: "There are no messages in this conversation.",
-                          })
-                        ) : (
-                        t({
-                          ro: (
-                            <>
-                              Conversează cu{" "}
-                              <span className="font-medium text-slate-600">
-                                {firstName}
-                              </span>{" "}
-                              direct pe Recash.
-                            </>
-                          ),
-                          en: (
-                            <>
-                              Chat with{" "}
-                              <span className="font-medium text-slate-600">
-                                {firstName}
-                              </span>{" "}
-                              directly on Recash.
-                            </>
-                          ),
-                        })
-                        )}
+                        {readOnly
+                          ? t({
+                              ro: "Nu există mesaje în această conversație.",
+                              en: "There are no messages in this conversation.",
+                            })
+                          : t({
+                              ro: (
+                                <>
+                                  Conversează cu{" "}
+                                  <span className="font-medium text-slate-600">
+                                    {firstName}
+                                  </span>{" "}
+                                  direct pe Recash.
+                                </>
+                              ),
+                              en: (
+                                <>
+                                  Chat with{" "}
+                                  <span className="font-medium text-slate-600">
+                                    {firstName}
+                                  </span>{" "}
+                                  directly on Recash.
+                                </>
+                              ),
+                            })}
                       </p>
                     </div>
                   </motion.div>
@@ -759,82 +755,82 @@ export function PostChat({
                 </p>
               </div>
             ) : (
-            <div className="shrink-0 border-t border-slate-100 px-5 py-4 bg-white">
-              <div className="flex items-center gap-2">
-                <div className="flex-1 relative">
-                  <textarea
-                    ref={textareaRef}
-                    value={text}
-                    onChange={handleTextChange}
-                    onKeyDown={handleKeyDown}
-                    placeholder={t({
-                      ro: "Trimite un mesaj…",
-                      en: "Send a message…",
-                    })}
-                    rows={1}
-                    className="w-full resize-none px-3.5 py-[10px] rounded-2xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100/60 outline-none text-slate-900 placeholder:text-slate-400 transition-[border-color,box-shadow] bg-slate-50 leading-[1.45] overflow-hidden"
-                    style={{
-                      height: MIN_H,
-                      minHeight: MIN_H,
-                      maxHeight: MAX_H,
-                      scrollbarWidth: "none",
-                      msOverflowStyle: "none",
-                    }}
-                  />
-                  {text.length > MAX_TEXT * 0.8 && (
-                    <span
-                      className={`absolute bottom-[11px] right-3 text-[9px] font-semibold pointer-events-none ${
-                        text.length >= MAX_TEXT
-                          ? "text-red-400"
-                          : "text-slate-400"
-                      }`}
-                    >
-                      {MAX_TEXT - text.length}
-                    </span>
-                  )}
-                </div>
-
-                <motion.button
-                  whileTap={{ scale: 0.84 }}
-                  animate={{
-                    backgroundColor: text.trim() ? "#123424" : "#f1f5f9",
-                  }}
-                  transition={{ duration: 0.15 }}
-                  onClick={() => void handleSend()}
-                  disabled={!text.trim() || sending}
-                  className="w-11 h-11 mb-1.5 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer disabled:cursor-not-allowed"
-                  aria-label={t({ ro: "Trimite", en: "Send" })}
-                >
-                  <AnimatePresence mode="wait">
-                    {sending ? (
-                      <motion.span
-                        key="spin"
-                        initial={{ scale: 0, rotate: -90 }}
-                        animate={{ scale: 1, rotate: 0 }}
-                        exit={{ scale: 0, rotate: 90 }}
-                        transition={{ duration: 0.12 }}
+              <div className="shrink-0 border-t border-slate-100 px-5 py-4 bg-white">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 relative">
+                    <textarea
+                      ref={textareaRef}
+                      value={text}
+                      onChange={handleTextChange}
+                      onKeyDown={handleKeyDown}
+                      placeholder={t({
+                        ro: "Trimite un mesaj…",
+                        en: "Send a message…",
+                      })}
+                      rows={1}
+                      className="w-full resize-none px-3.5 py-[10px] rounded-2xl border border-slate-200 focus:border-lime-400 focus:ring-2 focus:ring-lime-100/60 outline-none text-slate-900 placeholder:text-slate-400 transition-[border-color,box-shadow] bg-slate-50 leading-[1.45] overflow-hidden"
+                      style={{
+                        height: MIN_H,
+                        minHeight: MIN_H,
+                        maxHeight: MAX_H,
+                        scrollbarWidth: "none",
+                        msOverflowStyle: "none",
+                      }}
+                    />
+                    {text.length > MAX_TEXT * 0.8 && (
+                      <span
+                        className={`absolute bottom-[11px] right-3 text-[9px] font-semibold pointer-events-none ${
+                          text.length >= MAX_TEXT
+                            ? "text-red-400"
+                            : "text-slate-400"
+                        }`}
                       >
-                        <Loader2 className="w-[18px] h-[18px] text-lime-400 animate-spin" />
-                      </motion.span>
-                    ) : (
-                      <motion.span
-                        key="send"
-                        initial={{ scale: 0, rotate: -45 }}
-                        animate={{ scale: 1, rotate: 0 }}
-                        exit={{ scale: 0, rotate: 45 }}
-                        transition={{ duration: 0.12 }}
-                      >
-                        <Send
-                          className={`w-[18px] h-[18px] ${
-                            text.trim() ? "text-lime-400" : "text-slate-400"
-                          }`}
-                        />
-                      </motion.span>
+                        {MAX_TEXT - text.length}
+                      </span>
                     )}
-                  </AnimatePresence>
-                </motion.button>
+                  </div>
+
+                  <motion.button
+                    whileTap={{ scale: 0.84 }}
+                    animate={{
+                      backgroundColor: text.trim() ? "#123424" : "#f1f5f9",
+                    }}
+                    transition={{ duration: 0.15 }}
+                    onClick={() => void handleSend()}
+                    disabled={!text.trim() || sending}
+                    className="w-11 h-11 mb-1.5 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer disabled:cursor-not-allowed"
+                    aria-label={t({ ro: "Trimite", en: "Send" })}
+                  >
+                    <AnimatePresence mode="wait">
+                      {sending ? (
+                        <motion.span
+                          key="spin"
+                          initial={{ scale: 0, rotate: -90 }}
+                          animate={{ scale: 1, rotate: 0 }}
+                          exit={{ scale: 0, rotate: 90 }}
+                          transition={{ duration: 0.12 }}
+                        >
+                          <Loader2 className="w-[18px] h-[18px] text-lime-400 animate-spin" />
+                        </motion.span>
+                      ) : (
+                        <motion.span
+                          key="send"
+                          initial={{ scale: 0, rotate: -45 }}
+                          animate={{ scale: 1, rotate: 0 }}
+                          exit={{ scale: 0, rotate: 45 }}
+                          transition={{ duration: 0.12 }}
+                        >
+                          <Send
+                            className={`w-[18px] h-[18px] ${
+                              text.trim() ? "text-lime-400" : "text-slate-400"
+                            }`}
+                          />
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </motion.button>
+                </div>
               </div>
-            </div>
             )}
           </motion.div>
         </>
@@ -917,7 +913,10 @@ export function ChatTriggerButton({
             <div className="flex flex-col items-start leading-none gap-[2px]">
               <span className="text-[10px] text-white/70 font-semibold">
                 {readOnly
-                  ? t({ ro: "Vezi conversația cu", en: "View conversation with" })
+                  ? t({
+                      ro: "Vezi conversația cu",
+                      en: "View conversation with",
+                    })
                   : t({ ro: "Ia legătura cu", en: "Get in touch with" })}
               </span>
               <span className="text-sm font-bold whitespace-nowrap">

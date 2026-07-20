@@ -1,8 +1,8 @@
 import { prisma } from "./prisma";
 import { createNotification } from "./notifications";
-import { publishToUser } from "./pubsub";
+import { publishToUser, publishPostStatus } from "./pubsub";
 
-export const MAX_PENDING_REQUESTS_PER_COLLECTOR = 1;
+export { MAX_PENDING_REQUESTS_PER_COLLECTOR } from "./constants/posts";
 
 export type ResolveReason =
   | "another_collector_chosen"
@@ -102,4 +102,78 @@ export async function resolveAcceptedRequest(
 /** Number of PENDING requests on a post. */
 export async function countPendingRequests(postId: string): Promise<number> {
   return prisma.claimRequest.count({ where: { postId, status: "PENDING" } });
+}
+
+export async function resolveCollectorPendingElsewhere(
+  collectorId: string,
+  exceptPostId: string,
+): Promise<void> {
+  const others = await prisma.claimRequest.findMany({
+    where: {
+      collectorId,
+      status: "PENDING",
+      postId: { not: exceptPostId },
+    },
+    select: { id: true, postId: true },
+  });
+  if (others.length === 0) return;
+
+  await prisma.claimRequest.updateMany({
+    where: { id: { in: others.map((r) => r.id) } },
+    data: { status: "WITHDRAWN" },
+  });
+
+  const postIds = others.map((r) => r.postId);
+  const [collector, posts, counts] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: collectorId },
+      select: { name: true },
+    }),
+    prisma.post.findMany({
+      where: { id: { in: postIds } },
+      select: { id: true, authorId: true },
+    }),
+    Promise.all(
+      postIds.map(async (id) => ({
+        id,
+        remaining: await prisma.claimRequest.count({
+          where: { postId: id, status: "PENDING" },
+        }),
+      })),
+    ),
+  ]);
+
+  const name = collector?.name ?? "Un colector";
+  const remainingByPost = new Map(counts.map((c) => [c.id, c.remaining]));
+  const emptied = postIds.filter((id) => remainingByPost.get(id) === 0);
+
+  if (emptied.length > 0) {
+    await prisma.post.updateMany({
+      where: { id: { in: emptied }, status: "CLAIMED" },
+      data: { status: "OPEN", claimedAt: null, collectorId: null },
+    });
+  }
+
+  await Promise.all(
+    posts.map(async (post) => {
+      const remaining = remainingByPost.get(post.id) ?? 0;
+      await createNotification({
+        userId: post.authorId,
+        type: "POST_CANCELLED",
+        title: "Cerere retrasă",
+        message: `${name} a fost aprobat pe alt anunț și nu mai este disponibil.`,
+        link: `/post/${post.id}`,
+        metadata: { postId: post.id },
+      });
+
+      publishPostStatus(
+        {
+          postId: post.id,
+          status: remaining === 0 ? "OPEN" : "CLAIMED",
+          pendingRequestCount: remaining,
+        },
+        [post.authorId],
+      );
+    }),
+  );
 }
