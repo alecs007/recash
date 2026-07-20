@@ -8,16 +8,105 @@ import { useState, useRef, useEffect } from "react";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { useLoading } from "@/context/LoadingContext";
 import { FaWineBottle, FaRegUser, FaRegBell, FaRecycle } from "react-icons/fa";
-import { TbTruckDelivery, TbClockHour4 } from "react-icons/tb";
+import { TbTruckDelivery, TbClockHour4, TbLoader2 } from "react-icons/tb";
 import { FiPlusSquare } from "react-icons/fi";
-import { IoChevronDown } from "react-icons/io5";
+import { IoChevronDown, IoClose } from "react-icons/io5";
 import { MdLogout } from "react-icons/md";
 import { motion, AnimatePresence } from "framer-motion";
+import { mutate as globalMutate } from "swr";
 import { useNotificationBell } from "@/hooks/useNotificationBell";
-import { useActiveCounts } from "@/hooks/useActiveCounts";
+import { useActiveCounts, useSetActiveCounts } from "@/hooks/useActiveCounts";
+import type { PendingRequestSummary } from "@/hooks/useActiveCounts";
+import { MAX_PENDING_REQUESTS_PER_COLLECTOR } from "@/lib/constants/posts";
 import { OverheaderAd } from "./OverheaderAd";
 import { LocaleSwitcher, PreferenceSwitcherInline } from "./LocaleSwitcher";
 import { useI18n } from "@/context/I18nContext";
+
+function PendingRequestRows({
+  list,
+  onNavigate,
+}: {
+  list: PendingRequestSummary[];
+  onNavigate: () => void;
+}) {
+  const { t } = useI18n();
+  const setActiveCounts = useSetActiveCounts();
+  const [withdrawing, setWithdrawing] = useState<string | null>(null);
+
+  const handleWithdraw = async (postId: string) => {
+    setWithdrawing(postId);
+    try {
+      const res = await fetch(`/api/v1/posts/${postId}/claim`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setActiveCounts((c) => {
+          const rest = c.pendingRequestsList.filter((r) => r.postId !== postId);
+          return {
+            pendingRequests: Math.max(0, c.pendingRequests - 1),
+            pendingRequestsList: rest,
+            pendingRequestPostId: rest[0]?.postId ?? null,
+          };
+        });
+        void globalMutate(`/api/v1/posts/${postId}`);
+        void globalMutate("/api/v1/posts/active");
+      }
+    } catch {
+      // Keep the row; the next revalidation reflects the truth.
+    } finally {
+      setWithdrawing(null);
+    }
+  };
+
+  return (
+    <AnimatePresence initial={false}>
+      {list.map((r) => (
+        <motion.div
+          key={r.postId}
+          layout
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+          className="overflow-hidden"
+        >
+          <div className="flex items-center rounded-xl hover:bg-slate-50 transition-colors">
+            <Link
+              href={`/post/${r.postId}`}
+              onClick={onNavigate}
+              className="flex items-center gap-3 p-2 flex-1 min-w-0"
+            >
+              <div className="grid place-items-center w-8 h-8 shrink-0 rounded-full bg-slate-100 border-2 border-slate-400">
+                <TbClockHour4 className="w-4 h-4 text-slate-600" />
+              </div>
+              <div className="min-w-0 pr-1">
+                <p className="text-xs font-bold text-slate-700 truncate">
+                  {r.locationName ?? t({ ro: "Anunț", en: "Listing" })}
+                </p>
+                <p className="text-[10px] text-slate-400">
+                  {r.bottleCount} {t({ ro: "sticle", en: "bottles" })}
+                </p>
+              </div>
+            </Link>
+            <button
+              onClick={() => handleWithdraw(r.postId)}
+              disabled={withdrawing === r.postId}
+              aria-label={t({ ro: "Retrage cererea", en: "Withdraw request" })}
+              title={t({ ro: "Retrage cererea", en: "Withdraw request" })}
+              className="grid place-items-center w-7 h-7 mr-1.5 shrink-0 rounded-full text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {withdrawing === r.postId ? (
+                <TbLoader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <IoClose className="w-4 h-4" />
+              )}
+            </button>
+          </div>
+        </motion.div>
+      ))}
+    </AnimatePresence>
+  );
+}
 
 function ActiveIndicator({
   activePosts,
@@ -25,14 +114,14 @@ function ActiveIndicator({
   activePostId,
   activeCollectionId,
   pendingRequests,
-  pendingRequestPostId,
+  pendingRequestsList,
 }: {
   activePosts: number;
   activeCollections: number;
   activePostId: string | null;
   activeCollectionId: string | null;
   pendingRequests: number;
-  pendingRequestPostId: string | null;
+  pendingRequestsList: PendingRequestSummary[];
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
@@ -67,15 +156,11 @@ function ActiveIndicator({
   const postHref = activePostId ? `/post/${activePostId}` : "/profil/postari";
   const collectionHref = activeCollectionId
     ? `/post/${activeCollectionId}`
-    : pendingRequestPostId
-      ? `/post/${pendingRequestPostId}`
-      : "/map";
-
-  if (!hasPosts && !hasCollections) return null;
+    : "/map";
 
   return (
     <AnimatePresence mode="wait">
-      {hasPosts && hasCollections ? (
+      {!hasPosts && !hasCollections ? null : hasPosts && hasCollections ? (
         <motion.div key="dual" {...slideIn} className="relative" ref={ref}>
           <button
             onClick={() => setOpen((v) => !v)}
@@ -112,7 +197,7 @@ function ActiveIndicator({
                 initial={{ opacity: 0, scale: 0.9, y: 5 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 5 }}
-                className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-white border border-slate-200 rounded-2xl p-1.5 flex flex-col gap-1 z-[1002]"
+                className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-white border border-slate-200 rounded-2xl p-1.5 flex flex-col gap-1 z-[1002] min-w-[230px] max-w-[290px]"
               >
                 <Link
                   href={postHref}
@@ -131,38 +216,35 @@ function ActiveIndicator({
                     {t({ ro: "Postare activă", en: "Active post" })}
                   </span>
                 </Link>
-                <Link
-                  href={collectionHref}
-                  onClick={() => setOpen(false)}
-                  className="flex items-center gap-3 p-2 hover:bg-blue-50 rounded-xl transition-colors"
-                >
-                  <div
-                    className={`grid place-items-center w-8 h-8 rounded-full border-2 ${
-                      hasPending
-                        ? "bg-slate-100 border-slate-400"
-                        : "bg-blue-50 border-blue-400"
-                    }`}
+                {hasPending ? (
+                  <>
+                    <div className="px-2 pt-1 pb-0.5 text-[11px] font-semibold text-slate-400">
+                      {collectionLabel}
+                    </div>
+                    <PendingRequestRows
+                      list={pendingRequestsList}
+                      onNavigate={() => setOpen(false)}
+                    />
+                  </>
+                ) : (
+                  <Link
+                    href={collectionHref}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-3 p-2 hover:bg-blue-50 rounded-xl transition-colors"
                   >
-                    <motion.div
-                      animate={
-                        hasPending ? { scale: [1, 1.1, 1] } : { x: [-1, 1, -1] }
-                      }
-                      transition={{
-                        repeat: Infinity,
-                        duration: hasPending ? 2 : 1.5,
-                      }}
-                    >
-                      {hasPending ? (
-                        <TbClockHour4 className="w-4 h-4 text-slate-600" />
-                      ) : (
+                    <div className="grid place-items-center w-8 h-8 rounded-full border-2 bg-blue-50 border-blue-400">
+                      <motion.div
+                        animate={{ x: [-1, 1, -1] }}
+                        transition={{ repeat: Infinity, duration: 1.5 }}
+                      >
                         <TbTruckDelivery className="w-4 h-4 text-blue-600" />
-                      )}
-                    </motion.div>
-                  </div>
-                  <span className="text-xs font-bold text-slate-700 pr-2 whitespace-nowrap">
-                    {collectionLabel}
-                  </span>
-                </Link>
+                      </motion.div>
+                    </div>
+                    <span className="text-xs font-bold text-slate-700 pr-2 whitespace-nowrap">
+                      {collectionLabel}
+                    </span>
+                  </Link>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -172,6 +254,7 @@ function ActiveIndicator({
           key="single"
           {...slideIn}
           className="relative flex items-center"
+          ref={ref}
         >
           <div className="absolute -top-1 -right-1 z-[50] pointer-events-none">
             <div className="bg-red-600 text-white text-[8px] font-black px-1 py-0.5 rounded-sm leading-none tracking-tighter border border-white flex items-center justify-center">
@@ -190,33 +273,53 @@ function ActiveIndicator({
                 <FaWineBottle className="w-5 h-5 text-lime-600" />
               </motion.div>
             </Link>
+          ) : hasPending ? (
+            <button
+              onClick={() => setOpen((v) => !v)}
+              aria-label={collectionLabel}
+              aria-expanded={open}
+              className="grid place-items-center w-10 h-10 rounded-full border-2 bg-slate-100 border-slate-400 hover:bg-slate-200 transition-colors cursor-pointer"
+            >
+              <motion.div
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ repeat: Infinity, duration: 2 }}
+              >
+                <TbClockHour4 className="w-5 h-5 text-slate-600" />
+              </motion.div>
+            </button>
           ) : (
             <Link
               href={collectionHref}
               aria-label={collectionLabel}
-              className={`grid place-items-center w-10 h-10 rounded-full border-2 transition-colors ${
-                hasPending
-                  ? "bg-slate-100 border-slate-400 hover:bg-slate-200"
-                  : "bg-blue-50 border-blue-400 hover:bg-blue-100"
-              }`}
+              className="grid place-items-center w-10 h-10 rounded-full border-2 bg-blue-50 border-blue-400 hover:bg-blue-100 transition-colors"
             >
               <motion.div
-                animate={
-                  hasPending ? { scale: [1, 1.1, 1] } : { x: [-1, 1, -1] }
-                }
-                transition={{
-                  repeat: Infinity,
-                  duration: hasPending ? 2 : 1.5,
-                }}
+                animate={{ x: [-1, 1, -1] }}
+                transition={{ repeat: Infinity, duration: 1.5 }}
               >
-                {hasPending ? (
-                  <TbClockHour4 className="w-5 h-5 text-slate-600" />
-                ) : (
-                  <TbTruckDelivery className="w-5 h-5 text-blue-600" />
-                )}
+                <TbTruckDelivery className="w-5 h-5 text-blue-600" />
               </motion.div>
             </Link>
           )}
+
+          <AnimatePresence>
+            {open && hasPending && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 5 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 5 }}
+                className="absolute top-full mt-2 right-0 bg-white border border-slate-200 rounded-2xl p-1.5 flex flex-col gap-1 z-[1002] min-w-[230px] max-w-[290px]"
+              >
+                <div className="px-2 pt-1 pb-0.5 text-[11px] font-semibold text-slate-400 whitespace-nowrap">
+                  {collectionLabel}
+                </div>
+                <PendingRequestRows
+                  list={pendingRequestsList}
+                  onNavigate={() => setOpen(false)}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       )}
     </AnimatePresence>
@@ -252,7 +355,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
     activePostId,
     activeCollectionId,
     pendingRequests,
-    pendingRequestPostId,
+    pendingRequestsList,
   } = useActiveCounts(isAuthenticated);
 
   useEffect(() => {
@@ -323,7 +426,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                   activePostId={activePostId}
                   activeCollectionId={activeCollectionId}
                   pendingRequests={pendingRequests}
-                  pendingRequestPostId={pendingRequestPostId}
+                  pendingRequestsList={pendingRequestsList}
                 />
 
                 <Link
@@ -406,19 +509,21 @@ export default function Header({ children }: { children: React.ReactNode }) {
                               })}
                             </Link>
                           )}
-                          {activeCollections === 0 && (
-                            <Link
-                              href="/map"
-                              onClick={() => setDropdownOpen(false)}
-                              className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
-                            >
-                              <TbTruckDelivery className="w-4 h-4 text-slate-600" />
-                              {t({
-                                ro: "Colectează sticle",
-                                en: "Collect bottles",
-                              })}
-                            </Link>
-                          )}
+                          {activeCollections === 0 &&
+                            pendingRequests <
+                              MAX_PENDING_REQUESTS_PER_COLLECTOR && (
+                              <Link
+                                href="/map"
+                                onClick={() => setDropdownOpen(false)}
+                                className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                              >
+                                <TbTruckDelivery className="w-4 h-4 text-slate-600" />
+                                {t({
+                                  ro: "Colectează sticle",
+                                  en: "Collect bottles",
+                                })}
+                              </Link>
+                            )}
                           <div className="border-t border-slate-100 mt-1 pt-1">
                             <PreferenceSwitcherInline />
                           </div>

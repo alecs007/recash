@@ -7,7 +7,10 @@ import { approveClaimSchema } from "@/lib/validations/post";
 import { notifyClaimApproved, notifyClaimDenied } from "@/lib/notifications";
 import { redis } from "@/lib/redis";
 import { publishPostStatus, publishToUser } from "@/lib/pubsub";
-import { resolvePendingRequests } from "@/lib/claim-requests";
+import {
+  resolvePendingRequests,
+  resolveCollectorPendingElsewhere,
+} from "@/lib/claim-requests";
 import { invalidate, CacheKey } from "@/lib/cache";
 import {
   maybeEmailClaimApproved,
@@ -158,7 +161,10 @@ export async function POST(
         throw e;
       }
 
+      // Other requesters on this post lose out; the approved collector's
+      // requests on other posts are withdrawn (now committed here).
       await resolvePendingRequests(id, "another_collector_chosen", collectorId);
+      await resolveCollectorPendingElsewhere(collectorId, id);
 
       await redis.set(`code:${id}`, code, "EX", ttlSeconds);
 

@@ -7,6 +7,7 @@ import { checkPostBadges } from "@/lib/badges";
 import { startExpiryLoop } from "@/lib/expiry";
 import { dispatchRadarNotifications } from "@/lib/radar";
 import { createPostSchema } from "@/lib/validations/post";
+import { approximateCoords } from "@/lib/geo";
 
 startExpiryLoop();
 
@@ -64,6 +65,8 @@ export async function GET(req: Request) {
       {
         posts: posts.map(({ _count, ...p }) => ({
           ...p,
+          ...approximateCoords(p.latitude, p.longitude),
+          address: null,
           pendingRequestCount: _count.claimRequests,
         })),
       },

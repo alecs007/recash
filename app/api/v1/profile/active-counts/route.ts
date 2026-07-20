@@ -46,7 +46,10 @@ export async function GET() {
       prisma.claimRequest.findMany({
         where: { collectorId: session.user.id, status: "PENDING" },
         orderBy: { createdAt: "desc" },
-        select: { postId: true },
+        select: {
+          postId: true,
+          post: { select: { locationName: true, bottleCount: true } },
+        },
       }),
     ]);
 
@@ -58,10 +61,15 @@ export async function GET() {
         activeCollectionId: collection?.id || null,
         pendingRequests: pendingRequests.length,
         pendingRequestPostId: pendingRequests[0]?.postId || null,
+        pendingRequestsList: pendingRequests.map((r) => ({
+          postId: r.postId,
+          locationName: r.post?.locationName ?? null,
+          bottleCount: r.post?.bottleCount ?? 0,
+        })),
       },
       {
         headers: {
-          "Cache-Control": "private, max-age=5",
+          "Cache-Control": "no-store",
         },
       },
     );

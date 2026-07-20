@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+export const MAX_PENDING_REQUESTS_PER_COLLECTOR = 5;
+
 export const POST_STATUS_CONFIG: Record<
   string,
   { label: { ro: string; en: string }; color: string; Icon: LucideIcon }

@@ -111,8 +111,7 @@ export async function POST(
     if (myPendingCount >= MAX_PENDING_REQUESTS_PER_COLLECTOR) {
       return NextResponse.json(
         {
-          error:
-            "Ai deja o cerere de colectare în așteptare. Retrage-o sau așteaptă răspunsul autorului înainte de a trimite alta.",
+          error: `Poți avea maxim ${MAX_PENDING_REQUESTS_PER_COLLECTOR} cereri de colectare în așteptare. Retrage una înainte de a trimite alta.`,
         },
         { status: 409 },
       );

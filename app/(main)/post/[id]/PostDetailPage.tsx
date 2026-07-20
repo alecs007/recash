@@ -1253,7 +1253,10 @@ function DetailPanel({
         return;
       }
       setShowClaimModal(false);
-      setActiveCounts({ pendingRequests: 1, pendingRequestPostId: post.id });
+      setActiveCounts((c) => ({
+        pendingRequests: c.pendingRequests + 1,
+        pendingRequestPostId: c.pendingRequestPostId ?? post.id,
+      }));
       await mutate();
     } catch {
       setShowClaimModal(false);
@@ -1345,7 +1348,15 @@ function DetailPanel({
         return;
       }
 
-      setActiveCounts({ pendingRequests: 0, pendingRequestPostId: null });
+      setActiveCounts((c) => {
+        const rest = c.pendingRequestsList.filter((r) => r.postId !== post.id);
+        return {
+          pendingRequests: Math.max(0, c.pendingRequests - 1),
+          pendingRequestsList: rest,
+          pendingRequestPostId: rest[0]?.postId ?? null,
+        };
+      });
+      // actionLoading stays on — the redirect unmounts this view.
       onRedirect(`/?toast=claim_cancelled`);
     } catch {
       setActionError(t({ ro: "Eroare de rețea.", en: "Network error." }));
@@ -1757,7 +1768,7 @@ function DetailPanel({
               )}
 
             {/* IN_PROGRESS */}
-            {post.status === "IN_PROGRESS" && (
+            {post.status === "IN_PROGRESS" && (isAuthor || isCollector) && (
               <motion.div
                 key="in-progress"
                 variants={sectionVariants}
@@ -2335,12 +2346,20 @@ function DetailPanel({
           {/* Collect CTA for non-participants on OPEN or CLAIMED posts —
               several collectors can request the same post, so pending
               requests from others don't block a new one. */}
-          {(post.status === "OPEN" || post.status === "CLAIMED") &&
+          <AnimatePresence initial={false}>
+            {(post.status === "OPEN" || post.status === "CLAIMED") &&
             !isAuthor &&
             !isCollector &&
             !isCollectorPending &&
-            post.myRequest?.status !== "DECLINED" && (
-              <>
+            post.myRequest?.status !== "DECLINED" ? (
+              <motion.div
+                key="collect-cta"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.28, ease: EASE }}
+                className="overflow-hidden"
+              >
                 {post.status === "CLAIMED" &&
                   (post.pendingRequestCount ?? 0) > 0 && (
                     <div className="flex items-center gap-2 mb-3 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2">
@@ -2411,8 +2430,9 @@ function DetailPanel({
                     </>
                   )}
                 </motion.button>
-              </>
-            )}
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
 
           <div className="h-px bg-slate-100 mb-7" />
 
@@ -2750,10 +2770,8 @@ export default function PostDetailClient({
   const isCollector = post.isCollector ?? post.collector?.id === userId;
   const showExactLocation =
     isAuthor ||
-    (post.status !== "CANCELLED" &&
-      post.status !== "EXPIRED" &&
-      ((!!isCollector && post.status === "IN_PROGRESS") ||
-        post.status === "COMPLETED"));
+    (!!isCollector &&
+      (post.status === "IN_PROGRESS" || post.status === "COMPLETED"));
   const isCollectorPending =
     post.myRequest?.status === "PENDING" && post.status === "CLAIMED";
   const handleRedirect = (url: string) => router.push(url);

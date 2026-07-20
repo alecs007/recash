@@ -8,6 +8,12 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 const API_KEY = "/api/v1/profile/active-counts";
 
+export interface PendingRequestSummary {
+  postId: string;
+  locationName: string | null;
+  bottleCount: number;
+}
+
 export interface ActiveCounts {
   activePosts: number;
   activeCollections: number;
@@ -16,6 +22,7 @@ export interface ActiveCounts {
   // Non-binding pending collect requests (separate from a bound collection).
   pendingRequests: number;
   pendingRequestPostId: string | null;
+  pendingRequestsList: PendingRequestSummary[];
 }
 
 const EMPTY: ActiveCounts = {
@@ -25,6 +32,7 @@ const EMPTY: ActiveCounts = {
   activeCollectionId: null,
   pendingRequests: 0,
   pendingRequestPostId: null,
+  pendingRequestsList: [],
 };
 
 export function useActiveCounts(authenticated: boolean): ActiveCounts {
@@ -59,11 +67,19 @@ export function useActiveCounts(authenticated: boolean): ActiveCounts {
   return data ?? EMPTY;
 }
 
-export function useSetActiveCounts(): (partial: Partial<ActiveCounts>) => void {
-  return useCallback((partial: Partial<ActiveCounts>): void => {
+type ActiveCountsUpdate =
+  Partial<ActiveCounts> | ((current: ActiveCounts) => Partial<ActiveCounts>);
+
+/** Optimistically patch the header counts, then revalidate. */
+export function useSetActiveCounts(): (update: ActiveCountsUpdate) => void {
+  return useCallback((update: ActiveCountsUpdate): void => {
     void globalMutate<ActiveCounts>(
       API_KEY,
-      (current): ActiveCounts => ({ ...(current ?? EMPTY), ...partial }),
+      (current): ActiveCounts => {
+        const base = current ?? EMPTY;
+        const partial = typeof update === "function" ? update(base) : update;
+        return { ...base, ...partial };
+      },
       { revalidate: true },
     );
   }, []);

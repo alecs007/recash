@@ -44,7 +44,7 @@ vi.mock("@/lib/email-optin", () => ({
   maybeEmailCollectorRequest: h.maybeEmailCollectorRequest,
 }));
 vi.mock("@/lib/claim-requests", () => ({
-  MAX_PENDING_REQUESTS_PER_COLLECTOR: 1,
+  MAX_PENDING_REQUESTS_PER_COLLECTOR: 5,
   countPendingRequests: h.countPendingRequests,
   resolvePendingRequests: h.resolvePendingRequests,
 }));
@@ -149,8 +149,14 @@ describe("POST /posts/[id]/claim (send request)", () => {
     expect(res.status).toBe(409);
   });
 
-  it("409s when the collector already has a pending request (limit 1)", async () => {
-    h.prisma.claimRequest.count.mockResolvedValue(1);
+  it("allows a second concurrent request (under the cap of 5)", async () => {
+    h.prisma.claimRequest.count.mockResolvedValue(2);
+    const res = await POST(makeReq(), { params });
+    expect(res.status).toBe(200);
+  });
+
+  it("409s once the collector hits the cap of 5 pending requests", async () => {
+    h.prisma.claimRequest.count.mockResolvedValue(5);
     const res = await POST(makeReq(), { params });
     expect(res.status).toBe(409);
   });

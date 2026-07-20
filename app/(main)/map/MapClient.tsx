@@ -20,6 +20,7 @@ import {
   Star,
   ChevronRight,
   Clock,
+  Ban,
 } from "lucide-react";
 import { TbTruckDelivery } from "react-icons/tb";
 import { LuFilter } from "react-icons/lu";
@@ -29,6 +30,7 @@ import { FaWineBottle, FaRegCompass } from "react-icons/fa";
 import useSWR from "swr";
 import { useSetActiveCounts } from "@/hooks/useActiveCounts";
 import { isCurrentlyAvailable } from "@/lib/availability";
+import { MAX_PENDING_REQUESTS_PER_COLLECTOR } from "@/lib/constants/posts";
 import { useI18n } from "@/context/I18nContext";
 
 const API = process.env.NEXT_PUBLIC_API_VERSION ?? "v1";
@@ -314,26 +316,104 @@ function LocationRequestRow({
   );
 }
 
+interface ClaimState {
+  isLoggedIn: boolean;
+  isOwnPost: boolean;
+  alreadyRequested: boolean;
+  hasActiveCollection: boolean;
+  atCap: boolean;
+  isClaiming: boolean;
+  /** The collector's request/collection state hasn't loaded yet. */
+  stateLoading: boolean;
+}
+
+interface ClaimButton {
+  disabled: boolean;
+  Icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  loading?: boolean;
+}
+
+/** Button label, icon and disabled state, shared by the list card and overlay. */
+function useClaimButton(s: ClaimState): ClaimButton {
+  const { t } = useI18n();
+
+  if (!s.isLoggedIn) {
+    return {
+      disabled: false,
+      Icon: FaWineBottle,
+      label: t({
+        ro: "Conectează-te și colectează!",
+        en: "Sign in and collect!",
+      }),
+    };
+  }
+  if (s.isOwnPost) {
+    return {
+      disabled: true,
+      Icon: FaWineBottle,
+      label: t({ ro: "Anunțul tău", en: "Your listing" }),
+    };
+  }
+  // Hold the button until the state is known, or it flashes the wrong label.
+  if (s.stateLoading) {
+    return { disabled: true, Icon: Loader2, label: "", loading: true };
+  }
+  if (s.alreadyRequested) {
+    return {
+      disabled: true,
+      Icon: Clock,
+      label: t({ ro: "Cerere trimisă", en: "Request sent" }),
+    };
+  }
+  if (s.hasActiveCollection) {
+    return {
+      disabled: true,
+      Icon: TbTruckDelivery,
+      label: t({ ro: "Colectare activă", en: "Active collection" }),
+    };
+  }
+  if (s.atCap) {
+    return {
+      disabled: true,
+      Icon: Ban,
+      label: t({
+        ro: `Maxim ${MAX_PENDING_REQUESTS_PER_COLLECTOR} cereri active`,
+        en: `Max ${MAX_PENDING_REQUESTS_PER_COLLECTOR} active requests`,
+      }),
+    };
+  }
+  return {
+    disabled: s.isClaiming,
+    Icon: FaWineBottle,
+    label: t({ ro: "Colectează", en: "Collect" }),
+  };
+}
+
 function PostCard({
   post,
   selected,
   onClick,
   onClaim,
   claiming,
-  canClaim,
   isLoggedIn,
   isOwnPost,
   alreadyRequested,
+  hasActiveCollection,
+  atCap,
+  stateLoading,
 }: {
   post: Post;
   selected: boolean;
   onClick: () => void;
   onClaim: (id: string) => void;
   claiming: string | null;
-  canClaim: boolean;
   isLoggedIn: boolean;
   isOwnPost: boolean;
   alreadyRequested: boolean;
+  hasActiveCollection: boolean;
+  atCap: boolean;
+  stateLoading: boolean;
 }) {
   const { t, fmt } = useI18n();
   const collectorEarning =
@@ -345,23 +425,20 @@ function PostCard({
   );
   const urgent = timeLeft !== null && timeLeft.minutes < 360;
 
-  const buttonDisabled =
-    isLoggedIn &&
-    (isOwnPost || !canClaim || alreadyRequested || claiming === post.id);
-
-  const buttonText = () => {
-    if (!isLoggedIn)
-      return t({
-        ro: "Conectează-te și colectează!",
-        en: "Sign in and collect!",
-      });
-    if (isOwnPost) return t({ ro: "Anunțul tău", en: "Your listing" });
-    if (alreadyRequested)
-      return t({ ro: "Cerere trimisă", en: "Request sent" });
-    if (!canClaim)
-      return t({ ro: "Colectare activă", en: "Active collection" });
-    return t({ ro: "Colectează", en: "Collect" });
-  };
+  const {
+    disabled: buttonDisabled,
+    Icon: ButtonIcon,
+    label: buttonLabel,
+    loading: buttonLoading,
+  } = useClaimButton({
+    isLoggedIn,
+    isOwnPost,
+    alreadyRequested,
+    hasActiveCollection,
+    atCap,
+    stateLoading,
+    isClaiming: claiming === post.id,
+  });
 
   return (
     <div
@@ -465,20 +542,14 @@ function PostCard({
             : "bg-[#123424] hover:bg-[#1a4d36] disabled:opacity-40 disabled:cursor-not-allowed"
         } ${buttonDisabled ? "pointer-events-none text-slate-600 bg-slate-300 cursor-not-allowed" : "text-white"}`}
       >
-        {claiming === post.id ? (
+        {claiming === post.id || buttonLoading ? (
           <Loader2 className="w-4 h-4 animate-spin" />
         ) : (
           <>
-            {!canClaim ? (
-              <TbTruckDelivery
-                className={`w-4 h-4 ${buttonDisabled ? "text-slate-600" : "text-lime-400"}`}
-              />
-            ) : (
-              <FaWineBottle
-                className={`w-4 h-4 ${buttonDisabled ? "text-slate-600" : "text-lime-400"}`}
-              />
-            )}
-            {buttonText()}
+            <ButtonIcon
+              className={`w-4 h-4 ${buttonDisabled ? "text-slate-600" : "text-lime-400"}`}
+            />
+            {buttonLabel}
           </>
         )}
       </button>
@@ -491,19 +562,23 @@ function SelectedPostOverlay({
   onClose,
   onClaim,
   claiming,
-  canClaim,
   isLoggedIn,
   isOwnPost,
   alreadyRequested,
+  hasActiveCollection,
+  atCap,
+  stateLoading,
 }: {
   post: Post;
   onClose: () => void;
   onClaim: (id: string) => void;
   claiming: string | null;
-  canClaim: boolean;
   isLoggedIn: boolean;
   isOwnPost: boolean;
   alreadyRequested: boolean;
+  hasActiveCollection: boolean;
+  atCap: boolean;
+  stateLoading: boolean;
 }) {
   const { t, fmt } = useI18n();
   const collectorEarning =
@@ -515,23 +590,20 @@ function SelectedPostOverlay({
   );
   const urgent = timeLeft !== null && timeLeft.minutes < 360; // < 6h
 
-  const buttonDisabled =
-    isLoggedIn &&
-    (isOwnPost || !canClaim || alreadyRequested || claiming === post.id);
-
-  const buttonText = () => {
-    if (!isLoggedIn)
-      return t({
-        ro: "Conectează-te și colectează!",
-        en: "Sign in and collect!",
-      });
-    if (isOwnPost) return t({ ro: "Anunțul tău", en: "Your listing" });
-    if (alreadyRequested)
-      return t({ ro: "Cerere trimisă", en: "Request sent" });
-    if (!canClaim)
-      return t({ ro: "Colectare activă", en: "Active collection" });
-    return t({ ro: "Colectează", en: "Collect" });
-  };
+  const {
+    disabled: buttonDisabled,
+    Icon: ButtonIcon,
+    label: buttonLabel,
+    loading: buttonLoading,
+  } = useClaimButton({
+    isLoggedIn,
+    isOwnPost,
+    alreadyRequested,
+    hasActiveCollection,
+    atCap,
+    stateLoading,
+    isClaiming: claiming === post.id,
+  });
 
   return (
     <div
@@ -633,20 +705,14 @@ function SelectedPostOverlay({
               : "bg-[#123424] hover:bg-[#1a4d36] disabled:opacity-40 disabled:cursor-not-allowed"
           } ${buttonDisabled ? "pointer-events-none text-slate-600 bg-slate-300 cursor-not-allowed" : " text-white"}`}
         >
-          {claiming === post.id ? (
+          {claiming === post.id || buttonLoading ? (
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
             <>
-              {!canClaim ? (
-                <TbTruckDelivery
-                  className={`w-4 h-4 ${buttonDisabled ? "text-slate-600" : "text-lime-400"}`}
-                />
-              ) : (
-                <FaWineBottle
-                  className={`w-4 h-4 ${buttonDisabled ? "text-slate-600" : "text-lime-400"}`}
-                />
-              )}
-              {buttonText()}
+              <ButtonIcon
+                className={`w-4 h-4 ${buttonDisabled ? "text-slate-600" : "text-lime-400"}`}
+              />
+              {buttonLabel}
             </>
           )}
         </button>
@@ -1120,7 +1186,11 @@ export default function MapPage() {
     ? (filtered.find((p) => p.id === selectedId) ?? null)
     : null;
 
-  const canClaim = isLoggedIn && !activeData?.activeCollection;
+  // Signed in but the collector's request/collection state hasn't arrived yet.
+  const stateLoading = isLoggedIn && activeData === undefined;
+  const hasActiveCollection = !!activeData?.activeCollection;
+  const pendingCount = activeData?.pendingRequests?.length ?? 0;
+  const atCap = pendingCount >= MAX_PENDING_REQUESTS_PER_COLLECTOR;
 
   const requestedPostIds = useMemo(
     () => new Set(activeData?.pendingRequests?.map((r) => r.post.id) ?? []),
@@ -1210,6 +1280,16 @@ export default function MapPage() {
         return;
       }
 
+      if (atCap) {
+        setClaimError(
+          t({
+            ro: `Ai deja ${MAX_PENDING_REQUESTS_PER_COLLECTOR} cereri în așteptare. Retrage una înainte de a trimite alta.`,
+            en: `You already have ${MAX_PENDING_REQUESTS_PER_COLLECTOR} pending requests. Withdraw one before sending another.`,
+          }),
+        );
+        return;
+      }
+
       setPendingClaimPostId(postId);
       setShowCollectModal(true);
     },
@@ -1220,6 +1300,7 @@ export default function MapPage() {
       posts,
       currentUserId,
       requestedPostIds,
+      atCap,
       t,
     ],
   );
@@ -1254,7 +1335,10 @@ export default function MapPage() {
       await mutate();
       await mutateActive();
 
-      setActiveCounts({ pendingRequests: 1, pendingRequestPostId: postId });
+      setActiveCounts((c) => ({
+        pendingRequests: c.pendingRequests + 1,
+        pendingRequestPostId: c.pendingRequestPostId ?? postId,
+      }));
       router.push(`/post/${postId}`);
     } catch {
       setShowCollectModal(false);
@@ -1579,7 +1663,9 @@ export default function MapPage() {
                     onClick={() => handleSelectPost(post.id)}
                     onClaim={handleClaim}
                     claiming={claiming}
-                    canClaim={canClaim}
+                    hasActiveCollection={hasActiveCollection}
+                    atCap={atCap}
+                    stateLoading={stateLoading}
                     isLoggedIn={isLoggedIn}
                     isOwnPost={post.author.id === currentUserId}
                     alreadyRequested={requestedPostIds.has(post.id)}
@@ -1616,7 +1702,9 @@ export default function MapPage() {
               onClose={() => setSelectedId(null)}
               onClaim={handleClaim}
               claiming={claiming}
-              canClaim={canClaim}
+              hasActiveCollection={hasActiveCollection}
+              atCap={atCap}
+              stateLoading={stateLoading}
               isLoggedIn={isLoggedIn}
               isOwnPost={selectedPost.author.id === currentUserId}
               alreadyRequested={requestedPostIds.has(selectedPost.id)}

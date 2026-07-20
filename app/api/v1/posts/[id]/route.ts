@@ -5,6 +5,7 @@ import { maybeExpirePost } from "@/lib/expiry";
 import { releaseTimedOutCollection } from "@/lib/collection-timeout";
 import { rateLimit, RL, getClientIp } from "@/lib/rate-limit";
 import { isValidObjectId } from "@/lib/validate";
+import { approximateCoords } from "@/lib/geo";
 
 const collectorPublicSelect = {
   id: true,
@@ -155,10 +156,22 @@ export async function GET(
           })
         : null;
 
+    // Exact pin/address: author always, bound collector once approved.
+    const canSeeExactLocation =
+      isAuthor ||
+      (isCollector &&
+        (post.status === "IN_PROGRESS" || post.status === "COMPLETED"));
+
     // Requester identities go to the author only; everyone else gets the count.
     const { claimRequests, ...rest } = post;
     const base = {
       ...rest,
+      ...(canSeeExactLocation
+        ? {}
+        : {
+            ...approximateCoords(post.latitude, post.longitude),
+            address: null,
+          }),
       pendingRequestCount,
       claimRequests: isAuthor ? claimRequests : undefined,
       myRequest,

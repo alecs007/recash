@@ -26,6 +26,7 @@ const h = vi.hoisted(() => ({
   maybeEmailClaimDenied: vi.fn(),
   countPendingRequests: vi.fn(),
   resolvePendingRequests: vi.fn(),
+  resolveCollectorPendingElsewhere: vi.fn(),
   invalidate: vi.fn(),
 }));
 
@@ -51,6 +52,7 @@ vi.mock("@/lib/email-optin", () => ({
 vi.mock("@/lib/claim-requests", () => ({
   countPendingRequests: h.countPendingRequests,
   resolvePendingRequests: h.resolvePendingRequests,
+  resolveCollectorPendingElsewhere: h.resolveCollectorPendingElsewhere,
 }));
 vi.mock("@/lib/cache", () => ({
   invalidate: h.invalidate,
@@ -120,6 +122,7 @@ beforeEach(() => {
   h.maybeEmailClaimDenied.mockResolvedValue(undefined);
   h.countPendingRequests.mockResolvedValue(0);
   h.resolvePendingRequests.mockResolvedValue([]);
+  h.resolveCollectorPendingElsewhere.mockResolvedValue(undefined);
   h.invalidate.mockResolvedValue(undefined);
 });
 
@@ -188,6 +191,16 @@ describe("POST /posts/[id]/approve", () => {
       "another_collector_chosen",
       COLLECTOR_ID,
     );
+    // The approved collector's requests on other posts are retracted.
+    expect(h.resolveCollectorPendingElsewhere).toHaveBeenCalledWith(
+      COLLECTOR_ID,
+      POST_ID,
+    );
+  });
+
+  it("does not retract other requests when the request is declined", async () => {
+    await POST(makeReq(denyBody), { params });
+    expect(h.resolveCollectorPendingElsewhere).not.toHaveBeenCalled();
   });
 
   it("denies the last request: returns the post to OPEN, no code", async () => {

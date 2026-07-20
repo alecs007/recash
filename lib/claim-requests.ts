@@ -67,7 +67,8 @@ export async function resolvePendingRequests(
         link,
         metadata: { postId, reason },
       });
-
+      // The detail page treats `claim_denied` as "your request is gone" and
+      // sends the collector back to the map.
       publishToUser(r.collectorId, {
         type: "post:cancelled",
         payload: {
@@ -83,11 +84,6 @@ export async function resolvePendingRequests(
   return pending.map((r) => r.collectorId);
 }
 
-/**
- * Resolves a collector's ACCEPTED request when their collection ends without
- * completing (timeout, bail-out, author cancel), so the stale row doesn't
- * block them from re-requesting the post.
- */
 export async function resolveAcceptedRequest(
   postId: string,
   collectorId: string | null,
