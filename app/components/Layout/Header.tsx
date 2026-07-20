@@ -308,7 +308,7 @@ function ActiveIndicator({
                 initial={{ opacity: 0, scale: 0.9, y: 5 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 5 }}
-                className="absolute top-full mt-2 right-0 bg-white border border-slate-200 rounded-2xl p-1.5 flex flex-col gap-1 z-[1002] min-w-[230px] max-w-[290px]"
+                className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-white border border-slate-200 rounded-2xl p-1.5 flex flex-col gap-1 z-[1002] min-w-[230px] max-w-[290px]"
               >
                 <div className="px-2 pt-1 pb-0.5 text-[11px] font-semibold text-slate-400 whitespace-nowrap">
                   {collectionLabel}
