@@ -1252,7 +1252,7 @@ function DetailPanel({
         return;
       }
       setShowClaimModal(false);
-      setActiveCounts({});
+      setActiveCounts({ pendingRequests: 1, pendingRequestPostId: post.id });
       await mutate();
     } catch {
       setShowClaimModal(false);
@@ -1341,7 +1341,7 @@ function DetailPanel({
         setActionError(j.error ?? t({ ro: "Eroare", en: "Error" }));
         mutate();
       } else {
-        setActiveCounts({});
+        setActiveCounts({ pendingRequests: 0, pendingRequestPostId: null });
         onRedirect(`/?toast=claim_cancelled`);
       }
     } catch {
@@ -1676,6 +1676,24 @@ function DetailPanel({
                     </p>
                   </div>
                 </motion.div>
+                {(post.pendingRequestCount ?? 0) > 1 &&
+                  (() => {
+                    const others = (post.pendingRequestCount ?? 1) - 1;
+                    return (
+                      <div className="w-fit flex items-center gap-2 text-xs font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-xl pr-4 pl-3 py-2">
+                        <FaInfoCircle className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                        {others === 1
+                          ? t({
+                              ro: "Încă o persoană vrea să colecteze sticlele!",
+                              en: "One more person wants to collect the bottles!",
+                            })
+                          : t({
+                              ro: `Încă ${others} persoane vor să colecteze sticlele!`,
+                              en: `${others} more people want to collect the bottles!`,
+                            })}
+                      </div>
+                    );
+                  })()}
                 <AnimatePresence>
                   {actionError && (
                     <motion.p

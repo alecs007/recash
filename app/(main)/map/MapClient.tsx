@@ -1254,7 +1254,7 @@ export default function MapPage() {
       await mutate();
       await mutateActive();
 
-      setActiveCounts({});
+      setActiveCounts({ pendingRequests: 1, pendingRequestPostId: postId });
       router.push(`/post/${postId}`);
     } catch {
       setShowCollectModal(false);

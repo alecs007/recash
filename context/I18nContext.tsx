@@ -71,10 +71,11 @@ export function I18nProvider({
   const fmt = useCallback(
     (amountRon: number, opts?: { sign?: boolean }) => {
       const value = currency === "EUR" ? amountRon / RON_PER_EUR : amountRon;
-      const formatted = new Intl.NumberFormat(
-        locale === "ro" ? "ro-RO" : "en-GB",
-        { minimumFractionDigits: 2, maximumFractionDigits: 2 },
-      ).format(value);
+
+      const formatted = new Intl.NumberFormat("en-GB", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(value);
       const sign = opts?.sign && amountRon > 0 ? "+" : "";
       if (currency === "EUR")
         return locale === "ro"
