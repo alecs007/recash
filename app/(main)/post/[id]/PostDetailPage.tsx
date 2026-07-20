@@ -1143,11 +1143,27 @@ function DetailPanel({
 
   const schedule = post.availabilitySchedule as unknown as DaySchedule[] | null;
   const isUnavailableNow =
-    post.status === "OPEN" &&
+    (post.status === "OPEN" || post.status === "CLAIMED") &&
     !!schedule?.length &&
     !isCurrentlyAvailable(schedule);
 
   const isNonParticipant = !isAuthor && !isCollector;
+
+  // Only the author ever sees more than one pending request, so pluralize the
+  // CLAIMED pill just for them when several collectors have requested.
+  const claimedPill =
+    isAuthor && (post.pendingRequestCount ?? 0) > 1
+      ? {
+          label: t({
+            ro: `${post.pendingRequestCount} cereri în așteptare`,
+            en: `${post.pendingRequestCount} requests pending`,
+          }),
+          className: STATUS_CONFIG.CLAIMED.className,
+        }
+      : {
+          label: t(STATUS_CONFIG.CLAIMED.label),
+          className: STATUS_CONFIG.CLAIMED.className,
+        };
 
   const statusCfg = isUnavailableNow
     ? {
@@ -1159,10 +1175,12 @@ function DetailPanel({
           label: t({ ro: "Finalizat", en: "Completed" }),
           className: "bg-slate-100 text-slate-500",
         }
-      : {
-          label: t(STATUS_CONFIG[post.status].label),
-          className: STATUS_CONFIG[post.status].className,
-        };
+      : post.status === "CLAIMED"
+        ? claimedPill
+        : {
+            label: t(STATUS_CONFIG[post.status].label),
+            className: STATUS_CONFIG[post.status].className,
+          };
   const posterPct = 100 - post.collectorSharePercent;
   const collectorEarning =
     Math.round(((post.estimatedValue * post.collectorSharePercent) / 100) * 2) /
@@ -1234,7 +1252,7 @@ function DetailPanel({
         return;
       }
       setShowClaimModal(false);
-      setActiveCounts({ activeCollections: 1, activeCollectionId: post.id });
+      setActiveCounts({});
       await mutate();
     } catch {
       setShowClaimModal(false);
@@ -1253,27 +1271,38 @@ function DetailPanel({
     mutate();
   };
 
+  const [actionCollectorId, setActionCollectorId] = useState<string | null>(
+    null,
+  );
+
   const handleApprove = useCallback(
-    async (action: "approve" | "deny") => {
+    async (action: "approve" | "deny", collectorId: string) => {
       setActionLoading(true);
+      setActionCollectorId(collectorId);
       setActionError("");
       try {
         const res = await fetch(`/api/v1/posts/${post.id}/approve`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action }),
+          body: JSON.stringify({ action, collectorId }),
         });
         const j = await res.json();
         if (!res.ok) {
           setActionError(j.error ?? t({ ro: "Eroare", en: "Error" }));
+          mutate();
         } else if (action === "deny") {
           showToast(
             "info",
             t({ ro: "Cerere refuzată", en: "Request declined" }),
-            t({
-              ro: "Anunțul tău este din nou disponibil pe hartă.",
-              en: "Your listing is available on the map again.",
-            }),
+            j.status === "OPEN"
+              ? t({
+                  ro: "Nu mai sunt cereri — anunțul tău este disponibil.",
+                  en: "No requests left — your listing is available.",
+                })
+              : t({
+                  ro: "Cererea a fost refuzată. Mai ai cereri în așteptare.",
+                  en: "The request was declined. You still have pending requests.",
+                }),
           );
           mutate();
         } else {
@@ -1281,8 +1310,8 @@ function DetailPanel({
             "success",
             t({ ro: "Cerere aprobată!", en: "Request approved!" }),
             t({
-              ro: "Colectorul are 30 de minute să ajungă la tine.",
-              en: "The collector has 30 minutes to reach you.",
+              ro: "Colectorul are 60 de minute să ajungă la tine.",
+              en: "The collector has 60 minutes to reach you.",
             }),
           );
           mutate();
@@ -1291,10 +1320,36 @@ function DetailPanel({
         setActionError(t({ ro: "Eroare de rețea.", en: "Network error." }));
       } finally {
         setActionLoading(false);
+        setActionCollectorId(null);
       }
     },
     [post.id, mutate, t],
   );
+
+  // Withdraw my own pending collect request (requesters are not post
+  // participants, so this goes through DELETE /claim, not /cancel).
+  const handleWithdraw = useCallback(async () => {
+    setShowCancel(false);
+    setActionLoading(true);
+    setActionError("");
+    try {
+      const res = await fetch(`/api/v1/posts/${post.id}/claim`, {
+        method: "DELETE",
+      });
+      const j = await res.json();
+      if (!res.ok) {
+        setActionError(j.error ?? t({ ro: "Eroare", en: "Error" }));
+        mutate();
+      } else {
+        setActiveCounts({});
+        onRedirect(`/?toast=claim_cancelled`);
+      }
+    } catch {
+      setActionError(t({ ro: "Eroare de rețea.", en: "Network error." }));
+    } finally {
+      setActionLoading(false);
+    }
+  }, [post.id, mutate, onRedirect, setActiveCounts, t]);
 
   const handleCancel = useCallback(async () => {
     setShowCancel(false);
@@ -1426,150 +1481,166 @@ function DetailPanel({
               </motion.div>
             )}
 
-            {/* CLAIMED (author) */}
-            {post.status === "CLAIMED" && isAuthor && post.collector && (
-              <motion.div
-                key="claimed-author"
-                variants={sectionVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                className="mb-7 space-y-4"
-              >
+            {/* CLAIMED (author) — one card per pending collect request */}
+            {post.status === "CLAIMED" &&
+              isAuthor &&
+              (post.claimRequests?.length ?? 0) > 0 && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1, duration: 0.35, ease: EASE }}
-                  className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3"
+                  key="claimed-author"
+                  variants={sectionVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  className="mb-7 space-y-4"
                 >
-                  <UserHoverCard userId={post.collector.id}>
-                    <Link
-                      href={`/user/${post.collector.id}`}
-                      className="w-11 h-11 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 hover:ring-2 hover:ring-lime-400 hover:ring-offset-1 transition-all"
-                    >
-                      {post.collector.image ? (
-                        <Image
-                          src={post.collector.image}
-                          alt={post.collector.name ?? ""}
-                          width={44}
-                          height={44}
-                          priority
-                          className="object-cover w-full h-full"
-                        />
-                      ) : (
-                        <span className="text-sm font-bold text-slate-500">
-                          {post.collector.name?.[0] ?? "?"}
-                        </span>
-                      )}
-                    </Link>
-                  </UserHoverCard>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <UserHoverCard userId={post.collector.id}>
-                        <Link
-                          href={`/user/${post.collector.id}`}
-                          className="text-sm font-bold text-slate-900 truncate hover:text-lime-700 transition-colors flex items-center gap-0.5"
-                        >
-                          {post.collector.name ??
-                            t({ ro: "Colector", en: "Collector" })}
-                          {post.collector.certified && (
-                            <VerifiedBadge className="w-4 h-4 shrink-0" />
-                          )}
-                        </Link>
-                      </UserHoverCard>
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <Star className="w-3 h-3 text-[#FFDF00] fill-[#FFDF00]" />
-                        <span className="text-xs text-slate-500">
-                          {post.collector.reputationScore.toFixed(1)}{" "}
-                          <span className="text-slate-400">
-                            ({post.collector.ratingCount})
-                          </span>
-                        </span>
-                      </div>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {t({
-                        ro: "Vrea să colecteze sticlele tale. Odată aprobat, va avea 60 min la dispoziție să ajungă.",
-                        en: "Wants to collect your bottles. Once approved, they'll have 60 minutes to arrive.",
-                      })}
-                    </p>
-                  </div>
-                </motion.div>
+                  <p className="text-sm text-slate-600 leading-relaxed">
+                    {(post.claimRequests?.length ?? 0) === 1
+                      ? t({
+                          ro: "Un colector vrea să îți preia sticlele. Odată aprobat, va avea 60 min la dispoziție să ajungă.",
+                          en: "A collector wants to pick up your bottles. Once approved, they'll have 60 minutes to arrive.",
+                        })
+                      : t({
+                          ro: `${post.claimRequests?.length} colectori vor să îți preia sticlele. Alege unul — ceilalți vor fi anunțați automat.`,
+                          en: `${post.claimRequests?.length} collectors want to pick up your bottles. Choose one — the others are notified automatically.`,
+                        })}
+                  </p>
 
-                <AnimatePresence>
-                  {actionError && (
-                    <motion.p
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="text-sm text-red-500 font-medium overflow-hidden"
-                    >
-                      {actionError}
-                    </motion.p>
-                  )}
-                </AnimatePresence>
+                  {post.claimRequests?.map((request, i) => {
+                    const collector = request.collector;
+                    const busy =
+                      actionLoading && actionCollectorId === collector.id;
+                    return (
+                      <motion.div
+                        key={collector.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{
+                          delay: 0.08 + i * 0.06,
+                          duration: 0.35,
+                          ease: EASE,
+                        }}
+                        className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 space-y-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          <UserHoverCard userId={collector.id}>
+                            <Link
+                              href={`/user/${collector.id}`}
+                              className="w-11 h-11 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 hover:ring-2 hover:ring-lime-400 hover:ring-offset-1 transition-all"
+                            >
+                              {collector.image ? (
+                                <Image
+                                  src={collector.image}
+                                  alt={collector.name ?? ""}
+                                  width={44}
+                                  height={44}
+                                  priority
+                                  className="object-cover w-full h-full"
+                                />
+                              ) : (
+                                <span className="text-sm font-bold text-slate-500">
+                                  {collector.name?.[0] ?? "?"}
+                                </span>
+                              )}
+                            </Link>
+                          </UserHoverCard>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <UserHoverCard userId={collector.id}>
+                                <Link
+                                  href={`/user/${collector.id}`}
+                                  className="text-sm font-bold text-slate-900 truncate hover:text-lime-700 transition-colors flex items-center gap-0.5"
+                                >
+                                  {collector.name ??
+                                    t({ ro: "Colector", en: "Collector" })}
+                                  {collector.certified && (
+                                    <VerifiedBadge className="w-4 h-4 shrink-0" />
+                                  )}
+                                </Link>
+                              </UserHoverCard>
+                              <div className="flex items-center gap-1 mt-0.5">
+                                <Star className="w-3 h-3 text-[#FFDF00] fill-[#FFDF00]" />
+                                <span className="text-xs text-slate-500">
+                                  {(collector.reputationScore ?? 0).toFixed(1)}{" "}
+                                  <span className="text-slate-400">
+                                    ({collector.ratingCount ?? 0})
+                                  </span>
+                                </span>
+                              </div>
+                            </div>
+                            {request.createdAt && (
+                              <p className="text-xs text-slate-400 mt-0.5">
+                                {t({
+                                  ro: "Cerere trimisă la ",
+                                  en: "Requested at ",
+                                })}
+                                {new Date(request.createdAt).toLocaleTimeString(
+                                  locale === "ro" ? "ro-RO" : "en-GB",
+                                  { hour: "2-digit", minute: "2-digit" },
+                                )}
+                              </p>
+                            )}
+                          </div>
+                        </div>
 
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.18, duration: 0.3, ease: EASE }}
-                  className="flex gap-3"
-                >
+                        <div className="flex gap-3">
+                          <motion.button
+                            onClick={() => handleApprove("deny", collector.id)}
+                            disabled={actionLoading}
+                            whileTap={{ scale: 0.96 }}
+                            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-slate-200 text-slate-700 font-semibold text-sm hover:border-red-200 hover:text-red-600 hover:bg-red-50 transition-all disabled:opacity-40 cursor-pointer"
+                          >
+                            <XCircle className="w-4 h-4" />{" "}
+                            {t({ ro: "Refuză", en: "Decline" })}
+                          </motion.button>
+                          <motion.button
+                            onClick={() =>
+                              handleApprove("approve", collector.id)
+                            }
+                            disabled={actionLoading}
+                            whileTap={{ scale: 0.96 }}
+                            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all disabled:opacity-40 cursor-pointer shadow-sm"
+                          >
+                            {busy ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <>
+                                <CheckCircle className="w-4 h-4" />
+                                {t({ ro: "Aprobă", en: "Approve" })}
+                              </>
+                            )}
+                          </motion.button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+
+                  <AnimatePresence>
+                    {actionError && (
+                      <motion.p
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="text-sm text-red-500 font-medium overflow-hidden"
+                      >
+                        {actionError}
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
+
                   <motion.button
-                    onClick={() => handleApprove("deny")}
+                    onClick={() => setShowCancel(true)}
                     disabled={actionLoading}
-                    whileTap={{ scale: 0.96 }}
-                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-slate-200 text-slate-700 font-semibold text-sm hover:border-red-200 hover:text-red-600 hover:bg-red-50 transition-all disabled:opacity-40 cursor-pointer"
+                    whileTap={{ scale: 0.97 }}
+                    className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
                   >
-                    <XCircle className="w-4 h-4" />{" "}
-                    {t({ ro: "Refuză", en: "Decline" })}
+                    {t({ ro: "Anulează anunțul", en: "Cancel listing" })}
                   </motion.button>
-                  <motion.button
-                    onClick={() => handleApprove("approve")}
-                    disabled={actionLoading}
-                    whileTap={{ scale: 0.96 }}
-                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#123424] text-white font-bold text-sm hover:bg-[#1a4d36] transition-all disabled:opacity-40 cursor-pointer shadow-sm"
-                  >
-                    <AnimatePresence mode="wait">
-                      {actionLoading ? (
-                        <motion.span
-                          key="spin"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                        >
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        </motion.span>
-                      ) : (
-                        <motion.span
-                          key="check"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="flex items-center gap-2"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                          {t({ ro: "Aprobă", en: "Approve" })}
-                        </motion.span>
-                      )}
-                    </AnimatePresence>
-                  </motion.button>
+                  <div className="h-px bg-slate-100 mt-2" />
                 </motion.div>
+              )}
 
-                <motion.button
-                  onClick={() => setShowCancel(true)}
-                  disabled={actionLoading}
-                  whileTap={{ scale: 0.97 }}
-                  className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
-                >
-                  {t({ ro: "Anulează anunțul", en: "Cancel listing" })}
-                </motion.button>
-                <div className="h-px bg-slate-100 mt-2" />
-              </motion.div>
-            )}
-
-            {/* CLAIMED (collector) */}
-            {post.status === "CLAIMED" && isCollector && (
+            {/* CLAIMED (requester) — my pending collect request */}
+            {post.status === "CLAIMED" && isCollectorPending && (
               <motion.div
                 key="claimed-collector"
                 variants={sectionVariants}
@@ -1618,15 +1689,41 @@ function DetailPanel({
                   )}
                 </AnimatePresence>
                 <button
-                  onClick={() => setShowCancel(true)}
+                  onClick={handleWithdraw}
                   disabled={actionLoading}
                   className="text-sm text-red-400 hover:text-red-600 font-medium transition-colors cursor-pointer disabled:opacity-40"
                 >
-                  {t({ ro: "Anulează cererea", en: "Cancel request" })}
+                  {actionLoading
+                    ? t({ ro: "Se retrage…", en: "Withdrawing…" })
+                    : t({ ro: "Retrage cererea", en: "Withdraw request" })}
                 </button>
                 <div className="h-px bg-slate-100 mt-2" />
               </motion.div>
             )}
+
+            {/* My request was declined by the author */}
+            {(post.status === "CLAIMED" || post.status === "OPEN") &&
+              post.myRequest?.status === "DECLINED" && (
+                <motion.div
+                  key="request-declined"
+                  variants={sectionVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  className="mb-7 space-y-3"
+                >
+                  <div className="flex items-start gap-2.5 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
+                    <XCircle className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                    <p className="text-sm text-slate-600">
+                      {t({
+                        ro: "Autorul a refuzat cererea ta pentru acest anunț.",
+                        en: "The author declined your request for this listing.",
+                      })}
+                    </p>
+                  </div>
+                  <div className="h-px bg-slate-100 mt-2" />
+                </motion.div>
+              )}
 
             {/* IN_PROGRESS */}
             {post.status === "IN_PROGRESS" && (
@@ -2149,12 +2246,13 @@ function DetailPanel({
                   },
                 )}
               </span>
-              {post.status === "OPEN" && post.expiresAt && (
-                <div className="flex items-center gap-1.5 text-slate-400">
-                  <Clock className="w-3 h-3" />
-                  <ExpiryText expiresAt={post.expiresAt} />
-                </div>
-              )}
+              {(post.status === "OPEN" || post.status === "CLAIMED") &&
+                post.expiresAt && (
+                  <div className="flex items-center gap-1.5 text-slate-400">
+                    <Clock className="w-3 h-3" />
+                    <ExpiryText expiresAt={post.expiresAt} />
+                  </div>
+                )}
               {post.completedAt && (
                 <span className="flex items-center gap-1">
                   <CheckCircle className="w-3 h-3 text-lime-400" />
@@ -2203,66 +2301,87 @@ function DetailPanel({
             ) : null}
           </motion.div>
 
-          {/* Collect CTA for non-participants on OPEN posts */}
-          {post.status === "OPEN" && !isAuthor && !isCollector && (
-            <>
-              <AnimatePresence>
-                {claimError && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="overflow-hidden mb-4"
-                  >
-                    <div className="flex items-center justify-between bg-red-50 border border-red-200 rounded-xl px-3 py-2">
-                      <span className="text-xs font-semibold text-red-600">
-                        {claimError}
-                      </span>
-                      <button
-                        onClick={() => setClaimError(null)}
-                        className="text-red-400 hover:text-red-600 ml-2"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+          {/* Collect CTA for non-participants on OPEN or CLAIMED posts —
+              several collectors can request the same post, so pending
+              requests from others don't block a new one. */}
+          {(post.status === "OPEN" || post.status === "CLAIMED") &&
+            !isAuthor &&
+            !isCollector &&
+            !isCollectorPending &&
+            post.myRequest?.status !== "DECLINED" && (
+              <>
+                {post.status === "CLAIMED" &&
+                  (post.pendingRequestCount ?? 0) > 0 && (
+                    <div className="flex items-center gap-2 mb-3 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2">
+                      <Clock className="w-3.5 h-3.5 shrink-0" />
+                      {(post.pendingRequestCount ?? 0) === 1
+                        ? t({
+                            ro: "Un colector a trimis deja o cerere — poți trimite și tu una.",
+                            en: "One collector already sent a request — you can still send yours.",
+                          })
+                        : t({
+                            ro: `${post.pendingRequestCount} colectori au trimis deja cereri — poți trimite și tu una.`,
+                            en: `${post.pendingRequestCount} collectors already sent requests — you can still send yours.`,
+                          })}
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <motion.button
-                onClick={isUnavailableNow ? undefined : handleClaimClick}
-                disabled={isUnavailableNow}
-                whileTap={isUnavailableNow ? {} : { scale: 0.97 }}
-                className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition-all mb-7 ${
-                  isUnavailableNow
-                    ? "bg-slate-200 text-slate-500 cursor-not-allowed"
-                    : "bg-[#123424] text-white hover:bg-[#1a4d36] cursor-pointer"
-                }`}
-              >
-                {isUnavailableNow ? (
-                  <>
-                    <TbCancel className="w-4 h-4" />
-                    {t({
-                      ro: "Indisponibil momentan",
-                      en: "Currently unavailable",
-                    })}
-                  </>
-                ) : (
-                  <>
-                    <FaWineBottle className="w-4 h-4 text-lime-400" />
-                    {isLoggedIn
-                      ? t({
-                          ro: "Colectează sticlele",
-                          en: "Collect the bottles",
-                        })
-                      : t({
-                          ro: "Conectează-te și colectează!",
-                          en: "Sign in and collect!",
-                        })}
-                  </>
-                )}
-              </motion.button>
-            </>
-          )}
+                  )}
+                <AnimatePresence>
+                  {claimError && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden mb-4"
+                    >
+                      <div className="flex items-center justify-between bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+                        <span className="text-xs font-semibold text-red-600">
+                          {claimError}
+                        </span>
+                        <button
+                          onClick={() => setClaimError(null)}
+                          className="text-red-400 hover:text-red-600 ml-2"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                <motion.button
+                  onClick={isUnavailableNow ? undefined : handleClaimClick}
+                  disabled={isUnavailableNow}
+                  whileTap={isUnavailableNow ? {} : { scale: 0.97 }}
+                  className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition-all mb-7 ${
+                    isUnavailableNow
+                      ? "bg-slate-200 text-slate-500 cursor-not-allowed"
+                      : "bg-[#123424] text-white hover:bg-[#1a4d36] cursor-pointer"
+                  }`}
+                >
+                  {isUnavailableNow ? (
+                    <>
+                      <TbCancel className="w-4 h-4" />
+                      {t({
+                        ro: "Indisponibil momentan",
+                        en: "Currently unavailable",
+                      })}
+                    </>
+                  ) : (
+                    <>
+                      <FaWineBottle className="w-4 h-4 text-lime-400" />
+                      {isLoggedIn
+                        ? t({
+                            ro: "Colectează sticlele",
+                            en: "Collect the bottles",
+                          })
+                        : t({
+                            ro: "Conectează-te și colectează!",
+                            en: "Sign in and collect!",
+                          })}
+                    </>
+                  )}
+                </motion.button>
+              </>
+            )}
 
           <div className="h-px bg-slate-100 mb-7" />
 
@@ -2539,7 +2658,7 @@ function DetailPanel({
         <EmailOptinPopup context="author" postId={post.id} />
       )}
 
-      {isCollector && post.status === "CLAIMED" && (
+      {isCollectorPending && post.status === "CLAIMED" && (
         <EmailOptinPopup context="collector" postId={post.id} />
       )}
 
@@ -2604,7 +2723,8 @@ export default function PostDetailClient({
       post.status !== "EXPIRED" &&
       ((!!isCollector && post.status === "IN_PROGRESS") ||
         post.status === "COMPLETED"));
-  const isCollectorPending = !!isCollector && post.status === "CLAIMED";
+  const isCollectorPending =
+    post.myRequest?.status === "PENDING" && post.status === "CLAIMED";
   const handleRedirect = (url: string) => router.push(url);
 
   return (

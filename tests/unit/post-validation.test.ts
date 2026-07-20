@@ -123,9 +123,30 @@ describe("reviewSchema", () => {
 });
 
 describe("approveClaimSchema", () => {
-  it("accepts only approve/deny", () => {
-    expect(approveClaimSchema.safeParse({ action: "approve" }).success).toBe(true);
-    expect(approveClaimSchema.safeParse({ action: "deny" }).success).toBe(true);
-    expect(approveClaimSchema.safeParse({ action: "maybe" }).success).toBe(false);
+  const collectorId = "507f1f77bcf86cd799439011";
+
+  it("accepts approve/deny with a valid collectorId", () => {
+    expect(
+      approveClaimSchema.safeParse({ action: "approve", collectorId }).success,
+    ).toBe(true);
+    expect(
+      approveClaimSchema.safeParse({ action: "deny", collectorId }).success,
+    ).toBe(true);
+  });
+
+  it("rejects an invalid action", () => {
+    expect(
+      approveClaimSchema.safeParse({ action: "maybe", collectorId }).success,
+    ).toBe(false);
+  });
+
+  it("requires a valid collectorId", () => {
+    expect(approveClaimSchema.safeParse({ action: "approve" }).success).toBe(
+      false,
+    );
+    expect(
+      approveClaimSchema.safeParse({ action: "approve", collectorId: "nope" })
+        .success,
+    ).toBe(false);
   });
 });

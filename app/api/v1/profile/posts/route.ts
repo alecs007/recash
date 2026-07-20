@@ -14,6 +14,13 @@ const VALID_STATUSES = new Set<PostStatus>([
   "EXPIRED",
 ]);
 
+function withPendingCount<T extends { _count: { claimRequests: number } }>({
+  _count,
+  ...post
+}: T) {
+  return { ...post, pendingRequestCount: _count.claimRequests };
+}
+
 const STATUS_ORDER: Record<PostStatus, number> = {
   OPEN: 0,
   CLAIMED: 1,
@@ -68,6 +75,17 @@ export async function GET(req: Request) {
             take: 200,
             include: {
               collector: { select: { id: true, name: true, image: true } },
+              claimRequests: {
+                where: { status: "PENDING" },
+                orderBy: { createdAt: "asc" },
+                take: 4,
+                select: {
+                  collector: { select: { id: true, name: true, image: true } },
+                },
+              },
+              _count: {
+                select: { claimRequests: { where: { status: "PENDING" } } },
+              },
               transaction: {
                 select: {
                   posterEarning: true,
@@ -90,7 +108,7 @@ export async function GET(req: Request) {
       });
 
       return NextResponse.json({
-        posts: result.sorted.slice(skip, skip + limit),
+        posts: result.sorted.slice(skip, skip + limit).map(withPendingCount),
         total: result.total,
         page,
         totalPages: Math.ceil(result.total / limit),
@@ -106,6 +124,17 @@ export async function GET(req: Request) {
           take: limit,
           include: {
             collector: { select: { id: true, name: true, image: true } },
+            claimRequests: {
+              where: { status: "PENDING" },
+              orderBy: { createdAt: "asc" },
+              take: 4,
+              select: {
+                collector: { select: { id: true, name: true, image: true } },
+              },
+            },
+            _count: {
+              select: { claimRequests: { where: { status: "PENDING" } } },
+            },
             transaction: {
               select: {
                 posterEarning: true,
@@ -119,7 +148,7 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json({
-      posts: result.posts,
+      posts: result.posts.map(withPendingCount),
       total: result.total,
       page,
       totalPages: Math.ceil(result.total / limit),

@@ -13,6 +13,9 @@ export interface ActiveCounts {
   activeCollections: number;
   activePostId: string | null;
   activeCollectionId: string | null;
+  // Non-binding pending collect requests (separate from a bound collection).
+  pendingRequests: number;
+  pendingRequestPostId: string | null;
 }
 
 const EMPTY: ActiveCounts = {
@@ -20,6 +23,8 @@ const EMPTY: ActiveCounts = {
   activeCollections: 0,
   activePostId: null,
   activeCollectionId: null,
+  pendingRequests: 0,
+  pendingRequestPostId: null,
 };
 
 export function useActiveCounts(authenticated: boolean): ActiveCounts {

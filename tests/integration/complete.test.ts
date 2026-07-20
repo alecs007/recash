@@ -18,6 +18,8 @@ const h = vi.hoisted(() => ({
   checkTransactionBadges: vi.fn(),
   publishPostCompleted: vi.fn(),
   publishPostStatus: vi.fn(),
+  resolvePendingRequests: vi.fn(),
+  resolveAcceptedRequest: vi.fn(),
 }));
 
 vi.mock("@/auth", () => ({ auth: h.auth }));
@@ -43,6 +45,12 @@ vi.mock("@/lib/badges", () => ({
 vi.mock("@/lib/pubsub", () => ({
   publishPostCompleted: h.publishPostCompleted,
   publishPostStatus: h.publishPostStatus,
+}));
+// The complete route resolves straggler requests; releaseTimedOutCollection
+// (used on the expired-window path) frees the collector's accepted request.
+vi.mock("@/lib/claim-requests", () => ({
+  resolvePendingRequests: h.resolvePendingRequests,
+  resolveAcceptedRequest: h.resolveAcceptedRequest,
 }));
 
 import { POST } from "@/app/api/v1/posts/[id]/complete/route";
@@ -99,6 +107,8 @@ beforeEach(() => {
   );
   h.prisma.transaction.create.mockResolvedValue({});
   h.prisma.user.update.mockResolvedValue({});
+  h.resolvePendingRequests.mockResolvedValue([]);
+  h.resolveAcceptedRequest.mockResolvedValue(undefined);
 });
 
 describe("POST /posts/[id]/complete", () => {

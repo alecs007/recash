@@ -12,7 +12,15 @@ import { useSession } from "next-auth/react";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { CollectConfirmModal } from "@/app/components/UI/CollectConfirmModal";
 import { UserHoverCard } from "@/app/components/UI/UserHoverCard";
-import { MapPin, Search, Loader2, X, Star, ChevronRight } from "lucide-react";
+import {
+  MapPin,
+  Search,
+  Loader2,
+  X,
+  Star,
+  ChevronRight,
+  Clock,
+} from "lucide-react";
 import { TbTruckDelivery } from "react-icons/tb";
 import { LuFilter } from "react-icons/lu";
 import { FiMap } from "react-icons/fi";
@@ -40,6 +48,7 @@ type Post = {
   createdAt: string;
   expiresAt: string | null;
   availabilitySchedule: { day: number; start: string; end: string }[] | null;
+  pendingRequestCount?: number;
   author: {
     id: string;
     name: string | null;
@@ -52,6 +61,7 @@ type Post = {
 type ActiveData = {
   activePost: { id: string } | null;
   activeCollection: { id: string } | null;
+  pendingRequests?: { post: { id: string } }[];
 };
 
 type GeocodeResult = {
@@ -266,6 +276,44 @@ function AuthorAvatar({
   );
 }
 
+function RequestCountChip({ count }: { count: number }) {
+  const { t } = useI18n();
+  if (count <= 0) return null;
+  return (
+    <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+      <Clock className="w-2.5 h-2.5" />
+      {count === 1
+        ? t({ ro: "1 cerere trimisă", en: "1 request sent" })
+        : t({ ro: `${count} cereri trimise`, en: `${count} requests sent` })}
+    </span>
+  );
+}
+
+function LocationRequestRow({
+  locationName,
+  count,
+}: {
+  locationName: string | null;
+  count: number;
+}) {
+  const hasLoc = !!locationName;
+  const hasChip = count > 0;
+  if (!hasLoc && !hasChip) return null;
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 mb-2">
+      {hasLoc && (
+        <div className="flex items-center gap-1.5 min-w-0 max-w-full">
+          <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+          <span className="text-xs text-slate-500 truncate">
+            {locationName}
+          </span>
+        </div>
+      )}
+      {hasChip && <RequestCountChip count={count} />}
+    </div>
+  );
+}
+
 function PostCard({
   post,
   selected,
@@ -275,6 +323,7 @@ function PostCard({
   canClaim,
   isLoggedIn,
   isOwnPost,
+  alreadyRequested,
 }: {
   post: Post;
   selected: boolean;
@@ -284,6 +333,7 @@ function PostCard({
   canClaim: boolean;
   isLoggedIn: boolean;
   isOwnPost: boolean;
+  alreadyRequested: boolean;
 }) {
   const { t, fmt } = useI18n();
   const collectorEarning =
@@ -296,7 +346,8 @@ function PostCard({
   const urgent = timeLeft !== null && timeLeft.minutes < 360;
 
   const buttonDisabled =
-    isLoggedIn && (isOwnPost || !canClaim || claiming === post.id);
+    isLoggedIn &&
+    (isOwnPost || !canClaim || alreadyRequested || claiming === post.id);
 
   const buttonText = () => {
     if (!isLoggedIn)
@@ -305,6 +356,8 @@ function PostCard({
         en: "Sign in and collect!",
       });
     if (isOwnPost) return t({ ro: "Anunțul tău", en: "Your listing" });
+    if (alreadyRequested)
+      return t({ ro: "Cerere trimisă", en: "Request sent" });
     if (!canClaim)
       return t({ ro: "Colectare activă", en: "Active collection" });
     return t({ ro: "Colectează", en: "Collect" });
@@ -362,14 +415,10 @@ function PostCard({
         </div>
       </div>
 
-      {post.locationName && (
-        <div className="flex items-center gap-1.5 mb-2">
-          <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-          <span className="text-xs text-slate-500 truncate">
-            {post.locationName}
-          </span>
-        </div>
-      )}
+      <LocationRequestRow
+        locationName={post.locationName}
+        count={post.pendingRequestCount ?? 0}
+      />
 
       {post.description && (
         <p className="text-xs text-slate-400 mb-2.5 line-clamp-2 italic leading-relaxed">
@@ -445,6 +494,7 @@ function SelectedPostOverlay({
   canClaim,
   isLoggedIn,
   isOwnPost,
+  alreadyRequested,
 }: {
   post: Post;
   onClose: () => void;
@@ -453,6 +503,7 @@ function SelectedPostOverlay({
   canClaim: boolean;
   isLoggedIn: boolean;
   isOwnPost: boolean;
+  alreadyRequested: boolean;
 }) {
   const { t, fmt } = useI18n();
   const collectorEarning =
@@ -465,7 +516,8 @@ function SelectedPostOverlay({
   const urgent = timeLeft !== null && timeLeft.minutes < 360; // < 6h
 
   const buttonDisabled =
-    isLoggedIn && (isOwnPost || !canClaim || claiming === post.id);
+    isLoggedIn &&
+    (isOwnPost || !canClaim || alreadyRequested || claiming === post.id);
 
   const buttonText = () => {
     if (!isLoggedIn)
@@ -474,6 +526,8 @@ function SelectedPostOverlay({
         en: "Sign in and collect!",
       });
     if (isOwnPost) return t({ ro: "Anunțul tău", en: "Your listing" });
+    if (alreadyRequested)
+      return t({ ro: "Cerere trimisă", en: "Request sent" });
     if (!canClaim)
       return t({ ro: "Colectare activă", en: "Active collection" });
     return t({ ro: "Colectează", en: "Collect" });
@@ -532,14 +586,10 @@ function SelectedPostOverlay({
           </div>
         </div>
 
-        {post.locationName && (
-          <div className="flex items-center gap-1.5 mb-2">
-            <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-            <span className="text-xs text-slate-500 truncate">
-              {post.locationName}
-            </span>
-          </div>
-        )}
+        <LocationRequestRow
+          locationName={post.locationName}
+          count={post.pendingRequestCount ?? 0}
+        />
 
         {post.description && (
           <p className="text-xs text-slate-400 mb-2.5 line-clamp-2 italic leading-relaxed">
@@ -762,9 +812,20 @@ function PostMap({
       const label = n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
       const fs = size <= 32 ? 10 : 12;
 
+      // Blue corner dot marks a post that already has pending requests.
+      const hasRequests = (post.pendingRequestCount ?? 0) > 0;
+      const requestDot = hasRequests
+        ? `<div style="
+        position:absolute;top:-2px;right:-2px;
+        width:12px;height:12px;border-radius:50%;
+        background:#3b82f6;border:2px solid #ffffff;
+      "></div>`
+        : "";
+
       const icon = L.divIcon({
         className: "",
         html: `<div style="
+        position:relative;
         width:${size}px;height:${size}px;border-radius:50%;
         background:${bg};border:2.5px solid ${border};
         box-shadow:${shadow};
@@ -773,7 +834,7 @@ function PostMap({
         color:${fg};cursor:pointer;
         transform:scale(${scale});
         transition:transform 0.15s, background 0.15s;
-      ">${label}</div>`,
+      ">${label}${requestDot}</div>`,
         iconSize: [size, size],
         iconAnchor: [size / 2, size / 2],
       });
@@ -1022,7 +1083,7 @@ export default function MapPage() {
     { refreshInterval: 30_000, revalidateOnFocus: true },
   );
 
-  const { data: activeData } = useSWR<ActiveData>(
+  const { data: activeData, mutate: mutateActive } = useSWR<ActiveData>(
     isLoggedIn ? "/api/v1/posts/active" : null,
     fetcher,
     { refreshInterval: 15_000 },
@@ -1060,6 +1121,11 @@ export default function MapPage() {
     : null;
 
   const canClaim = isLoggedIn && !activeData?.activeCollection;
+
+  const requestedPostIds = useMemo(
+    () => new Set(activeData?.pendingRequests?.map((r) => r.post.id) ?? []),
+    [activeData],
+  );
 
   const { visible: visiblePosts, sentinel, hasMore } = useVirtualList(filtered);
 
@@ -1127,8 +1193,18 @@ export default function MapPage() {
       if (activeData?.activeCollection) {
         setClaimError(
           t({
-            ro: "Ai deja o colectare activă. Finalizează-o mai întâi.",
-            en: "You already have an active collection. Finish it first.",
+            ro: "Ai o colectare în desfășurare. Finalizeaz-o mai întâi.",
+            en: "You have a collection in progress. Finish it first.",
+          }),
+        );
+        return;
+      }
+
+      if (requestedPostIds.has(postId)) {
+        setClaimError(
+          t({
+            ro: "Ai trimis deja o cerere pentru acest anunț.",
+            en: "You've already sent a request for this listing.",
           }),
         );
         return;
@@ -1137,7 +1213,15 @@ export default function MapPage() {
       setPendingClaimPostId(postId);
       setShowCollectModal(true);
     },
-    [isLoggedIn, activeData, openAuthModal, posts, currentUserId, t],
+    [
+      isLoggedIn,
+      activeData,
+      openAuthModal,
+      posts,
+      currentUserId,
+      requestedPostIds,
+      t,
+    ],
   );
 
   const handleCollectConfirmed = useCallback(async () => {
@@ -1166,8 +1250,11 @@ export default function MapPage() {
 
       setShowCollectModal(false);
       setPendingClaimPostId(null);
+
       await mutate();
-      setActiveCounts({ activeCollections: 1, activeCollectionId: postId });
+      await mutateActive();
+
+      setActiveCounts({});
       router.push(`/post/${postId}`);
     } catch {
       setShowCollectModal(false);
@@ -1180,7 +1267,7 @@ export default function MapPage() {
       );
       setClaiming(null);
     }
-  }, [pendingClaimPostId, mutate, router, setActiveCounts, t]);
+  }, [pendingClaimPostId, mutate, mutateActive, setActiveCounts, router, t]);
 
   const handleSelectPost = useCallback((id: string) => {
     setSelectedId((prev) => (prev === id ? null : id));
@@ -1495,6 +1582,7 @@ export default function MapPage() {
                     canClaim={canClaim}
                     isLoggedIn={isLoggedIn}
                     isOwnPost={post.author.id === currentUserId}
+                    alreadyRequested={requestedPostIds.has(post.id)}
                   />
                 ))}
                 {hasMore && (
@@ -1531,6 +1619,7 @@ export default function MapPage() {
               canClaim={canClaim}
               isLoggedIn={isLoggedIn}
               isOwnPost={selectedPost.author.id === currentUserId}
+              alreadyRequested={requestedPostIds.has(selectedPost.id)}
             />
           )}
 

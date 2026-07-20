@@ -8,7 +8,7 @@ import { useState, useRef, useEffect } from "react";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { useLoading } from "@/context/LoadingContext";
 import { FaWineBottle, FaRegUser, FaRegBell, FaRecycle } from "react-icons/fa";
-import { TbTruckDelivery } from "react-icons/tb";
+import { TbTruckDelivery, TbClockHour4 } from "react-icons/tb";
 import { FiPlusSquare } from "react-icons/fi";
 import { IoChevronDown } from "react-icons/io5";
 import { MdLogout } from "react-icons/md";
@@ -24,17 +24,30 @@ function ActiveIndicator({
   activeCollections,
   activePostId,
   activeCollectionId,
+  pendingRequests,
+  pendingRequestPostId,
 }: {
   activePosts: number;
   activeCollections: number;
   activePostId: string | null;
   activeCollectionId: string | null;
+  pendingRequests: number;
+  pendingRequestPostId: string | null;
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const hasPosts = activePosts > 0;
-  const hasCollections = activeCollections > 0;
+  // Bound collection (IN_PROGRESS) and pending request are mutually exclusive;
+  // both drive the "collection side" but are labelled/badged differently.
+  const hasBoundCollection = activeCollections > 0;
+  const hasPending = !hasBoundCollection && pendingRequests > 0;
+  const hasCollections = hasBoundCollection || hasPending;
+  const collectionLabel = hasPending
+    ? pendingRequests > 1
+      ? t({ ro: "Cereri trimise", en: "Requests sent" })
+      : t({ ro: "Cerere trimisă", en: "Request sent" })
+    : t({ ro: "Colectare activă", en: "Active collection" });
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -54,7 +67,9 @@ function ActiveIndicator({
   const postHref = activePostId ? `/post/${activePostId}` : "/profil/postari";
   const collectionHref = activeCollectionId
     ? `/post/${activeCollectionId}`
-    : "/map";
+    : pendingRequestPostId
+      ? `/post/${pendingRequestPostId}`
+      : "/map";
 
   if (!hasPosts && !hasCollections) return null;
 
@@ -76,8 +91,18 @@ function ActiveIndicator({
             <div className="absolute top-0 left-0 z-10 w-7 h-7 rounded-full bg-lime-50 border-2 border-lime-400 flex items-center justify-center">
               <FaWineBottle className="w-3.5 h-3.5 text-lime-600" />
             </div>
-            <div className="absolute bottom-0 right-0 z-0 w-7 h-7 rounded-full bg-blue-50 border-2 border-blue-400 flex items-center justify-center">
-              <TbTruckDelivery className="w-3.5 h-3.5 text-blue-600" />
+            <div
+              className={`absolute bottom-0 right-0 z-0 w-7 h-7 rounded-full border-2 flex items-center justify-center ${
+                hasPending
+                  ? "bg-slate-100 border-slate-400"
+                  : "bg-blue-50 border-blue-400"
+              }`}
+            >
+              {hasPending ? (
+                <TbClockHour4 className="w-3.5 h-3.5 text-slate-600" />
+              ) : (
+                <TbTruckDelivery className="w-3.5 h-3.5 text-blue-600" />
+              )}
             </div>
           </button>
 
@@ -111,16 +136,31 @@ function ActiveIndicator({
                   onClick={() => setOpen(false)}
                   className="flex items-center gap-3 p-2 hover:bg-blue-50 rounded-xl transition-colors"
                 >
-                  <div className="grid place-items-center w-8 h-8 rounded-full bg-blue-50 border-2 border-blue-400">
+                  <div
+                    className={`grid place-items-center w-8 h-8 rounded-full border-2 ${
+                      hasPending
+                        ? "bg-slate-100 border-slate-400"
+                        : "bg-blue-50 border-blue-400"
+                    }`}
+                  >
                     <motion.div
-                      animate={{ x: [-1, 1, -1] }}
-                      transition={{ repeat: Infinity, duration: 1.5 }}
+                      animate={
+                        hasPending ? { scale: [1, 1.1, 1] } : { x: [-1, 1, -1] }
+                      }
+                      transition={{
+                        repeat: Infinity,
+                        duration: hasPending ? 2 : 1.5,
+                      }}
                     >
-                      <TbTruckDelivery className="w-4 h-4 text-blue-600" />
+                      {hasPending ? (
+                        <TbClockHour4 className="w-4 h-4 text-slate-600" />
+                      ) : (
+                        <TbTruckDelivery className="w-4 h-4 text-blue-600" />
+                      )}
                     </motion.div>
                   </div>
                   <span className="text-xs font-bold text-slate-700 pr-2 whitespace-nowrap">
-                    {t({ ro: "Colectare activă", en: "Active collection" })}
+                    {collectionLabel}
                   </span>
                 </Link>
               </motion.div>
@@ -153,13 +193,27 @@ function ActiveIndicator({
           ) : (
             <Link
               href={collectionHref}
-              className="grid place-items-center w-10 h-10 rounded-full bg-blue-50 border-2 border-blue-400 hover:bg-blue-100 transition-colors"
+              aria-label={collectionLabel}
+              className={`grid place-items-center w-10 h-10 rounded-full border-2 transition-colors ${
+                hasPending
+                  ? "bg-slate-100 border-slate-400 hover:bg-slate-200"
+                  : "bg-blue-50 border-blue-400 hover:bg-blue-100"
+              }`}
             >
               <motion.div
-                animate={{ x: [-1, 1, -1] }}
-                transition={{ repeat: Infinity, duration: 1.5 }}
+                animate={
+                  hasPending ? { scale: [1, 1.1, 1] } : { x: [-1, 1, -1] }
+                }
+                transition={{
+                  repeat: Infinity,
+                  duration: hasPending ? 2 : 1.5,
+                }}
               >
-                <TbTruckDelivery className="w-5 h-5 text-blue-600" />
+                {hasPending ? (
+                  <TbClockHour4 className="w-5 h-5 text-slate-600" />
+                ) : (
+                  <TbTruckDelivery className="w-5 h-5 text-blue-600" />
+                )}
               </motion.div>
             </Link>
           )}
@@ -192,8 +246,14 @@ export default function Header({ children }: { children: React.ReactNode }) {
 
   const { unreadCount } = useNotificationBell(isAuthenticated);
 
-  const { activePosts, activeCollections, activePostId, activeCollectionId } =
-    useActiveCounts(isAuthenticated);
+  const {
+    activePosts,
+    activeCollections,
+    activePostId,
+    activeCollectionId,
+    pendingRequests,
+    pendingRequestPostId,
+  } = useActiveCounts(isAuthenticated);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -262,6 +322,8 @@ export default function Header({ children }: { children: React.ReactNode }) {
                   activeCollections={activeCollections}
                   activePostId={activePostId}
                   activeCollectionId={activeCollectionId}
+                  pendingRequests={pendingRequests}
+                  pendingRequestPostId={pendingRequestPostId}
                 />
 
                 <Link

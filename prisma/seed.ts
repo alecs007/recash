@@ -881,11 +881,13 @@ async function main() {
     const posterId = shuffled[i];
     if (usersWithOpenPost.has(posterId)) continue;
 
-    const otherUsers = userIds.filter(
-      (id) => id !== posterId && !usersWithOpenPost.has(id),
-    );
+    // Candidate requesters — several collectors can request the same post.
+    const otherUsers = userIds.filter((id) => id !== posterId);
     if (otherUsers.length === 0) continue;
-    const collectorId = pick(otherUsers);
+    const requesterCount = Math.min(otherUsers.length, rand(1, 3));
+    const requesters = [...otherUsers]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, requesterCount);
 
     const bottleCount = pick([10, 20, 30, 50]);
     const collectorSharePercent = pick([30, 50, 75]);
@@ -895,10 +897,11 @@ async function main() {
     const claimedAt = new Date(Date.now() - rand(5, 55) * 60_000);
     const expiresAt = new Date(createdAt.getTime() + 72 * 3600_000);
 
-    await prisma.post.create({
+    // A CLAIMED post keeps collectorId null; the pending requests live in
+    // ClaimRequest until the author approves one.
+    const post = await prisma.post.create({
       data: {
         authorId: posterId,
-        collectorId,
         status: PostStatus.CLAIMED,
         description: pick(descriptions),
         bottleCount,
@@ -916,8 +919,16 @@ async function main() {
       },
     });
 
+    await prisma.claimRequest.createMany({
+      data: requesters.map((collectorId, idx) => ({
+        postId: post.id,
+        collectorId,
+        status: "PENDING" as const,
+        createdAt: new Date(claimedAt.getTime() + idx * 60_000),
+      })),
+    });
+
     usersWithOpenPost.add(posterId);
-    usersWithOpenPost.add(collectorId);
     claimedCount++;
   }
 

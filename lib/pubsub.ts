@@ -58,6 +58,7 @@ export interface PostStatusPayload {
   collectorId?: string | null;
   collectorName?: string | null;
   expiresAt?: string | null;
+  pendingRequestCount?: number;
 }
 
 export function publishPostStatus(

@@ -3,7 +3,20 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 const h = vi.hoisted(() => ({
   auth: vi.fn(),
   rateLimit: vi.fn(),
-  prisma: { post: { findUnique: vi.fn(), update: vi.fn() } },
+  prisma: {
+    post: {
+      findUnique: vi.fn(),
+      findFirst: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+    },
+    claimRequest: {
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      count: vi.fn(),
+    },
+    $transaction: vi.fn(),
+  },
   redis: { set: vi.fn() },
   notifyClaimApproved: vi.fn(),
   notifyClaimDenied: vi.fn(),
@@ -11,6 +24,9 @@ const h = vi.hoisted(() => ({
   publishToUser: vi.fn(),
   maybeEmailClaimApproved: vi.fn(),
   maybeEmailClaimDenied: vi.fn(),
+  countPendingRequests: vi.fn(),
+  resolvePendingRequests: vi.fn(),
+  invalidate: vi.fn(),
 }));
 
 vi.mock("@/auth", () => ({ auth: h.auth }));
@@ -31,6 +47,14 @@ vi.mock("@/lib/pubsub", () => ({
 vi.mock("@/lib/email-optin", () => ({
   maybeEmailClaimApproved: h.maybeEmailClaimApproved,
   maybeEmailClaimDenied: h.maybeEmailClaimDenied,
+}));
+vi.mock("@/lib/claim-requests", () => ({
+  countPendingRequests: h.countPendingRequests,
+  resolvePendingRequests: h.resolvePendingRequests,
+}));
+vi.mock("@/lib/cache", () => ({
+  invalidate: h.invalidate,
+  CacheKey: { posts: (u: string, s: string) => `posts:${u}:${s}` },
 }));
 
 import { POST } from "@/app/api/v1/posts/[id]/approve/route";
@@ -53,54 +77,100 @@ function claimedPost(overrides: Record<string, unknown> = {}) {
     id: POST_ID,
     status: "CLAIMED",
     authorId: AUTHOR_ID,
-    collectorId: COLLECTOR_ID,
+    collectorId: null,
     bottleCount: 20,
     expiresAt: null,
     author: { name: "Ana" },
+    ...overrides,
+  };
+}
+
+function pendingRequest(overrides: Record<string, unknown> = {}) {
+  return {
+    status: "PENDING",
+    createdAt: new Date(),
     collector: { name: "Bogdan" },
     ...overrides,
   };
 }
 
+const approveBody = { action: "approve", collectorId: COLLECTOR_ID };
+const denyBody = { action: "deny", collectorId: COLLECTOR_ID };
+
 beforeEach(() => {
+  vi.clearAllMocks();
   h.rateLimit.mockResolvedValue({ ok: true });
   h.auth.mockResolvedValue({ user: { id: AUTHOR_ID } });
+  h.prisma.post.findUnique.mockResolvedValue(claimedPost());
+  h.prisma.post.findFirst.mockResolvedValue(null); // collector not busy
   h.prisma.post.update.mockResolvedValue({});
+  h.prisma.post.updateMany.mockResolvedValue({ count: 1 });
+  h.prisma.claimRequest.findUnique.mockResolvedValue(pendingRequest());
+  h.prisma.claimRequest.update.mockResolvedValue({});
+  h.prisma.claimRequest.count.mockResolvedValue(0);
+  h.prisma.$transaction.mockImplementation((arg: unknown) =>
+    typeof arg === "function"
+      ? (arg as (tx: unknown) => unknown)(h.prisma)
+      : Promise.all(arg as unknown[]),
+  );
   h.redis.set.mockResolvedValue("OK");
   h.notifyClaimApproved.mockResolvedValue(undefined);
   h.notifyClaimDenied.mockResolvedValue(undefined);
   h.maybeEmailClaimApproved.mockResolvedValue(undefined);
   h.maybeEmailClaimDenied.mockResolvedValue(undefined);
+  h.countPendingRequests.mockResolvedValue(0);
+  h.resolvePendingRequests.mockResolvedValue([]);
+  h.invalidate.mockResolvedValue(undefined);
 });
 
 describe("POST /posts/[id]/approve", () => {
   it("rejects unauthenticated callers", async () => {
     h.auth.mockResolvedValue(null);
-    const res = await POST(makeReq({ action: "approve" }), { params });
+    const res = await POST(makeReq(approveBody), { params });
     expect(res.status).toBe(401);
   });
 
   it("rejects an invalid action", async () => {
-    const res = await POST(makeReq({ action: "maybe" }), { params });
+    const res = await POST(
+      makeReq({ action: "maybe", collectorId: COLLECTOR_ID }),
+      { params },
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects a missing collectorId", async () => {
+    const res = await POST(makeReq({ action: "approve" }), { params });
     expect(res.status).toBe(400);
   });
 
   it("403s when the caller is not the author", async () => {
-    h.prisma.post.findUnique.mockResolvedValue(claimedPost());
     h.auth.mockResolvedValue({ user: { id: COLLECTOR_ID } });
-    const res = await POST(makeReq({ action: "approve" }), { params });
+    const res = await POST(makeReq(approveBody), { params });
     expect(res.status).toBe(403);
   });
 
   it("409s when the post is not in CLAIMED state", async () => {
     h.prisma.post.findUnique.mockResolvedValue(claimedPost({ status: "OPEN" }));
-    const res = await POST(makeReq({ action: "approve" }), { params });
+    const res = await POST(makeReq(approveBody), { params });
     expect(res.status).toBe(409);
   });
 
-  it("approves: moves to IN_PROGRESS and stores a 4-char code", async () => {
-    h.prisma.post.findUnique.mockResolvedValue(claimedPost());
-    const res = await POST(makeReq({ action: "approve" }), { params });
+  it("409s when the target request is no longer pending", async () => {
+    h.prisma.claimRequest.findUnique.mockResolvedValue(
+      pendingRequest({ status: "WITHDRAWN" }),
+    );
+    const res = await POST(makeReq(approveBody), { params });
+    expect(res.status).toBe(409);
+  });
+
+  it("409s when the chosen collector is already busy elsewhere", async () => {
+    h.prisma.post.findFirst.mockResolvedValue({ id: "other000000000000000000" });
+    const res = await POST(makeReq(approveBody), { params });
+    expect(res.status).toBe(409);
+  });
+
+  it("approves: IN_PROGRESS, stores a code, resolves the other requests", async () => {
+    const res = await POST(makeReq(approveBody), { params });
 
     expect(res.status).toBe(200);
     const json = await res.json();
@@ -111,11 +181,18 @@ describe("POST /posts/[id]/approve", () => {
     const [key, code] = h.redis.set.mock.calls[0];
     expect(key).toBe(`code:${POST_ID}`);
     expect(code).toMatch(/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{4}$/);
+
+    // The rejected collectors are notified & their requests closed.
+    expect(h.resolvePendingRequests).toHaveBeenCalledWith(
+      POST_ID,
+      "another_collector_chosen",
+      COLLECTOR_ID,
+    );
   });
 
-  it("denies: returns the post to OPEN without a code", async () => {
-    h.prisma.post.findUnique.mockResolvedValue(claimedPost());
-    const res = await POST(makeReq({ action: "deny" }), { params });
+  it("denies the last request: returns the post to OPEN, no code", async () => {
+    h.prisma.claimRequest.count.mockResolvedValue(0);
+    const res = await POST(makeReq(denyBody), { params });
 
     expect(res.status).toBe(200);
     const json = await res.json();
@@ -123,11 +200,20 @@ describe("POST /posts/[id]/approve", () => {
     expect(h.redis.set).not.toHaveBeenCalled();
   });
 
+  it("denies one of several requests: post stays CLAIMED", async () => {
+    h.prisma.claimRequest.count.mockResolvedValue(1);
+    const res = await POST(makeReq(denyBody), { params });
+
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.status).toBe("CLAIMED");
+  });
+
   it("410s when approving an already-expired post", async () => {
     h.prisma.post.findUnique.mockResolvedValue(
       claimedPost({ expiresAt: new Date(Date.now() - 1000) }),
     );
-    const res = await POST(makeReq({ action: "approve" }), { params });
+    const res = await POST(makeReq(approveBody), { params });
     expect(res.status).toBe(410);
   });
 });

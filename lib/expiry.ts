@@ -1,6 +1,7 @@
 import { prisma } from "./prisma";
 import { publishPostStatus } from "./pubsub";
 import { releaseTimedOutCollection } from "./collection-timeout";
+import { resolvePendingRequests } from "./claim-requests";
 
 const INTERVAL_MS = 2 * 60 * 1000;
 
@@ -44,29 +45,36 @@ export function startExpiryLoop(): void {
     try {
       const now = new Date();
 
+      // OPEN and (always-unbound) CLAIMED posts expire with the listing.
+      // IN_PROGRESS is handled by the timeout sweep above.
       const expiring = await prisma.post.findMany({
         where: {
-          status: "OPEN",
+          status: { in: ["OPEN", "CLAIMED"] },
           expiresAt: { not: null, lt: now },
         },
-        select: { id: true, authorId: true },
+        select: { id: true, authorId: true, status: true },
       });
       if (expiring.length === 0) return;
 
       const result = await prisma.post.updateMany({
         where: {
           id: { in: expiring.map((p) => p.id) },
-          status: "OPEN",
+          status: { in: ["OPEN", "CLAIMED"] },
         },
-        data: { status: "EXPIRED" },
+        data: { status: "EXPIRED", claimedAt: null },
       });
 
       for (const p of expiring) {
+        if (p.status === "CLAIMED") {
+          await resolvePendingRequests(p.id, "post_expired").catch((err) =>
+            console.error("[expiry] request resolve error:", err),
+          );
+        }
         publishPostStatus({ postId: p.id, status: "EXPIRED" }, [p.authorId]);
       }
 
       if (result.count > 0) {
-        console.log(`[expiry] expired ${result.count} OPEN post(s)`);
+        console.log(`[expiry] expired ${result.count} post(s)`);
       }
     } catch (err) {
       console.error("[expiry] sweep error:", err);
@@ -86,14 +94,24 @@ export async function maybeExpirePost(
   expiresAt: Date | null,
   authorId?: string,
 ): Promise<boolean> {
-  if (status !== "OPEN") return false;
+  if (status !== "OPEN" && status !== "CLAIMED") return false;
   if (!expiresAt || expiresAt > new Date()) return false;
 
   try {
-    await prisma.post.update({
-      where: { id: postId, status: "OPEN" },
-      data: { status: "EXPIRED" },
+    const result = await prisma.post.updateMany({
+      where: {
+        id: postId,
+        status: { in: ["OPEN", "CLAIMED"] },
+      },
+      data: { status: "EXPIRED", claimedAt: null },
     });
+    if (result.count === 0) return false;
+
+    if (status === "CLAIMED") {
+      await resolvePendingRequests(postId, "post_expired").catch((err) =>
+        console.error("[expiry] request resolve error:", err),
+      );
+    }
     publishPostStatus(
       { postId, status: "EXPIRED" },
       authorId ? [authorId] : [],

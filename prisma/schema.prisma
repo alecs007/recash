@@ -47,6 +47,14 @@ enum BadgeType {
   PERFECT_RATING
 }
 
+enum ClaimRequestStatus {
+  PENDING // waiting for the poster's decision
+  ACCEPTED // poster approved this collector — post moved to IN_PROGRESS
+  DECLINED // poster explicitly refused this collector (blocks re-requesting)
+  WITHDRAWN // collector withdrew the request (may re-request later)
+  RESOLVED // closed by the system: another collector was chosen, or the post was cancelled/expired/completed (may re-request if the post reopens)
+}
+
 enum NotificationType {
   POST_CLAIMED
   POST_COMPLETED
@@ -133,6 +141,7 @@ model User {
   badges                Badge[]
   posts                 Post[]         @relation("PostAuthor")
   claimedPosts          Post[]         @relation("PostCollector")
+  claimRequests         ClaimRequest[] @relation("CollectorClaimRequests")
   posterTransactions    Transaction[]  @relation("PosterTransactions")
   collectorTransactions Transaction[]  @relation("CollectorTransactions")
   notifications         Notification[]
@@ -173,6 +182,7 @@ model Post {
   author      User       @relation("PostAuthor", fields: [authorId], references: [id], onDelete: Cascade)
   collector   User?      @relation("PostCollector", fields: [collectorId], references: [id], onDelete: SetNull)
   transaction Transaction?
+  claimRequests ClaimRequest[]
 
   // ── Indexes ────────────────────────────────────────────────────────────────
 
@@ -193,6 +203,32 @@ model Post {
 
   // Geo queries — finding posts near a location (lat/lng range scan)
   @@index([latitude, longitude])
+}
+
+// A collector's request to collect a post. Many can be PENDING on one post at
+// once; the poster picks one. A post with only pending requests stays CLAIMED
+// with `collectorId = null` — identity binds to the post only on approval
+// (post → IN_PROGRESS, request → ACCEPTED).
+model ClaimRequest {
+  id          String             @id @default(auto()) @map("_id") @db.ObjectId
+  postId      String             @db.ObjectId
+  collectorId String             @db.ObjectId
+  status      ClaimRequestStatus @default(PENDING)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  post      Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  collector User @relation("CollectorClaimRequests", fields: [collectorId], references: [id], onDelete: Cascade)
+
+  // One request row per (post, collector) pair — re-requests reuse the row,
+  // which also makes concurrent duplicate claims impossible.
+  @@unique([postId, collectorId])
+
+  // Poster view — pending requests for a post
+  @@index([postId, status])
+
+  // Collector view — "my requests", newest first
+  @@index([collectorId, status, createdAt(sort: Desc)])
 }
 
 model Transaction {

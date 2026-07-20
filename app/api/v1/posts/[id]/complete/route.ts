@@ -10,6 +10,7 @@ import { checkPostBadges, checkTransactionBadges } from "@/lib/badges";
 import { publishPostCompleted, publishPostStatus } from "@/lib/pubsub";
 import { computeEarnings } from "@/lib/earnings";
 import { releaseTimedOutCollection } from "@/lib/collection-timeout";
+import { resolvePendingRequests } from "@/lib/claim-requests";
 
 export async function POST(
   req: Request,
@@ -142,6 +143,8 @@ export async function POST(
     }
 
     await redis.del(`code:${id}`);
+
+    await resolvePendingRequests(id, "post_completed");
 
     await Promise.all([
       checkPostBadges(post.authorId),

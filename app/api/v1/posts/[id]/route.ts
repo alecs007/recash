@@ -6,6 +6,15 @@ import { releaseTimedOutCollection } from "@/lib/collection-timeout";
 import { rateLimit, RL, getClientIp } from "@/lib/rate-limit";
 import { isValidObjectId } from "@/lib/validate";
 
+const collectorPublicSelect = {
+  id: true,
+  name: true,
+  image: true,
+  certified: true,
+  reputationScore: true,
+  ratingCount: true,
+} as const;
+
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -40,14 +49,17 @@ export async function GET(
           },
         },
         collector: {
+          select: { ...collectorPublicSelect, phone: true },
+        },
+        claimRequests: {
+          where: { status: "PENDING" },
+          orderBy: { createdAt: "asc" },
           select: {
             id: true,
-            name: true,
-            image: true,
-            certified: true,
-            reputationScore: true,
-            ratingCount: true,
-            phone: true,
+            collectorId: true,
+            status: true,
+            createdAt: true,
+            collector: { select: collectorPublicSelect },
           },
         },
         transaction: {
@@ -80,7 +92,9 @@ export async function GET(
       );
     }
 
-    if (post.status === "OPEN") {
+    const userId = session?.user?.id;
+
+    if (post.status === "OPEN" || post.status === "CLAIMED") {
       const didExpire = await maybeExpirePost(
         post.id,
         post.status,
@@ -88,12 +102,21 @@ export async function GET(
         post.authorId,
       );
       if (didExpire) {
-        const updated = { ...post, status: "EXPIRED" as const };
-        return NextResponse.json({
-          ...updated,
-          author: { ...updated.author, phone: null },
-          collector: null,
-        });
+        post.status = "EXPIRED";
+        post.claimedAt = null;
+        post.claimRequests = [];
+      }
+    }
+
+    // Self-heal: a CLAIMED post with no pending requests belongs back in OPEN.
+    if (post.status === "CLAIMED" && post.claimRequests.length === 0) {
+      const reopened = await prisma.post.updateMany({
+        where: { id: post.id, status: "CLAIMED" },
+        data: { status: "OPEN", claimedAt: null, collectorId: null },
+      });
+      if (reopened.count > 0) {
+        post.status = "OPEN";
+        post.claimedAt = null;
       }
     }
 
@@ -118,14 +141,32 @@ export async function GET(
       }
     }
 
-    const userId = session?.user?.id;
     const isAuthor = userId === post.authorId;
-    const isCollector = userId === post.collectorId;
+    const isCollector = !!userId && userId === post.collectorId;
     const isParticipant = isAuthor || isCollector;
+
+    const pendingRequestCount = post.claimRequests.length;
+
+    const myRequest =
+      userId && !isAuthor
+        ? await prisma.claimRequest.findUnique({
+            where: { postId_collectorId: { postId: id, collectorId: userId } },
+            select: { status: true, createdAt: true },
+          })
+        : null;
+
+    // Requester identities go to the author only; everyone else gets the count.
+    const { claimRequests, ...rest } = post;
+    const base = {
+      ...rest,
+      pendingRequestCount,
+      claimRequests: isAuthor ? claimRequests : undefined,
+      myRequest,
+    };
 
     if (!isParticipant) {
       return NextResponse.json({
-        ...post,
+        ...base,
         author: { ...post.author, phone: null },
         collector: post.collector ? { ...post.collector, phone: null } : null,
       });
@@ -133,7 +174,7 @@ export async function GET(
 
     const showPhone = isParticipant && post.status === "IN_PROGRESS";
     return NextResponse.json({
-      ...post,
+      ...base,
       author: { ...post.author, phone: showPhone ? post.author?.phone : null },
       collector: post.collector
         ? { ...post.collector, phone: showPhone ? post.collector?.phone : null }

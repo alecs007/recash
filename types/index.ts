@@ -58,6 +58,30 @@ export type PostStatus =
   | "CANCELLED"
   | "EXPIRED";
 
+export type ClaimRequestStatus =
+  | "PENDING"
+  | "ACCEPTED"
+  | "DECLINED"
+  | "WITHDRAWN"
+  | "RESOLVED";
+
+// Card/profile endpoints return only `collector`; the detail endpoint fills
+// the rest — hence the optionals.
+export type ClaimRequestEntry = {
+  id?: string;
+  collectorId?: string;
+  status?: ClaimRequestStatus;
+  createdAt?: string;
+  collector: {
+    id: string;
+    name: string | null;
+    image: string | null;
+    certified?: boolean;
+    reputationScore?: number;
+    ratingCount?: number;
+  };
+};
+
 export interface Post {
   id: string;
   status: PostStatus;
@@ -77,6 +101,10 @@ export interface Post {
   completedAt: string | null;
   isAuthor?: boolean;
   isCollector?: boolean;
+  pendingRequestCount?: number;
+  // Author-only (requester identities); others get just the count.
+  claimRequests?: ClaimRequestEntry[];
+  myRequest?: { status: ClaimRequestStatus; createdAt: string } | null;
   author: {
     id: string;
     name: string | null;

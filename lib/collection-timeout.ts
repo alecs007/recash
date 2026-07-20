@@ -2,6 +2,7 @@ import { prisma } from "./prisma";
 import { redis } from "./redis";
 import { publishPostStatus } from "./pubsub";
 import { createNotification } from "./notifications";
+import { resolveAcceptedRequest } from "./claim-requests";
 
 interface TimedOutPost {
   id: string;
@@ -47,6 +48,8 @@ export async function releaseTimedOutCollection(
     if ((e as { code?: string }).code === "P2025") return null;
     throw e;
   }
+
+  await resolveAcceptedRequest(post.id, post.collectorId);
 
   await redis.del(`code:${post.id}`).catch(() => null);
 

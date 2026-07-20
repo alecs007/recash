@@ -4,13 +4,16 @@ import { prisma } from "@/lib/prisma";
 import { rateLimit, RL } from "@/lib/rate-limit";
 import { isValidObjectId } from "@/lib/validate";
 import {
-  notifyPostCancelled,
   notifyInProgressCancelled,
   createNotification,
 } from "@/lib/notifications";
 import { invalidate, CacheKey } from "@/lib/cache";
 import { redis } from "@/lib/redis";
 import { publishPostCancelled, publishPostStatus } from "@/lib/pubsub";
+import {
+  resolveAcceptedRequest,
+  resolvePendingRequests,
+} from "@/lib/claim-requests";
 
 export async function POST(
   req: Request,
@@ -75,6 +78,8 @@ export async function POST(
         throw e;
       }
 
+      await resolvePendingRequests(id, "post_cancelled");
+
       publishPostStatus({ postId: id, status: "CANCELLED" }, [post.authorId]);
       publishPostCancelled(id, [post.authorId], {
         postId: id,
@@ -86,59 +91,36 @@ export async function POST(
     }
 
     if (post.status === "CLAIMED") {
-      if (isAuthor) {
-        try {
-          await prisma.post.update({
-            where: { id, status: "CLAIMED", collectorId: post.collectorId },
-            data: { status: "CANCELLED" },
-          });
-        } catch (e) {
-          if ((e as { code?: string }).code === "P2025") {
-            return NextResponse.json(
-              { error: "Cererea nu mai este validă." },
-              { status: 409 },
-            );
-          }
-          throw e;
-        }
-        if (post.collectorId) {
-          await notifyPostCancelled(post.collectorId, id, "poster");
-        }
-        publishPostStatus(
-          { postId: id, status: "CANCELLED", collectorId: null },
-          [post.collectorId!],
-        );
-        publishPostCancelled(
-          id,
-          [post.authorId, ...(post.collectorId ? [post.collectorId] : [])],
-          { postId: id, cancelledBy: "poster", newStatus: "CANCELLED" },
-        );
-        return NextResponse.json({ success: true, status: "CANCELLED" });
-      } else {
-        try {
-          await prisma.post.update({
-            where: { id, status: "CLAIMED", collectorId: post.collectorId },
-            data: { status: "OPEN", collectorId: null, claimedAt: null },
-          });
-        } catch (e) {
-          if ((e as { code?: string }).code === "P2025") {
-            return NextResponse.json(
-              { error: "Cererea nu mai este validă." },
-              { status: 409 },
-            );
-          }
-          throw e;
-        }
-        publishPostStatus({ postId: id, status: "OPEN", collectorId: null }, [
-          post.authorId,
-        ]);
-        publishPostCancelled(
-          id,
-          [post.authorId, ...(post.collectorId ? [post.collectorId] : [])],
-          { postId: id, cancelledBy: "collector", newStatus: "OPEN" },
-        );
-        return NextResponse.json({ success: true, status: "OPEN" });
+      // Only the author cancels here; a requester withdraws via DELETE /claim.
+      if (!isAuthor) {
+        return NextResponse.json({ error: "Acces interzis" }, { status: 403 });
       }
+      try {
+        await prisma.post.update({
+          where: { id, status: "CLAIMED" },
+          data: { status: "CANCELLED", claimedAt: null },
+        });
+      } catch (e) {
+        if ((e as { code?: string }).code === "P2025") {
+          return NextResponse.json(
+            { error: "Cererea nu mai este validă." },
+            { status: 409 },
+          );
+        }
+        throw e;
+      }
+
+      const affectedCollectors = await resolvePendingRequests(
+        id,
+        "post_cancelled",
+      );
+
+      publishPostCancelled(id, [post.authorId, ...affectedCollectors], {
+        postId: id,
+        cancelledBy: "poster",
+        newStatus: "CANCELLED",
+      });
+      return NextResponse.json({ success: true, status: "CANCELLED" });
     }
 
     if (post.status === "IN_PROGRESS") {
@@ -193,6 +175,8 @@ export async function POST(
         }
         throw e;
       }
+
+      await resolveAcceptedRequest(id, post.collectorId);
 
       await redis.del(`code:${id}`).catch(() => null);
 

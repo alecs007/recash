@@ -69,10 +69,37 @@ test.describe.serial("Full lifecycle", () => {
     expect(res.status()).toBe(403);
   });
 
-  test("collector claims the post", async () => {
+  test("collector requests the post (stays CLAIMED, no bound collector)", async () => {
     const res = await collector.post(`/api/v1/posts/${postId}/claim`);
     expect(res.status()).toBe(200);
-    expect((await res.json()).status).toBe("CLAIMED");
+    const json = await res.json();
+    expect(json.status).toBe("CLAIMED");
+    expect(json.requestStatus).toBe("PENDING");
+  });
+
+  test("a duplicate request from the same collector is rejected", async () => {
+    const res = await collector.post(`/api/v1/posts/${postId}/claim`);
+    expect(res.status()).toBe(409);
+  });
+
+  test("the collector's identity is hidden from non-participants", async () => {
+    const anon = await request.newContext({ baseURL: state.baseURL });
+    const res = await anon.get(`/api/v1/posts/${postId}`);
+    expect(res.status()).toBe(200);
+    const json = await res.json();
+    expect(json.collector).toBeNull();
+    expect(json.claimRequests).toBeUndefined();
+    expect(json.pendingRequestCount).toBe(1);
+    await anon.dispose();
+  });
+
+  test("the author sees the pending requester", async () => {
+    const res = await poster.get(`/api/v1/posts/${postId}`);
+    expect(res.status()).toBe(200);
+    const json = await res.json();
+    expect(json.pendingRequestCount).toBe(1);
+    expect(json.claimRequests).toHaveLength(1);
+    expect(json.claimRequests[0].collectorId).toBe(state.collectorId);
   });
 
   test("code is not available before approval", async () => {
@@ -80,9 +107,16 @@ test.describe.serial("Full lifecycle", () => {
     expect(res.status()).toBe(409); // only for IN_PROGRESS
   });
 
-  test("poster approves and a code is issued", async () => {
+  test("approve requires a collectorId", async () => {
     const res = await poster.post(`/api/v1/posts/${postId}/approve`, {
       data: { action: "approve" },
+    });
+    expect(res.status()).toBe(400);
+  });
+
+  test("poster approves a specific collector and a code is issued", async () => {
+    const res = await poster.post(`/api/v1/posts/${postId}/approve`, {
+      data: { action: "approve", collectorId: state.collectorId },
     });
     expect(res.status()).toBe(200);
     expect((await res.json()).status).toBe("IN_PROGRESS");

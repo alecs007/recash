@@ -13,7 +13,7 @@ export async function GET() {
   if (!rl.ok) return rl.response;
 
   try {
-    const [activePost, activeCollection] = await Promise.all([
+    const [activePost, activeCollection, pendingRequests] = await Promise.all([
       prisma.post.findFirst({
         where: {
           authorId: session.user.id,
@@ -27,6 +27,9 @@ export async function GET() {
           createdAt: true,
           claimedAt: true,
           collector: { select: { id: true, name: true, image: true } },
+          _count: {
+            select: { claimRequests: { where: { status: "PENDING" } } },
+          },
         },
         orderBy: { createdAt: "desc" },
       }),
@@ -45,9 +48,37 @@ export async function GET() {
         },
         orderBy: { claimedAt: "desc" },
       }),
+      prisma.claimRequest.findMany({
+        where: { collectorId: session.user.id, status: "PENDING" },
+        orderBy: { createdAt: "desc" },
+        select: {
+          createdAt: true,
+          post: {
+            select: {
+              id: true,
+              status: true,
+              bottleCount: true,
+              locationName: true,
+              author: { select: { id: true, name: true, image: true } },
+            },
+          },
+        },
+      }),
     ]);
 
-    return NextResponse.json({ activePost, activeCollection });
+    return NextResponse.json({
+      activePost: activePost
+        ? (({ _count, ...p }) => ({
+            ...p,
+            pendingRequestCount: _count.claimRequests,
+          }))(activePost)
+        : null,
+      activeCollection,
+      pendingRequests: pendingRequests.map((r) => ({
+        requestedAt: r.createdAt,
+        post: r.post,
+      })),
+    });
   } catch (err) {
     console.error("[GET /api/v1/posts/active]", err);
     return NextResponse.json({ error: "Eroare internă" }, { status: 500 });

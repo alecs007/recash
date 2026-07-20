@@ -89,6 +89,52 @@ export function PostCard({ post }: { post: Post }) {
           </span>
         </div>
       )}
+
+      {/* CLAIMED has no bound collector yet — show the pending requesters. */}
+      {!post.collector &&
+        post.status === "CLAIMED" &&
+        (post.pendingRequestCount ?? post.claimRequests?.length ?? 0) > 0 && (
+          <div className="border-t border-slate-50 flex items-center gap-2 py-3 px-4 min-w-0">
+            <div className="flex -space-x-2 shrink-0">
+              {(post.claimRequests ?? []).slice(0, 3).map(({ collector }) => (
+                <div
+                  key={collector.id}
+                  className="w-6 h-6 rounded-full bg-lime-100 flex items-center justify-center overflow-hidden border border-white ring-1 ring-lime-200"
+                >
+                  {collector.image ? (
+                    <Image
+                      src={collector.image}
+                      alt={collector.name ?? ""}
+                      width={24}
+                      height={24}
+                      className="object-cover"
+                    />
+                  ) : (
+                    <span className="text-[10px] font-bold text-lime-700">
+                      {collector.name?.[0] ?? "?"}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <span className="text-xs text-slate-500 truncate">
+              {(() => {
+                const count =
+                  post.pendingRequestCount ?? post.claimRequests?.length ?? 0;
+                return count === 1
+                  ? t({
+                      ro: "1 cerere de colectare în așteptare",
+                      en: "1 pending collect request",
+                    })
+                  : t({
+                      ro: `${count} cereri de colectare în așteptare`,
+                      en: `${count} pending collect requests`,
+                    });
+              })()}
+            </span>
+          </div>
+        )}
     </div>
   );
 }

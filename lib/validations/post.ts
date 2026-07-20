@@ -132,4 +132,5 @@ export type ReviewInput = z.infer<typeof reviewSchema>;
 
 export const approveClaimSchema = z.object({
   action: z.enum(["approve", "deny"]),
+  collectorId: z.string().regex(/^[0-9a-fA-F]{24}$/, "ID colector invalid"),
 });

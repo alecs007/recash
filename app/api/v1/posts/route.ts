@@ -21,9 +21,11 @@ export async function GET(req: Request) {
   );
 
   try {
+    // OPEN and CLAIMED posts stay on the map (CLAIMED still accepts requests);
+    // posts leave the feed once a collector is approved (IN_PROGRESS).
     const posts = await prisma.post.findMany({
       where: {
-        status: "OPEN",
+        status: { in: ["OPEN", "CLAIMED"] },
         OR: [{ expiresAt: { gt: new Date() } }, { expiresAt: null }],
       },
       orderBy: { createdAt: "desc" },
@@ -31,6 +33,9 @@ export async function GET(req: Request) {
       select: {
         id: true,
         status: true,
+        _count: {
+          select: { claimRequests: { where: { status: "PENDING" } } },
+        },
         description: true,
         bottleCount: true,
         estimatedValue: true,
@@ -56,7 +61,12 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json(
-      { posts },
+      {
+        posts: posts.map(({ _count, ...p }) => ({
+          ...p,
+          pendingRequestCount: _count.claimRequests,
+        })),
+      },
       {
         headers: {
           "Cache-Control": "public, s-maxage=15, stale-while-revalidate=30",

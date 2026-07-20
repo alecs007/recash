@@ -57,6 +57,21 @@ export async function GET() {
                     certified: true,
                   },
                 },
+                claimRequests: {
+                  where: { status: "PENDING" },
+                  orderBy: { createdAt: "asc" },
+                  take: 4,
+                  select: {
+                    collector: {
+                      select: { id: true, name: true, image: true },
+                    },
+                  },
+                },
+                _count: {
+                  select: {
+                    claimRequests: { where: { status: "PENDING" } },
+                  },
+                },
                 transaction: {
                   select: {
                     actualValue: true,
@@ -72,12 +87,21 @@ export async function GET() {
         }),
     );
 
-    return NextResponse.json(user, {
-      headers: {
-        "X-RateLimit-Remaining": String(rl.remaining),
-        "X-RateLimit-Reset": String(rl.reset),
+    return NextResponse.json(
+      {
+        ...user,
+        posts: user.posts.map(({ _count, ...p }) => ({
+          ...p,
+          pendingRequestCount: _count.claimRequests,
+        })),
       },
-    });
+      {
+        headers: {
+          "X-RateLimit-Remaining": String(rl.remaining),
+          "X-RateLimit-Reset": String(rl.reset),
+        },
+      },
+    );
   } catch (err: unknown) {
     if ((err as { code?: string }).code === "P2025") {
       return NextResponse.json(

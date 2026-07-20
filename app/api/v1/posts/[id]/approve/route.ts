@@ -7,6 +7,8 @@ import { approveClaimSchema } from "@/lib/validations/post";
 import { notifyClaimApproved, notifyClaimDenied } from "@/lib/notifications";
 import { redis } from "@/lib/redis";
 import { publishPostStatus, publishToUser } from "@/lib/pubsub";
+import { resolvePendingRequests } from "@/lib/claim-requests";
+import { invalidate, CacheKey } from "@/lib/cache";
 import {
   maybeEmailClaimApproved,
   maybeEmailClaimDenied,
@@ -52,15 +54,12 @@ export async function POST(
     return NextResponse.json({ error: "Acțiune invalidă" }, { status: 400 });
   }
 
-  const { action } = parsed.data;
+  const { action, collectorId } = parsed.data;
 
   try {
     const post = await prisma.post.findUnique({
       where: { id },
-      include: {
-        author: { select: { name: true } },
-        collector: { select: { name: true } },
-      },
+      include: { author: { select: { name: true } } },
     });
 
     if (!post) {
@@ -75,25 +74,47 @@ export async function POST(
         { status: 409 },
       );
     }
-    if (!post.collectorId) {
+    if (collectorId === post.authorId) {
+      return NextResponse.json({ error: "Acțiune invalidă" }, { status: 400 });
+    }
+
+    const request = await prisma.claimRequest.findUnique({
+      where: { postId_collectorId: { postId: id, collectorId } },
+      include: { collector: { select: { name: true } } },
+    });
+    if (!request || request.status !== "PENDING") {
       return NextResponse.json(
-        { error: "Nu există un colector activ" },
+        { error: "Cererea nu mai este validă — a fost retrasă între timp." },
         { status: 409 },
       );
     }
 
     const posterName = post.author.name ?? "Autorul";
-    const collectorId = post.collectorId;
 
     if (action === "approve") {
       if (post.expiresAt && post.expiresAt < new Date()) {
-        await prisma.post.update({
-          where: { id },
-          data: { status: "EXPIRED", collectorId: null, claimedAt: null },
+        await prisma.post.updateMany({
+          where: { id, status: "CLAIMED" },
+          data: { status: "EXPIRED", claimedAt: null },
         });
+        await resolvePendingRequests(id, "post_expired");
         return NextResponse.json(
           { error: "Anunțul a expirat. Nu mai poate fi aprobat." },
           { status: 410 },
+        );
+      }
+
+      const busy = await prisma.post.findFirst({
+        where: { collectorId, status: "IN_PROGRESS" },
+        select: { id: true },
+      });
+      if (busy) {
+        return NextResponse.json(
+          {
+            error:
+              "Acest colector are deja o colectare în desfășurare. Alege alt colector.",
+          },
+          { status: 409 },
         );
       }
 
@@ -104,14 +125,27 @@ export async function POST(
       const ttlSeconds = COLLECTION_WINDOW_MINUTES * 60 + 300;
 
       try {
-        await prisma.post.update({
-          where: { id, status: "CLAIMED", collectorId },
-          data: {
-            status: "IN_PROGRESS",
-            expiresAt: collectionDeadline,
-            listingExpiresAt: post.expiresAt,
-          },
-        });
+        await prisma.$transaction([
+          prisma.claimRequest.update({
+            where: {
+              postId_collectorId: { postId: id, collectorId },
+              status: "PENDING",
+            },
+            data: { status: "ACCEPTED" },
+          }),
+          // status-only filter: Prisma's `collectorId: null` misses a missing
+          // field (MongoDB); CLAIMED already implies no bound collector.
+          prisma.post.update({
+            where: { id, status: "CLAIMED" },
+            data: {
+              status: "IN_PROGRESS",
+              collectorId,
+              claimedAt: request.createdAt,
+              expiresAt: collectionDeadline,
+              listingExpiresAt: post.expiresAt,
+            },
+          }),
+        ]);
       } catch (e) {
         if ((e as { code?: string }).code === "P2025") {
           return NextResponse.json(
@@ -123,6 +157,8 @@ export async function POST(
         }
         throw e;
       }
+
+      await resolvePendingRequests(id, "another_collector_chosen", collectorId);
 
       await redis.set(`code:${id}`, code, "EX", ttlSeconds);
 
@@ -136,6 +172,11 @@ export async function POST(
           expiresAt: collectionDeadline.toISOString(),
         },
         [session.user.id, collectorId],
+      );
+
+      await invalidate(
+        CacheKey.posts(post.authorId, "active"),
+        CacheKey.posts(post.authorId, "all"),
       );
 
       maybeEmailClaimApproved({
@@ -152,9 +193,12 @@ export async function POST(
       });
     } else {
       try {
-        await prisma.post.update({
-          where: { id, status: "CLAIMED", collectorId },
-          data: { status: "OPEN", collectorId: null, claimedAt: null },
+        await prisma.claimRequest.update({
+          where: {
+            postId_collectorId: { postId: id, collectorId },
+            status: "PENDING",
+          },
+          data: { status: "DECLINED" },
         });
       } catch (e) {
         if ((e as { code?: string }).code === "P2025") {
@@ -166,21 +210,39 @@ export async function POST(
         throw e;
       }
 
+      let newStatus: "OPEN" | "CLAIMED" = "CLAIMED";
+      const remaining = await prisma.claimRequest.count({
+        where: { postId: id, status: "PENDING" },
+      });
+      if (remaining === 0) {
+        await prisma.post.updateMany({
+          where: { id, status: "CLAIMED" },
+          data: { status: "OPEN", claimedAt: null, collectorId: null },
+        });
+        newStatus = "OPEN";
+      }
+
       await notifyClaimDenied(collectorId, id, posterName);
 
-      publishPostStatus({ postId: id, status: "OPEN", collectorId: null }, [
-        session.user.id,
-      ]);
+      publishPostStatus(
+        { postId: id, status: newStatus, pendingRequestCount: remaining },
+        [session.user.id],
+      );
 
       publishToUser(collectorId, {
         type: "post:cancelled",
         payload: {
           postId: id,
           cancelledBy: "poster",
-          newStatus: "OPEN",
+          newStatus,
           reason: "claim_denied",
         },
       });
+
+      await invalidate(
+        CacheKey.posts(post.authorId, "active"),
+        CacheKey.posts(post.authorId, "all"),
+      );
 
       maybeEmailClaimDenied({
         collectorId,
@@ -188,7 +250,7 @@ export async function POST(
         postId: id,
       }).catch(console.error);
 
-      return NextResponse.json({ success: true, status: "OPEN" });
+      return NextResponse.json({ success: true, status: newStatus });
     }
   } catch (err) {
     console.error("[POST /api/v1/posts/[id]/approve]", err);

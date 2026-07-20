@@ -17,7 +17,7 @@ export async function GET() {
 
   try {
     const now = new Date();
-    const [post, collection] = await Promise.all([
+    const [post, collection, pendingRequests] = await Promise.all([
       prisma.post.findFirst({
         // An OPEN post whose expiresAt has passed but which the expiry sweep
         // hasn't updated yet is NOT active — otherwise the header indicator
@@ -34,12 +34,19 @@ export async function GET() {
         },
         select: { id: true },
       }),
+      // Only a bound collection (approved → IN_PROGRESS) counts as an active
+      // collection; pending requests are reported separately below.
       prisma.post.findFirst({
         where: {
           collectorId: session.user.id,
           status: { in: ACTIVE_STATUSES },
         },
         select: { id: true },
+      }),
+      prisma.claimRequest.findMany({
+        where: { collectorId: session.user.id, status: "PENDING" },
+        orderBy: { createdAt: "desc" },
+        select: { postId: true },
       }),
     ]);
 
@@ -49,6 +56,8 @@ export async function GET() {
         activeCollections: collection ? 1 : 0,
         activePostId: post?.id || null,
         activeCollectionId: collection?.id || null,
+        pendingRequests: pendingRequests.length,
+        pendingRequestPostId: pendingRequests[0]?.postId || null,
       },
       {
         headers: {
