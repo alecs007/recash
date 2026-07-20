@@ -21,6 +21,7 @@ import {
   Calendar,
   LockKeyholeOpen,
   AlertTriangle,
+  Users,
 } from "lucide-react";
 import { FaWineBottle, FaInfoCircle } from "react-icons/fa";
 import { GrSend } from "react-icons/gr";
@@ -1339,14 +1340,15 @@ function DetailPanel({
       const j = await res.json();
       if (!res.ok) {
         setActionError(j.error ?? t({ ro: "Eroare", en: "Error" }));
+        setActionLoading(false);
         mutate();
-      } else {
-        setActiveCounts({ pendingRequests: 0, pendingRequestPostId: null });
-        onRedirect(`/?toast=claim_cancelled`);
+        return;
       }
+
+      setActiveCounts({ pendingRequests: 0, pendingRequestPostId: null });
+      onRedirect(`/?toast=claim_cancelled`);
     } catch {
       setActionError(t({ ro: "Eroare de rețea.", en: "Network error." }));
-    } finally {
       setActionLoading(false);
     }
   }, [post.id, mutate, onRedirect, setActiveCounts, t]);
@@ -1676,24 +1678,35 @@ function DetailPanel({
                     </p>
                   </div>
                 </motion.div>
-                {(post.pendingRequestCount ?? 0) > 1 &&
-                  (() => {
-                    const others = (post.pendingRequestCount ?? 1) - 1;
-                    return (
-                      <div className="w-fit flex items-center gap-2 text-xs font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-xl pr-4 pl-3 py-2">
-                        <FaInfoCircle className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-                        {others === 1
-                          ? t({
-                              ro: "Încă o persoană vrea să colecteze sticlele!",
-                              en: "One more person wants to collect the bottles!",
-                            })
-                          : t({
-                              ro: `Încă ${others} persoane vor să colecteze sticlele!`,
-                              en: `${others} more people want to collect the bottles!`,
-                            })}
-                      </div>
-                    );
-                  })()}
+                <AnimatePresence initial={false}>
+                  {(post.pendingRequestCount ?? 0) > 1 &&
+                    (() => {
+                      const others = (post.pendingRequestCount ?? 1) - 1;
+                      return (
+                        <motion.div
+                          key="others-count"
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.28, ease: EASE }}
+                          className="overflow-hidden"
+                        >
+                          <div className="w-fit flex items-center gap-2 text-xs font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-xl pr-4 pl-3 py-2">
+                            <Users className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                            {others === 1
+                              ? t({
+                                  ro: "Încă o persoană vrea să colecteze sticlele!",
+                                  en: "One more person wants to collect the bottles!",
+                                })
+                              : t({
+                                  ro: `Încă ${others} persoane vor să colecteze sticlele!`,
+                                  en: `${others} more people want to collect the bottles!`,
+                                })}
+                          </div>
+                        </motion.div>
+                      );
+                    })()}
+                </AnimatePresence>
                 <AnimatePresence>
                   {actionError && (
                     <motion.p
