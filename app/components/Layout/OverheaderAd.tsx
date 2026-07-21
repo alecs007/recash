@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { X } from "lucide-react";
 import { FaRecycle } from "react-icons/fa";
+import { FaMoneyBillTrendUp } from "react-icons/fa6";
 import { useI18n } from "@/context/I18nContext";
 
 export interface OverheaderAdConfig {
@@ -158,10 +159,11 @@ export function OverheaderAd({
             <FaRecycle className="w-3.5 h-3.5 shrink-0 text-lime-600" />
             <span className="text-xs font-semibold text-slate-600 truncate">
               {t({
-                ro: "Recycle & Earn Cash 💸",
-                en: "Recycle & Earn Cash 💸",
+                ro: "Recycle & Earn Cash",
+                en: "Recycle & Earn Cash",
               })}
             </span>
+            <FaMoneyBillTrendUp className="w-3.5 h-3.5 shrink-0 text-lime-600" />
           </div>
         )}
       </div>
