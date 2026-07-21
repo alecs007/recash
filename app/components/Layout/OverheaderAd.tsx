@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { X } from "lucide-react";
+import { FaRecycle } from "react-icons/fa";
 import { useI18n } from "@/context/I18nContext";
 
 export interface OverheaderAdConfig {
@@ -118,7 +119,11 @@ export function OverheaderAd({
       <div className="max-w-7xl mx-auto px-3 sm:px-4 flex items-center gap-2 h-9 sm:h-10">
         <button
           onClick={handleClose}
-          aria-label={t({ ro: "Închide reclama", en: "Close ad" })}
+          aria-label={
+            ad
+              ? t({ ro: "Închide reclama", en: "Close ad" })
+              : t({ ro: "Închide mesajul", en: "Close message" })
+          }
           className="shrink-0 w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors cursor-pointer"
         >
           <X className="w-3 h-3 text-slate-500" />
@@ -150,13 +155,11 @@ export function OverheaderAd({
           </Link>
         ) : (
           <div className="flex-1 min-w-0 flex items-center justify-center gap-2">
-            <span className="text-[10px] font-black tracking-widest uppercase text-slate-300 border border-slate-200 rounded px-1.5 py-0.5">
-              Ad
-            </span>
-            <span className="text-xs text-slate-400 truncate">
+            <FaRecycle className="w-3.5 h-3.5 shrink-0 text-lime-600" />
+            <span className="text-xs font-semibold text-slate-600 truncate">
               {t({
-                ro: "Spațiu publicitar disponibil",
-                en: "Ad space available",
+                ro: "Recycle & Earn Cash 💸",
+                en: "Recycle & Earn Cash 💸",
               })}
             </span>
           </div>
