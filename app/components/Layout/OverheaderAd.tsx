@@ -4,8 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { X } from "lucide-react";
-import { FaRecycle } from "react-icons/fa";
-import { FaMoneyBillTrendUp } from "react-icons/fa6";
+import { FaWineBottle } from "react-icons/fa6";
 import { useI18n } from "@/context/I18nContext";
 
 export interface OverheaderAdConfig {
@@ -155,17 +154,25 @@ export function OverheaderAd({
             )}
           </Link>
         ) : (
-          <div className="flex-1 min-w-0 flex items-center justify-center gap-2">
-            <FaRecycle className="w-3.5 h-3.5 shrink-0 text-lime-600" />
-            {/* R + E + CASH spell out the Recash name. */}
-            <span className="text-xs font-medium text-slate-500 truncate">
-              <span className="font-bold text-lime-800">R</span>ecycle &amp;{" "}
-              <span className="font-bold text-lime-800">E</span>arn{" "}
-              <span className="font-bold tracking-wide text-lime-800">
-                CASH
+          <div className="flex-1 min-w-0 flex items-center justify-center gap-2.5 sm:gap-3">
+            <span className="text-xs font-semibold text-slate-700 truncate">
+              {t({ ro: "Sticlele goale =", en: "Empty bottles =" })}{" "}
+              <span className="font-bold text-lime-600">
+                {t({ ro: "bani gheață", en: "instant cash" })}
               </span>
             </span>
-            <FaMoneyBillTrendUp className="w-3.5 h-3.5 shrink-0 text-lime-600" />
+
+            <span
+              aria-hidden
+              className="hidden lg:block w-px h-4 bg-slate-200"
+            />
+
+            <span className="hidden lg:inline text-xs font-medium text-slate-400 truncate">
+              {t({
+                ro: "Locul lor este în automat, nu la tine în casă.",
+                en: "They belong in the machine, not in your home.",
+              })}
+            </span>
           </div>
         )}
       </div>
