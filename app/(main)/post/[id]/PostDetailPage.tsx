@@ -682,15 +682,15 @@ function ReviewForm({
           ),
         })}
       </p>
-      <div className="flex gap-1">
+      <div className="flex -m-1 w-fit" onMouseLeave={() => setHover(0)}>
         {[1, 2, 3, 4, 5].map((s) => (
           <motion.button
             key={s}
+            type="button"
             onClick={() => setRating(s)}
             onMouseEnter={() => setHover(s)}
-            onMouseLeave={() => setHover(0)}
             whileTap={{ scale: 1.2 }}
-            className="cursor-pointer"
+            className="cursor-pointer p-1"
           >
             <Star
               className={`w-7 h-7 transition-colors ${s <= (hover || rating) ? "text-[#FFDF00] fill-[#FFDF00]" : "text-slate-200"}`}
