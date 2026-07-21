@@ -468,18 +468,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                   )}
                 </Link>
 
-                <div
-                  ref={dropdownRef}
-                  className="relative"
-                  onMouseEnter={() => {
-                    if (window.matchMedia("(pointer: fine)").matches)
-                      setDropdownOpen(true);
-                  }}
-                  onMouseLeave={() => {
-                    if (window.matchMedia("(pointer: fine)").matches)
-                      setDropdownOpen(false);
-                  }}
-                >
+                <div ref={dropdownRef} className="relative">
                   <button
                     onClick={() => setDropdownOpen((v) => !v)}
                     className="flex items-center gap-2 pl-1 pr-2 py-1 -translate-x-1 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
