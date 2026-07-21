@@ -115,6 +115,7 @@ function ActiveIndicator({
   activeCollectionId,
   pendingRequests,
   pendingRequestsList,
+  onOpenChange,
 }: {
   activePosts: number;
   activeCollections: number;
@@ -122,6 +123,7 @@ function ActiveIndicator({
   activeCollectionId: string | null;
   pendingRequests: number;
   pendingRequestsList: PendingRequestSummary[];
+  onOpenChange?: (open: boolean) => void;
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
@@ -146,6 +148,10 @@ function ActiveIndicator({
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  useEffect(() => {
+    onOpenChange?.(open);
+  }, [open, onOpenChange]);
 
   const slideIn = {
     initial: { opacity: 0, scale: 0.8, x: 10 },
@@ -341,8 +347,13 @@ export default function Header({ children }: { children: React.ReactNode }) {
   const { show } = useLoading();
   const { t } = useI18n();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [indicatorOpen, setIndicatorOpen] = useState(false);
+  const [localeOpen, setLocaleOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
+
+  // Any open header dropdown dims the rest of the page.
+  const scrimOpen = dropdownOpen || indicatorOpen || localeOpen;
 
   const isAuthenticated = status === "authenticated" && !!session?.user;
   const isLoading = status === "loading";
@@ -402,6 +413,20 @@ export default function Header({ children }: { children: React.ReactNode }) {
         style={{ willChange: "transform" }}
       >
         <OverheaderAd headerRef={headerRef} />
+
+        <AnimatePresence>
+          {scrimOpen && (
+            <motion.div
+              key="header-scrim-top"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute inset-0 z-[1000] bg-slate-900/25 backdrop-blur-[2px]"
+              aria-hidden
+            />
+          )}
+        </AnimatePresence>
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <Image
@@ -427,6 +452,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                   activeCollectionId={activeCollectionId}
                   pendingRequests={pendingRequests}
                   pendingRequestsList={pendingRequestsList}
+                  onOpenChange={setIndicatorOpen}
                 />
 
                 <Link
@@ -485,7 +511,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="absolute right-0 top-full mt-0 pt-2 w-56 origin-top-right"
+                        className="absolute right-0 top-full mt-0 pt-2 w-56 origin-top-right z-[1002]"
                       >
                         <div className="bg-white rounded-3xl border border-slate-200 p-2">
                           <Link
@@ -553,7 +579,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
               </>
             ) : (
               <div className="flex items-center gap-2">
-                <LocaleSwitcher />
+                <LocaleSwitcher onOpenChange={setLocaleOpen} />
                 <button
                   onClick={openAuthModal}
                   className="hidden sm:flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors px-3 py-2 rounded-xl hover:bg-slate-50 cursor-pointer"
@@ -590,6 +616,20 @@ export default function Header({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
+
+      <AnimatePresence>
+        {scrimOpen && (
+          <motion.div
+            key="header-scrim"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className="fixed inset-0 z-[1000] bg-slate-900/25 backdrop-blur-[2px]"
+            aria-hidden
+          />
+        )}
+      </AnimatePresence>
 
       <main
         className="flex-1"

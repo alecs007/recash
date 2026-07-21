@@ -124,7 +124,11 @@ export function PreferenceSwitcherInline() {
   );
 }
 
-export function LocaleSwitcher() {
+export function LocaleSwitcher({
+  onOpenChange,
+}: {
+  onOpenChange?: (open: boolean) => void;
+} = {}) {
   const { locale, currency, t } = useI18n();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -137,6 +141,10 @@ export function LocaleSwitcher() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  useEffect(() => {
+    onOpenChange?.(open);
+  }, [open, onOpenChange]);
 
   return (
     <div
