@@ -155,8 +155,9 @@ export function OverheaderAd({
           </Link>
         ) : (
           <div className="flex-1 min-w-0 flex items-center justify-center gap-2.5 sm:gap-3">
-            <span className="text-xs font-semibold text-slate-700 truncate">
-              {t({ ro: "Sticlele goale =", en: "Empty bottles =" })}{" "}
+            <span className="text-xs font-semibold text-slate-600 truncate">
+              <FaWineBottle className="inline-block w-3.5 h-3.5 mr-1.5 -translate-y-px text-lime-600" />
+              {t({ ro: "Sticle goale =", en: "Empty bottles =" })}{" "}
               <span className="font-bold text-lime-600">
                 {t({ ro: "bani gheață", en: "instant cash" })}
               </span>
