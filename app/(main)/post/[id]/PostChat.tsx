@@ -181,7 +181,7 @@ function MessageBubble({
         delay: isPending ? 0.1 : 0,
       }}
       className={`flex items-end gap-2 ${isMe ? "flex-row-reverse" : "flex-row"} ${
-        isLastInGroup ? "" : "mb-[17px]"
+        isLastInGroup ? "" : "mb-[8px]"
       }`}
       style={{ originX: isMe ? 1 : 0, originY: 1 }}
     >
