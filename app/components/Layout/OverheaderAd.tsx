@@ -157,11 +157,13 @@ export function OverheaderAd({
         ) : (
           <div className="flex-1 min-w-0 flex items-center justify-center gap-2">
             <FaRecycle className="w-3.5 h-3.5 shrink-0 text-lime-600" />
-            <span className="text-xs font-semibold text-slate-600 truncate">
-              {t({
-                ro: "Recycle & Earn Cash",
-                en: "Recycle & Earn Cash",
-              })}
+            {/* R + E + CASH spell out the Recash name. */}
+            <span className="text-xs font-medium text-slate-500 truncate">
+              <span className="font-bold text-lime-800">R</span>ecycle &amp;{" "}
+              <span className="font-bold text-lime-800">E</span>arn{" "}
+              <span className="font-bold tracking-wide text-lime-800">
+                CASH
+              </span>
             </span>
             <FaMoneyBillTrendUp className="w-3.5 h-3.5 shrink-0 text-lime-600" />
           </div>
