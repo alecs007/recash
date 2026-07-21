@@ -1513,8 +1513,8 @@ function DetailPanel({
                           en: "A collector wants to pick up your bottles. Once approved, they'll have 60 minutes to arrive.",
                         })
                       : t({
-                          ro: `${post.claimRequests?.length} colectori vor să îți preia sticlele. Alege unul — ceilalți vor fi anunțați automat.`,
-                          en: `${post.claimRequests?.length} collectors want to pick up your bottles. Choose one — the others are notified automatically.`,
+                          ro: `${post.claimRequests?.length} colectori vor să îți preia sticlele. Odată aprobat, colectorul ales va avea 60 min la dispoziție să ajungă.`,
+                          en: `${post.claimRequests?.length} collectors want to pick up your bottles. Once approved, the chosen collector will have 60 minutes to arrive.`,
                         })}
                   </p>
 

@@ -1,12 +1,18 @@
 "use client";
 
 import { animate, motion, useMotionValue } from "framer-motion";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useCallback } from "react";
+
+const MAX_DURATION_MS = 8000;
 
 export function NavigationProgress() {
   const pathname = usePathname();
-  const prevPath = useRef(pathname);
+  const searchParams = useSearchParams();
+
+  const navKey = `${pathname}?${searchParams.toString()}`;
+  const prevNavKey = useRef(navKey);
+  const bailoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Use MotionValue for the progress
   const scaleX = useMotionValue(0);
@@ -15,8 +21,36 @@ export function NavigationProgress() {
 
   const animRef = useRef<ReturnType<typeof animate> | null>(null);
 
+  const finish = useCallback(() => {
+    animRef.current?.stop();
+
+    if (bailoutRef.current) {
+      clearTimeout(bailoutRef.current);
+      bailoutRef.current = null;
+    }
+
+    // 1. Fill the bar to 100%
+    animate(scaleX, 1, {
+      duration: 0.4,
+      ease: [0.23, 1, 0.32, 1], // Strong Ease Out
+      onComplete: () => {
+        // 2. After it hits 100%, fade it out smoothly
+        animate(opacity, 0, {
+          duration: 0.4,
+          onComplete: () => {
+            // 3. ONLY reset scale to 0 once it is completely invisible
+            scaleX.jump(0);
+          },
+        });
+      },
+    });
+  }, [scaleX, opacity]);
+
   const start = useCallback(() => {
     animRef.current?.stop();
+
+    if (bailoutRef.current) clearTimeout(bailoutRef.current);
+    bailoutRef.current = setTimeout(finish, MAX_DURATION_MS);
 
     // 1. Instant reset for a new navigation
     scaleX.jump(0);
@@ -36,27 +70,7 @@ export function NavigationProgress() {
         });
       },
     });
-  }, [scaleX, opacity]);
-
-  const finish = useCallback(() => {
-    animRef.current?.stop();
-
-    // 1. Fill the bar to 100%
-    animate(scaleX, 1, {
-      duration: 0.4,
-      ease: [0.23, 1, 0.32, 1], // Strong Ease Out
-      onComplete: () => {
-        // 2. After it hits 100%, fade it out smoothly
-        animate(opacity, 0, {
-          duration: 0.4,
-          onComplete: () => {
-            // 3. ONLY reset scale to 0 once it is completely invisible
-            scaleX.jump(0);
-          },
-        });
-      },
-    });
-  }, [scaleX, opacity]);
+  }, [scaleX, opacity, finish]);
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -90,11 +104,18 @@ export function NavigationProgress() {
   }, [start]);
 
   useEffect(() => {
-    if (pathname !== prevPath.current) {
-      prevPath.current = pathname;
+    if (navKey !== prevNavKey.current) {
+      prevNavKey.current = navKey;
       finish();
     }
-  }, [pathname, finish]);
+  }, [navKey, finish]);
+
+  useEffect(
+    () => () => {
+      if (bailoutRef.current) clearTimeout(bailoutRef.current);
+    },
+    [],
+  );
 
   return (
     <motion.div
