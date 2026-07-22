@@ -8,6 +8,7 @@ import { FaRegBell } from "react-icons/fa";
 import { ArrowRight, BellOff } from "lucide-react";
 import type { Notification } from "@prisma/client";
 import { NOTIF_CONFIG } from "@/lib/constants/notifications";
+import { useRecashSocket } from "@/hooks/useRecashSocket";
 import { useI18n, type Locale } from "@/context/I18nContext";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -123,6 +124,7 @@ export function NotificationBell({
   onOpenChange?: (open: boolean) => void;
 }) {
   const { t, locale } = useI18n();
+  const { on, off } = useRecashSocket();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -131,12 +133,19 @@ export function NotificationBell({
   const { data, isLoading, mutate } = useSWR<ApiResponse>(
     open ? RECENT_URL : null,
     fetcher,
-    { revalidateOnFocus: false, dedupingInterval: 10_000 },
+    { revalidateOnFocus: true, dedupingInterval: 5_000 },
   );
 
   useEffect(() => {
     onOpenChange?.(open);
   }, [open, onOpenChange]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = () => mutate();
+    on("notification:new", handler);
+    return () => off("notification:new", handler);
+  }, [open, on, off, mutate]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -206,7 +215,11 @@ export function NotificationBell({
             transition={{ duration: 0.2, ease: "easeOut" }}
             className="absolute -right-18 top-full mt-0 pt-2 w-[340px] max-w-[calc(100vw-1rem)] origin-top-right z-[1002]"
           >
-            <div className="bg-white rounded-3xl border border-slate-200 shadow shadow-slate-200/60 p-4 space-y-2">
+            <motion.div
+              layout
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="bg-white rounded-3xl border border-slate-200 shadow shadow-slate-200/60 p-4 flex flex-col gap-2"
+            >
               {isLoading && notifications.length === 0 ? (
                 <RowSkeleton />
               ) : notifications.length === 0 ? (
@@ -225,28 +238,40 @@ export function NotificationBell({
                   </p>
                 </div>
               ) : (
-                notifications.map((n) => (
-                  <NotifRow
-                    key={n.id}
-                    notif={n}
-                    locale={locale}
-                    onClick={() => handleItemClick(n)}
-                  />
-                ))
+                <AnimatePresence initial={false} mode="popLayout">
+                  {notifications.map((n) => (
+                    <motion.div
+                      key={n.id}
+                      layout
+                      initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.97 }}
+                      transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                      <NotifRow
+                        notif={n}
+                        locale={locale}
+                        onClick={() => handleItemClick(n)}
+                      />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               )}
 
-              <Link
-                href="/notificari"
-                onClick={() => setOpen(false)}
-                className="flex items-center justify-center gap-1 px-4 py-3 rounded-2xl bg-slate-50 hover:bg-slate-100 text-xs font-bold text-[#123424] transition-colors"
-              >
-                {t({
-                  ro: "Vezi toate notificările",
-                  en: "See all notifications",
-                })}
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
+              <motion.div layout>
+                <Link
+                  href="/notificari"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center justify-center gap-1 px-4 py-3 rounded-2xl bg-slate-50 hover:bg-slate-100 text-xs font-bold text-[#123424] transition-colors"
+                >
+                  {t({
+                    ro: "Vezi toate notificările",
+                    en: "See all notifications",
+                  })}
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </motion.div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
