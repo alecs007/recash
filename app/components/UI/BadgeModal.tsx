@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Image from "next/image";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import { FaCircleInfo } from "react-icons/fa6";
 import { motion, AnimatePresence } from "framer-motion";
 import { BADGE_CONFIG, BADGE_COLORS } from "@/lib/constants/badges";
 import type { BadgeData } from "./BadgeCard";
@@ -141,10 +142,42 @@ export function BadgeModal({ badge, earned = true, onClose }: BadgeModalProps) {
               </div>
 
               <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.18 }}
+                className="relative z-10 mx-6 -mt-4 flex items-center gap-3 rounded-2xl border bg-white p-3.5 shadow-sm"
+                style={{
+                  borderColor: earned
+                    ? `color-mix(in srgb, ${color} 30%, white)`
+                    : "#e2e8f0",
+                }}
+              >
+                <div
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+                  style={{
+                    backgroundColor: earned
+                      ? `color-mix(in srgb, ${color} 14%, white)`
+                      : "#f1f5f9",
+                    color: earned ? color : "#94a3b8",
+                  }}
+                >
+                  <FaCircleInfo className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold text-slate-400">
+                    {t({ ro: "Cum se obține?", en: "How to get it?" })}
+                  </p>
+                  <p className="text-sm font-bold leading-snug text-slate-800">
+                    {t(cfg.howTo)}
+                  </p>
+                </div>
+              </motion.div>
+
+              <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="px-6 py-5 space-y-3"
+                className="px-6 pb-5 pt-4 space-y-3"
               >
                 <div className="flex items-center justify-between py-2.5 px-3 bg-slate-50 rounded-xl">
                   <span className="text-xs font-semibold text-slate-500">

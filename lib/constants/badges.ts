@@ -2,6 +2,8 @@ export type BadgeCfg = {
   image: string;
   label: { ro: string; en: string };
   desc: { ro: string; en: string };
+  /** How the badge is unlocked, shown in the badge modal. */
+  howTo: { ro: string; en: string };
   group: { ro: string; en: string };
 };
 
@@ -25,6 +27,10 @@ export const BADGE_CONFIG: Record<string, BadgeCfg> = {
       ro: "Primele sticle intră în joc",
       en: "First bottles in play",
     },
+    howTo: {
+      ro: "O postare publicată",
+      en: "One post published",
+    },
     group: GROUPS.posts,
   },
   POST_VETERAN_10: {
@@ -33,6 +39,10 @@ export const BADGE_CONFIG: Record<string, BadgeCfg> = {
     desc: {
       ro: "Zece anunțuri, zero risipă",
       en: "Ten posts, zero waste",
+    },
+    howTo: {
+      ro: "10 postări publicate",
+      en: "10 posts published",
     },
     group: GROUPS.posts,
   },
@@ -43,6 +53,10 @@ export const BADGE_CONFIG: Record<string, BadgeCfg> = {
       ro: "Reciclare pe bandă rulantă",
       en: "Recycling on a roll",
     },
+    howTo: {
+      ro: "50 de postări publicate",
+      en: "50 posts published",
+    },
     group: GROUPS.posts,
   },
   POST_VETERAN_100: {
@@ -51,6 +65,10 @@ export const BADGE_CONFIG: Record<string, BadgeCfg> = {
     desc: {
       ro: "O fabrică de reciclare",
       en: "A recycling machine",
+    },
+    howTo: {
+      ro: "100 de postări publicate",
+      en: "100 posts published",
     },
     group: GROUPS.posts,
   },
@@ -61,6 +79,10 @@ export const BADGE_CONFIG: Record<string, BadgeCfg> = {
       ro: "Reciclarea a început",
       en: "Recycling begins",
     },
+    howTo: {
+      ro: "O colectare finalizată",
+      en: "One collection completed",
+    },
     group: GROUPS.collections,
   },
   COLLECTOR_STARTER_10: {
@@ -69,6 +91,10 @@ export const BADGE_CONFIG: Record<string, BadgeCfg> = {
     desc: {
       ro: "Sticle strânse, bani câștigați",
       en: "Bottles in, cash out",
+    },
+    howTo: {
+      ro: "10 colectări finalizate",
+      en: "10 collections completed",
     },
     group: GROUPS.collections,
   },
@@ -79,6 +105,10 @@ export const BADGE_CONFIG: Record<string, BadgeCfg> = {
       ro: "Vânător de sticle goale",
       en: "Empty-bottle hunter",
     },
+    howTo: {
+      ro: "50 de colectări finalizate",
+      en: "50 collections completed",
+    },
     group: GROUPS.collections,
   },
   COLLECTOR_ELITE_100: {
@@ -87,6 +117,10 @@ export const BADGE_CONFIG: Record<string, BadgeCfg> = {
     desc: {
       ro: "Colector de neoprit",
       en: "Unstoppable collector",
+    },
+    howTo: {
+      ro: "100 de colectări finalizate",
+      en: "100 collections completed",
     },
     group: GROUPS.collections,
   },
@@ -97,6 +131,10 @@ export const BADGE_CONFIG: Record<string, BadgeCfg> = {
       ro: "Primele sticle reciclate",
       en: "First bottles recycled",
     },
+    howTo: {
+      ro: "50 de sticle reciclate",
+      en: "50 bottles recycled",
+    },
     group: GROUPS.eco,
   },
   ECO_WARRIOR: {
@@ -105,6 +143,10 @@ export const BADGE_CONFIG: Record<string, BadgeCfg> = {
     desc: {
       ro: "Mai puțin plastic, mai mult verde",
       en: "Less plastic, more green",
+    },
+    howTo: {
+      ro: "250 de sticle reciclate",
+      en: "250 bottles recycled",
     },
     group: GROUPS.eco,
   },
@@ -115,6 +157,10 @@ export const BADGE_CONFIG: Record<string, BadgeCfg> = {
       ro: "O mie de sticle reciclate",
       en: "A thousand bottles recycled",
     },
+    howTo: {
+      ro: "1.000 de sticle reciclate",
+      en: "1,000 bottles recycled",
+    },
     group: GROUPS.eco,
   },
   ECO_LEGEND: {
@@ -123,6 +169,10 @@ export const BADGE_CONFIG: Record<string, BadgeCfg> = {
     desc: {
       ro: "Munți de sticle reciclate",
       en: "Mountains of bottles recycled",
+    },
+    howTo: {
+      ro: "5.000 de sticle reciclate",
+      en: "5,000 bottles recycled",
     },
     group: GROUPS.eco,
   },
@@ -133,6 +183,10 @@ export const BADGE_CONFIG: Record<string, BadgeCfg> = {
       ro: "Colectare fulger",
       en: "Lightning pickup",
     },
+    howTo: {
+      ro: "O colectare finalizată în sub 30 de minute de la preluare",
+      en: "A collection completed within 30 minutes of claiming it",
+    },
     group: GROUPS.special,
   },
   FIRST_WEEK: {
@@ -141,6 +195,10 @@ export const BADGE_CONFIG: Record<string, BadgeCfg> = {
     desc: {
       ro: "Primii pași verzi",
       en: "First green steps",
+    },
+    howTo: {
+      ro: "Activ în prima săptămână de la înregistrare",
+      en: "Active within the first week of signing up",
     },
     group: GROUPS.activity,
   },
@@ -151,6 +209,10 @@ export const BADGE_CONFIG: Record<string, BadgeCfg> = {
       ro: "Lună de lună, tot mai verde",
       en: "Month after month, ever greener",
     },
+    howTo: {
+      ro: "Activitate în fiecare lună",
+      en: "Active every month",
+    },
     group: GROUPS.activity,
   },
   VETERAN_1_YEAR: {
@@ -159,6 +221,10 @@ export const BADGE_CONFIG: Record<string, BadgeCfg> = {
     desc: {
       ro: "Un an de reciclare",
       en: "A year of recycling",
+    },
+    howTo: {
+      ro: "Un an de la înregistrare",
+      en: "One year since signing up",
     },
     group: GROUPS.activity,
   },
@@ -169,6 +235,10 @@ export const BADGE_CONFIG: Record<string, BadgeCfg> = {
       ro: "O sută de misiuni verzi",
       en: "A hundred green missions",
     },
+    howTo: {
+      ro: "100 de tranzacții finalizate",
+      en: "100 transactions completed",
+    },
     group: GROUPS.special,
   },
   PERFECT_RATING: {
@@ -177,6 +247,10 @@ export const BADGE_CONFIG: Record<string, BadgeCfg> = {
     desc: {
       ro: "Reciclare impecabilă",
       en: "Flawless recycling",
+    },
+    howTo: {
+      ro: "Medie 5.0 din minim 10 evaluări",
+      en: "5.0 average from at least 10 ratings",
     },
     group: GROUPS.special,
   },

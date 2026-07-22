@@ -7,7 +7,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useState, useRef, useEffect } from "react";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { useLoading } from "@/context/LoadingContext";
-import { FaWineBottle, FaRegUser, FaRegBell, FaRecycle } from "react-icons/fa";
+import { FaWineBottle, FaRegUser, FaRecycle } from "react-icons/fa";
 import { TbTruckDelivery, TbClockHour4, TbLoader2 } from "react-icons/tb";
 import { FiPlusSquare } from "react-icons/fi";
 import { IoChevronDown, IoClose } from "react-icons/io5";
@@ -20,6 +20,7 @@ import type { PendingRequestSummary } from "@/hooks/useActiveCounts";
 import { MAX_PENDING_REQUESTS_PER_COLLECTOR } from "@/lib/constants/posts";
 import { OverheaderAd } from "./OverheaderAd";
 import { LocaleSwitcher, PreferenceSwitcherInline } from "./LocaleSwitcher";
+import { NotificationBell } from "./NotificationBell";
 import { useI18n } from "@/context/I18nContext";
 
 function PendingRequestRows({
@@ -349,11 +350,12 @@ export default function Header({ children }: { children: React.ReactNode }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [indicatorOpen, setIndicatorOpen] = useState(false);
   const [localeOpen, setLocaleOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
 
   // Any open header dropdown dims the rest of the page.
-  const scrimOpen = dropdownOpen || indicatorOpen || localeOpen;
+  const scrimOpen = dropdownOpen || indicatorOpen || localeOpen || notifOpen;
 
   const isAuthenticated = status === "authenticated" && !!session?.user;
   const isLoading = status === "loading";
@@ -455,18 +457,10 @@ export default function Header({ children }: { children: React.ReactNode }) {
                   onOpenChange={setIndicatorOpen}
                 />
 
-                <Link
-                  href="/notificari"
-                  className="relative grid place-items-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors"
-                  aria-label={t({ ro: "Notificări", en: "Notifications" })}
-                >
-                  <FaRegBell className="w-5 h-5 text-slate-700" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">
-                      {unreadCount > 9 ? "9+" : unreadCount}
-                    </span>
-                  )}
-                </Link>
+                <NotificationBell
+                  unreadCount={unreadCount}
+                  onOpenChange={setNotifOpen}
+                />
 
                 <div ref={dropdownRef} className="relative">
                   <button

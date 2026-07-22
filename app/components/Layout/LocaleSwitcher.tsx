@@ -147,16 +147,7 @@ export function LocaleSwitcher({
   }, [open, onOpenChange]);
 
   return (
-    <div
-      ref={ref}
-      className="relative"
-      onMouseEnter={() => {
-        if (window.matchMedia("(pointer: fine)").matches) setOpen(true);
-      }}
-      onMouseLeave={() => {
-        if (window.matchMedia("(pointer: fine)").matches) setOpen(false);
-      }}
-    >
+    <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label={t({
