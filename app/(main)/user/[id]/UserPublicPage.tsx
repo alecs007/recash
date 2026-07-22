@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import useSWR from "swr";
 import {
   ArrowLeft,
@@ -144,6 +145,38 @@ function RatingBreakdown({ reviews }: { reviews: Review[] }) {
   );
 }
 
+function ReviewerAvatar({
+  src,
+  name,
+}: {
+  src?: string | null;
+  name?: string | null;
+}) {
+  const [loaded, setLoaded] = useState(false);
+
+  return (
+    <div className="relative w-10 h-10 rounded-full bg-lime-50 border border-lime-200 flex items-center justify-center overflow-hidden">
+      {src ? (
+        <Image
+          src={src}
+          alt={name ?? ""}
+          width={80}
+          height={80}
+          draggable={false}
+          onLoad={() => setLoaded(true)}
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+            loaded ? "opacity-100" : "opacity-0"
+          }`}
+        />
+      ) : (
+        <span className="text-sm font-bold text-lime-700 select-none">
+          {name?.[0] ?? "?"}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function ReviewCard({
   review,
   profileUserId,
@@ -160,41 +193,13 @@ function ReviewCard({
       <div className="flex items-start gap-3">
         {canLink ? (
           <UserHoverCard userId={reviewer.id!}>
-            <Link href={`/user/${reviewer.id}`} className="shrink-0">
-              <div className="w-10 h-10 rounded-full bg-lime-50 border border-lime-200 flex items-center justify-center overflow-hidden transition-all">
-                {reviewer.image ? (
-                  <Image
-                    src={reviewer.image}
-                    alt={reviewer.name ?? ""}
-                    width={120}
-                    height={120}
-                    className="object-cover"
-                    draggable={false}
-                  />
-                ) : (
-                  <span className="text-sm font-bold text-lime-700">
-                    {reviewer.name?.[0] ?? "?"}{" "}
-                  </span>
-                )}
-              </div>
+            <Link href={`/user/${reviewer.id}`} className="shrink-0 block">
+              <ReviewerAvatar src={reviewer.image} name={reviewer.name} />
             </Link>
           </UserHoverCard>
         ) : (
-          <div className="shrink-0 w-10 h-10 rounded-full bg-lime-50 border border-lime-200 flex items-center justify-center overflow-hidden">
-            {reviewer.image ? (
-              <Image
-                src={reviewer.image}
-                alt={reviewer.name ?? ""}
-                width={40}
-                height={40}
-                className="object-cover"
-                draggable={false}
-              />
-            ) : (
-              <span className="text-sm font-bold text-lime-700">
-                {reviewer.name?.[0] ?? "?"}
-              </span>
-            )}
+          <div className="shrink-0">
+            <ReviewerAvatar src={reviewer.image} name={reviewer.name} />
           </div>
         )}
 
@@ -747,18 +752,25 @@ export default function UserPublicPage({ userId }: { userId: string }) {
           <>
             <RatingBreakdown reviews={reviews} />
 
-            <div className="space-y-3">
-              {visibleReviews.map((review) => (
-                <ReviewCard
-                  key={review.id}
-                  review={review}
-                  profileUserId={userId}
-                />
-              ))}
-            </div>
+            <motion.div layout className="space-y-3">
+              <AnimatePresence initial={false}>
+                {visibleReviews.map((review) => (
+                  <motion.div
+                    key={review.id}
+                    layout
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <ReviewCard review={review} profileUserId={userId} />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
 
             {hasMore && (
-              <button
+              <motion.button
+                layout
                 onClick={() => setVisibleCount((c) => c + REVIEWS_PER_PAGE)}
                 className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-500 hover:border-lime-300 hover:text-lime-700 hover:bg-lime-50 transition-all cursor-pointer"
               >
@@ -769,7 +781,7 @@ export default function UserPublicPage({ userId }: { userId: string }) {
                   })`,
                   en: `See more (${reviews.length - visibleCount} left)`,
                 })}
-              </button>
+              </motion.button>
             )}
           </>
         )}

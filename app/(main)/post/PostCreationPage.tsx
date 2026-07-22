@@ -1356,67 +1356,86 @@ function StepDetails({
                 </div>
 
                 {/* Time ranges */}
-                {[1, 2, 3, 4, 5, 6, 0]
-                  .map((v) =>
-                    data.availabilitySchedule!.find((s) => s.day === v),
-                  )
-                  .filter(Boolean)
-                  .map((s) => {
-                    const dayLabel = [
-                      { value: 1, long: t({ ro: "Luni", en: "Monday" }) },
-                      { value: 2, long: t({ ro: "Marți", en: "Tuesday" }) },
-                      { value: 3, long: t({ ro: "Miercuri", en: "Wednesday" }) },
-                      { value: 4, long: t({ ro: "Joi", en: "Thursday" }) },
-                      { value: 5, long: t({ ro: "Vineri", en: "Friday" }) },
-                      { value: 6, long: t({ ro: "Sâmbătă", en: "Saturday" }) },
-                      { value: 0, long: t({ ro: "Duminică", en: "Sunday" }) },
-                    ].find((d) => d.value === s!.day)?.long;
-                    return (
-                      <div
-                        key={s!.day}
-                        className="flex items-center gap-2 bg-slate-50 rounded-xl px-2.5 py-2"
-                      >
-                        <span className="text-xs font-bold text-slate-600 w-9 shrink-0">
-                          {dayLabel?.slice(0, 3)}
-                        </span>
-                        <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                          <input
-                            type="time"
-                            value={s!.start}
-                            onChange={(e) => {
-                              onChange({
-                                availabilitySchedule:
-                                  data.availabilitySchedule!.map((item) =>
-                                    item.day === s!.day
-                                      ? { ...item, start: e.target.value }
-                                      : item,
-                                  ),
-                              });
+                <div className="flex flex-col">
+                  <AnimatePresence initial={false}>
+                    {[1, 2, 3, 4, 5, 6, 0]
+                      .map((v) =>
+                        data.availabilitySchedule!.find((s) => s.day === v),
+                      )
+                      .filter(Boolean)
+                      .map((s) => {
+                        const dayLabel = [
+                          { value: 1, long: t({ ro: "Luni", en: "Monday" }) },
+                          { value: 2, long: t({ ro: "Marți", en: "Tuesday" }) },
+                          {
+                            value: 3,
+                            long: t({ ro: "Miercuri", en: "Wednesday" }),
+                          },
+                          { value: 4, long: t({ ro: "Joi", en: "Thursday" }) },
+                          { value: 5, long: t({ ro: "Vineri", en: "Friday" }) },
+                          {
+                            value: 6,
+                            long: t({ ro: "Sâmbătă", en: "Saturday" }),
+                          },
+                          { value: 0, long: t({ ro: "Duminică", en: "Sunday" }) },
+                        ].find((d) => d.value === s!.day)?.long;
+                        return (
+                          <motion.div
+                            key={s!.day}
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{
+                              duration: 0.22,
+                              ease: [0.22, 1, 0.36, 1],
                             }}
-                            className="flex-1 min-w-0 text-xs sm:text-sm border border-slate-200 rounded-lg px-1.5 py-1 focus:border-lime-400 outline-none"
-                          />
-                          <span className="text-slate-400 text-xs shrink-0">
-                            –
-                          </span>
-                          <input
-                            type="time"
-                            value={s!.end}
-                            onChange={(e) => {
-                              onChange({
-                                availabilitySchedule:
-                                  data.availabilitySchedule!.map((item) =>
-                                    item.day === s!.day
-                                      ? { ...item, end: e.target.value }
-                                      : item,
-                                  ),
-                              });
-                            }}
-                            className="flex-1 min-w-0 text-xs sm:text-sm border border-slate-200 rounded-lg px-1.5 py-1 focus:border-lime-400 outline-none"
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
+                            className="overflow-hidden"
+                          >
+                            <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-2.5 py-2 mb-2.5">
+                              <span className="text-xs font-bold text-slate-600 w-9 shrink-0">
+                                {dayLabel?.slice(0, 3)}
+                              </span>
+                              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                <input
+                                  type="time"
+                                  value={s!.start}
+                                  onChange={(e) => {
+                                    onChange({
+                                      availabilitySchedule:
+                                        data.availabilitySchedule!.map((item) =>
+                                          item.day === s!.day
+                                            ? { ...item, start: e.target.value }
+                                            : item,
+                                        ),
+                                    });
+                                  }}
+                                  className="flex-1 min-w-0 text-xs sm:text-sm border border-slate-200 rounded-lg px-1.5 py-1 focus:border-lime-400 outline-none"
+                                />
+                                <span className="text-slate-400 text-xs shrink-0">
+                                  –
+                                </span>
+                                <input
+                                  type="time"
+                                  value={s!.end}
+                                  onChange={(e) => {
+                                    onChange({
+                                      availabilitySchedule:
+                                        data.availabilitySchedule!.map((item) =>
+                                          item.day === s!.day
+                                            ? { ...item, end: e.target.value }
+                                            : item,
+                                        ),
+                                    });
+                                  }}
+                                  className="flex-1 min-w-0 text-xs sm:text-sm border border-slate-200 rounded-lg px-1.5 py-1 focus:border-lime-400 outline-none"
+                                />
+                              </div>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                  </AnimatePresence>
+                </div>
               </div>
             </motion.div>
           )}
