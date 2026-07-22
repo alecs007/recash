@@ -14,6 +14,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { FaBan } from "react-icons/fa";
+import { FaUserLargeSlash } from "react-icons/fa6";
 import { ProfileRankBadge } from "@/app/components/Profile/RankBadge";
 import { BadgeCard } from "@/app/components/UI/BadgeCard";
 import { BADGE_CONFIG } from "@/lib/constants/badges";
@@ -406,13 +407,7 @@ function Skeleton() {
               key={i}
               className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-white border border-slate-100"
             >
-              <div
-                className="w-[52px] h-[59px] bg-slate-100"
-                style={{
-                  clipPath:
-                    "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-                }}
-              />
+              <div className="w-[52px] h-[59px] bg-slate-100 rounded-xl" />
               <div className="space-y-1 w-full flex flex-col items-center">
                 <div className="h-2.5 w-14 bg-slate-100 rounded" />
                 <div className="h-2 w-10 bg-slate-100 rounded" />
@@ -449,12 +444,12 @@ export default function UserPublicPage({ userId }: { userId: string }) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4">
         <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
-          <ShieldCheck className="w-8 h-8 text-slate-300" />
+          <FaUserLargeSlash className="w-8 h-8 text-slate-300" />
         </div>
         <p className="font-bold text-slate-700 text-lg">
           {t({ ro: "Utilizator inexistent", en: "User not found" })}
         </p>
-        <p className="text-sm text-slate-400 text-center">
+        <p className="text-sm text-slate-400 text-center mb-4">
           {t({
             ro: "Profilul nu există sau a fost eliminat.",
             en: "This profile doesn't exist or has been removed.",

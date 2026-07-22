@@ -12,7 +12,7 @@ import { FaWineBottle } from "react-icons/fa";
 import { TbTruckDelivery } from "react-icons/tb";
 import { HiOutlineArrowsRightLeft } from "react-icons/hi2";
 import { VerifiedBadge } from "@/app/components/UI/VerifiedBadge";
-import { BADGE_CONFIG, BADGE_COLORS } from "@/lib/constants/badges";
+import { BADGE_CONFIG } from "@/lib/constants/badges";
 import { useI18n } from "@/context/I18nContext";
 
 const API = process.env.NEXT_PUBLIC_API_VERSION ?? "v1";
@@ -23,6 +23,35 @@ const CARD_WIDTH = 272; // w-68
 const CARD_EST_HEIGHT = 210;
 const MARGIN = 8;
 const ANCHOR_GAP = 10;
+
+type Pos = {
+  left: number;
+  top?: number;
+  bottom?: number;
+  placement: "below" | "above";
+};
+
+/**
+ * Position the card attached to `anchor`: below its bottom-left corner, or
+ * above it when there isn't room underneath. `top`/`bottom` are the outer
+ * layer's edge (flush with the anchor); the ANCHOR_GAP is added back as
+ * transparent padding so the hover area stays continuous. Returns null when
+ * the anchor isn't laid out (detached or zero-size).
+ */
+function computePos(anchor: Element): Pos | null {
+  if (!anchor.isConnected) return null;
+  const rect = anchor.getBoundingClientRect();
+  if (rect.width === 0 && rect.height === 0) return null;
+
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const left = Math.min(Math.max(rect.left, MARGIN), vw - CARD_WIDTH - MARGIN);
+
+  if (rect.bottom + ANCHOR_GAP + CARD_EST_HEIGHT <= vh - MARGIN) {
+    return { left, top: rect.bottom, placement: "below" };
+  }
+  return { left, bottom: vh - rect.top, placement: "above" };
+}
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -125,7 +154,12 @@ function CardContent({ userId }: { userId: string }) {
   ];
 
   return (
-    <div className="space-y-3">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.2 }}
+      className="space-y-3"
+    >
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded-full bg-lime-50 border border-lime-200 flex items-center justify-center overflow-hidden shrink-0">
           {user.image ? (
@@ -185,16 +219,11 @@ function CardContent({ userId }: { userId: string }) {
         <div className="flex items-center gap-1.5">
           {shownBadges.map((b) => {
             const cfg = BADGE_CONFIG[b.type];
-            const color = BADGE_COLORS[b.type] ?? "#64748B";
             return (
               <span
                 key={b.id}
                 title={t(cfg.label)}
-                className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
-                style={{
-                  backgroundColor: color,
-                  border: `1.5px solid color-mix(in srgb, ${color} 60%, black)`,
-                }}
+                className="flex items-center justify-center shrink-0"
               >
                 <Image
                   src={cfg.image}
@@ -202,7 +231,7 @@ function CardContent({ userId }: { userId: string }) {
                   width={40}
                   height={40}
                   draggable={false}
-                  className="w-4 h-4 object-contain"
+                  className="w-6 h-6 object-contain"
                 />
               </span>
             );
@@ -222,7 +251,7 @@ function CardContent({ userId }: { userId: string }) {
         {t({ ro: "Vezi profilul", en: "View profile" })}
         <ChevronRight className="w-3.5 h-3.5" />
       </Link>
-    </div>
+    </motion.div>
   );
 }
 
@@ -245,14 +274,11 @@ export function UserHoverCard({
 }) {
   const { data: session } = useSession();
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{
-    left: number;
-    top?: number;
-    bottom?: number;
-    placement: "below" | "above";
-  } | null>(null);
+  const [pos, setPos] = useState<Pos | null>(null);
   const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The element the card is pinned to, so it can follow on scroll/resize.
+  const anchorRef = useRef<Element | null>(null);
 
   const isSelf = session?.user?.id === userId;
 
@@ -279,28 +305,10 @@ export function UserHoverCard({
     const wrapper = e.currentTarget;
     openTimer.current = setTimeout(() => {
       const anchor = wrapper.firstElementChild ?? wrapper;
-      if (!anchor.isConnected) return;
-      const rect = anchor.getBoundingClientRect();
-      if (rect.width === 0 && rect.height === 0) return;
-
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const left = Math.min(
-        Math.max(rect.left, MARGIN),
-        vw - CARD_WIDTH - MARGIN,
-      );
-
-      // Always attached to the element: below its bottom-left corner, or
-      // above it when there's no room underneath.
-      if (rect.bottom + ANCHOR_GAP + CARD_EST_HEIGHT <= vh - MARGIN) {
-        setPos({ left, top: rect.bottom + ANCHOR_GAP, placement: "below" });
-      } else {
-        setPos({
-          left,
-          bottom: vh - rect.top + ANCHOR_GAP,
-          placement: "above",
-        });
-      }
+      const p = computePos(anchor);
+      if (!p) return;
+      anchorRef.current = anchor;
+      setPos(p);
       setOpen(true);
     }, OPEN_DELAY);
   };
@@ -314,14 +322,39 @@ export function UserHoverCard({
 
   useEffect(() => cancelTimers, []);
 
+  // While open, keep the card pinned to its anchor as the page scrolls
+  // instead of closing on the first scroll tick — that made the card flicker
+  // away on trackpads. Only close once the anchor scrolls out of view.
   useEffect(() => {
     if (!open) return;
-    const close = () => setOpen(false);
-    window.addEventListener("scroll", close, { capture: true, passive: true });
-    window.addEventListener("resize", close);
+    let raf = 0;
+    const sync = () => {
+      raf = 0;
+      const anchor = anchorRef.current;
+      if (!anchor || !anchor.isConnected) {
+        setOpen(false);
+        return;
+      }
+      const rect = anchor.getBoundingClientRect();
+      if (rect.bottom < 0 || rect.top > window.innerHeight) {
+        setOpen(false);
+        return;
+      }
+      const p = computePos(anchor);
+      if (p) setPos(p);
+    };
+    const onScrollResize = () => {
+      if (!raf) raf = requestAnimationFrame(sync);
+    };
+    window.addEventListener("scroll", onScrollResize, {
+      capture: true,
+      passive: true,
+    });
+    window.addEventListener("resize", onScrollResize);
     return () => {
-      window.removeEventListener("scroll", close, { capture: true });
-      window.removeEventListener("resize", close);
+      if (raf) cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScrollResize, { capture: true });
+      window.removeEventListener("resize", onScrollResize);
     };
   }, [open]);
 
@@ -339,6 +372,9 @@ export function UserHoverCard({
         createPortal(
           <AnimatePresence>
             {open && pos && (
+              // Outer layer owns positioning + hover intent. Its transparent
+              // padding bridges the gap to the anchor so moving the cursor
+              // onto the card never crosses dead space (the old flicker).
               <motion.div
                 data-user-hovercard
                 initial={{
@@ -358,14 +394,19 @@ export function UserHoverCard({
                   bottom: pos.bottom,
                   left: pos.left,
                   width: CARD_WIDTH,
+                  paddingTop: pos.placement === "below" ? ANCHOR_GAP : undefined,
+                  paddingBottom:
+                    pos.placement === "above" ? ANCHOR_GAP : undefined,
                   transformOrigin:
                     pos.placement === "below" ? "top left" : "bottom left",
                 }}
-                className="fixed z-[1300] bg-white rounded-2xl border border-slate-200 shadow shadow-slate-200/60 p-3.5"
+                className="fixed z-[1300]"
                 onMouseEnter={keepOpen}
                 onMouseLeave={scheduleClose}
               >
-                <CardContent userId={userId} />
+                <div className="bg-white rounded-2xl border border-slate-200 shadow shadow-slate-200/60 p-3.5">
+                  <CardContent userId={userId} />
+                </div>
               </motion.div>
             )}
           </AnimatePresence>,

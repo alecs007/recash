@@ -70,37 +70,16 @@ export function BadgeCard({ badge, onSeen, earned = true }: Props) {
           </span>
         )}
 
-        <div className="relative w-[56px] h-[63px] flex-shrink-0">
-          <div
-            className="absolute inset-0"
-            style={{
-              clipPath:
-                "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-              backgroundColor: earned
-                ? `color-mix(in srgb, ${color} 60%, black)`
-                : "#94a3b8",
-            }}
+        <div className="relative w-[68px] h-[72px] flex-shrink-0 flex items-center justify-center">
+          <Image
+            width={128}
+            height={128}
+            priority
+            draggable={false}
+            src={cfg.image}
+            alt={t(cfg.label)}
+            className="w-24 h-24 object-contain"
           />
-          <div
-            className="absolute"
-            style={{
-              inset: "2.5px",
-              clipPath:
-                "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-              backgroundColor: earned ? color : "#cbd5e1",
-            }}
-          />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Image
-              width={128}
-              height={128}
-              priority
-              draggable={false}
-              src={cfg.image}
-              alt={t(cfg.label)}
-              className="w-11 h-11 object-contain"
-            />
-          </div>
         </div>
 
         <div className="flex flex-col items-center gap-1 text-center w-full">
@@ -152,13 +131,7 @@ export function BadgeCard({ badge, onSeen, earned = true }: Props) {
 export function BadgeCardSkeleton() {
   return (
     <div className="flex flex-col items-center gap-3 p-4 rounded-2xl border border-slate-100 bg-white animate-pulse">
-      <div
-        className="w-[56px] h-[63px] bg-slate-100"
-        style={{
-          clipPath:
-            "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-        }}
-      />
+      <div className="w-[56px] h-[63px] bg-slate-100 rounded-xl" />
       <div className="flex flex-col items-center gap-1.5 w-full">
         <div className="h-2.5 w-14 bg-slate-100 rounded" />
         <div className="h-2 w-12 bg-slate-100 rounded" />

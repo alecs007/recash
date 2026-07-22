@@ -112,44 +112,19 @@ export function BadgeModal({ badge, earned = true, onClose }: BadgeModalProps) {
                     stiffness: 320,
                     damping: 22,
                   }}
-                  className="relative"
-                  style={{ width: 96, height: 108 }}
+                  className="relative flex items-center justify-center"
+                  style={{ width: 112, height: 120 }}
                 >
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      clipPath:
-                        "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-                      backgroundColor: earned
-                        ? `color-mix(in srgb, ${color} 60%, black)`
-                        : "#94a3b8",
-                    }}
-                  />
-
-                  <div
-                    className="absolute"
-                    style={{
-                      inset: "4px",
-                      clipPath:
-                        "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-                      backgroundColor: earned ? color : "#cbd5e1",
-                    }}
-                  />
-
-                  <div
-                    className="absolute inset-0 flex items-center justify-center"
+                  <Image
+                    width={256}
+                    height={256}
+                    priority
+                    draggable={false}
+                    src={cfg.image}
+                    alt={t(cfg.label)}
+                    className="w-28 h-28 object-contain"
                     style={{ filter: earned ? "none" : "grayscale(1)" }}
-                  >
-                    <Image
-                      width={256}
-                      height={256}
-                      priority
-                      draggable={false}
-                      src={cfg.image}
-                      alt={t(cfg.label)}
-                      className="w-16 h-16 object-contain"
-                    />
-                  </div>
+                  />
                 </motion.div>
 
                 <motion.div
