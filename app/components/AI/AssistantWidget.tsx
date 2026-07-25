@@ -31,8 +31,8 @@ const COPY = {
   close: { ro: "Închide", en: "Close" },
   placeholder: { ro: "Scrie un mesaj…", en: "Type a message…" },
   intro: {
-    ro: "Salut! 👋 Sunt asistentul Recash. Te pot ajuta cu anunțuri, clasament, reputație sau câștiguri — întreabă-mă orice.",
-    en: "Hi! 👋 I'm the Recash assistant. I can help with listings, the leaderboard, reputation or earnings — ask me anything.",
+    ro: "Bună! 👋 Sunt asistentul Recash. Îți pot găsi anunțuri în zona ta, îți pot arăta clasamentul, verific reputația unui utilizator sau calculez cât valorează un schimb. Cu ce te pot ajuta?",
+    en: "Hi! 👋 I'm the Recash assistant. I can find listings near you, show the leaderboard, check a user's reputation, or work out what an exchange is worth. How can I help?",
   },
   error: {
     ro: "A apărut o eroare. Încearcă din nou.",
@@ -46,16 +46,16 @@ const COPY = {
 
 const SUGGESTIONS = [
   {
-    ro: "Câte sticle s-au reciclat până acum?",
-    en: "How many bottles have been recycled so far?",
+    ro: "Arată-mi clasamentul Recash.",
+    en: "Show me the Recash leaderboard.",
   },
   {
-    ro: "Cine este pe primul loc în clasament?",
-    en: "Who's #1 on the leaderboard?",
+    ro: "Câte anunțuri există în București?",
+    en: "How many listings are there in Bucharest?",
   },
   {
-    ro: "Cât primesc pentru 300 de sticle la 60%?",
-    en: "What do I get for 300 bottles at 60%?",
+    ro: "Câte sticle a ajutat Recash să recicleze până acum?",
+    en: "How many bottles has Recash helped recycle so far?",
   },
 ];
 
