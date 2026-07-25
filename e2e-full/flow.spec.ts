@@ -1,4 +1,9 @@
-import { test, expect, request, type APIRequestContext } from "@playwright/test";
+import {
+  test,
+  expect,
+  request,
+  type APIRequestContext,
+} from "@playwright/test";
 import { PrismaClient } from "@prisma/client";
 import fs from "node:fs";
 import { STATE_FILE } from "./constants";
@@ -136,8 +141,18 @@ test.describe.serial("Full lifecycle", () => {
     expect(res.status()).toBe(400);
   });
 
+  test("only the poster can read the code, not the collector", async () => {
+    // The code proves the physical hand-off: the poster shows it in person and
+    // the collector types it into `complete`. The collector must NOT be able to
+    // fetch it from the API, otherwise they could self-complete without meeting.
+    const collectorCodeRes = await collector.get(
+      `/api/v1/posts/${postId}/code`,
+    );
+    expect(collectorCodeRes.status()).toBe(403);
+  });
+
   test("collector completes with the real code and the split is correct", async () => {
-    const codeRes = await collector.get(`/api/v1/posts/${postId}/code`);
+    const codeRes = await poster.get(`/api/v1/posts/${postId}/code`);
     expect(codeRes.status()).toBe(200);
     const { code } = await codeRes.json();
     expect(code).toMatch(/^[A-Z0-9]{4}$/);
