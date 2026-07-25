@@ -36,6 +36,7 @@ vi.mock("@/lib/notifications", () => ({
 }));
 vi.mock("@/lib/cache", () => ({
   invalidate: h.invalidate,
+  invalidatePostLists: async () => {},
   CacheKey: { profile: (id: string) => `profile:${id}` },
 }));
 vi.mock("@/lib/badges", () => ({

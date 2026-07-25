@@ -50,6 +50,7 @@ vi.mock("@/lib/claim-requests", () => ({
 }));
 vi.mock("@/lib/cache", () => ({
   invalidate: h.invalidate,
+  invalidatePostLists: async () => {},
   CacheKey: { posts: (u: string, s: string) => `posts:${u}:${s}` },
 }));
 

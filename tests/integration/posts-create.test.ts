@@ -25,6 +25,7 @@ vi.mock("@/lib/rate-limit", () => ({
 }));
 vi.mock("@/lib/cache", () => ({
   invalidate: h.invalidate,
+  invalidatePostLists: async () => {},
   CacheKey: { posts: (id: string, status: string) => `posts:${id}:${status}` },
 }));
 vi.mock("@/lib/badges", () => ({ checkPostBadges: h.checkPostBadges }));

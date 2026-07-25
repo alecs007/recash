@@ -5,7 +5,7 @@ import { rateLimit, RL } from "@/lib/rate-limit";
 import { isValidObjectId } from "@/lib/validate";
 import { redis } from "@/lib/redis";
 import { notifyPostCompleted } from "@/lib/notifications";
-import { invalidate, CacheKey } from "@/lib/cache";
+import { invalidatePostLists } from "@/lib/cache";
 import { checkPostBadges, checkTransactionBadges } from "@/lib/badges";
 import { publishPostCompleted, publishPostStatus } from "@/lib/pubsub";
 import { computeEarnings } from "@/lib/earnings";
@@ -168,10 +168,7 @@ export async function POST(
       bottleCount,
     });
 
-    await Promise.all([
-      invalidate(CacheKey.profile(post.authorId)),
-      invalidate(CacheKey.profile(post.collectorId!)),
-    ]);
+    await invalidatePostLists(post.authorId, post.collectorId);
 
     return NextResponse.json({
       success: true,

@@ -7,7 +7,7 @@ import {
   notifyInProgressCancelled,
   createNotification,
 } from "@/lib/notifications";
-import { invalidate, CacheKey } from "@/lib/cache";
+import { invalidatePostLists } from "@/lib/cache";
 import { redis } from "@/lib/redis";
 import { publishPostCancelled, publishPostStatus } from "@/lib/pubsub";
 import {
@@ -80,6 +80,8 @@ export async function POST(
 
       await resolvePendingRequests(id, "post_cancelled");
 
+      await invalidatePostLists(post.authorId);
+
       publishPostStatus({ postId: id, status: "CANCELLED" }, [post.authorId]);
       publishPostCancelled(id, [post.authorId], {
         postId: id,
@@ -114,6 +116,8 @@ export async function POST(
         id,
         "post_cancelled",
       );
+
+      await invalidatePostLists(post.authorId);
 
       publishPostCancelled(id, [post.authorId, ...affectedCollectors], {
         postId: id,
@@ -180,12 +184,7 @@ export async function POST(
 
       await redis.del(`code:${id}`).catch(() => null);
 
-      await invalidate(
-        CacheKey.profile(cancellerUserId),
-        `profile:${cancellerUserId}:summary`,
-        CacheKey.posts(post.authorId, "active"),
-        CacheKey.posts(post.authorId, "all"),
-      );
+      await invalidatePostLists(post.authorId, post.collectorId);
       await createNotification({
         userId: cancellerUserId,
         type: "POST_CANCELLED",
