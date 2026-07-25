@@ -15,14 +15,14 @@ describe("approximateCoords", () => {
     expect(approximateCoords(LAT, LNG)).toEqual(approximateCoords(LAT, LNG));
   });
 
-  it("stays close enough to remain useful (well under ~200m)", () => {
+  it("obfuscates within a ~150–350m disk: far enough to hide the home, close enough to stay useful", () => {
     const a = approximateCoords(LAT, LNG);
     const dLat = (a.latitude - LAT) * 111_320;
     const dLng =
       (a.longitude - LNG) * 111_320 * Math.cos((LAT * Math.PI) / 180);
     const meters = Math.sqrt(dLat * dLat + dLng * dLng);
-    expect(meters).toBeGreaterThan(10);
-    expect(meters).toBeLessThan(200);
+    expect(meters).toBeGreaterThan(140);
+    expect(meters).toBeLessThan(360);
   });
 
   it("gives different offsets for different listings", () => {

@@ -35,11 +35,65 @@ export async function invalidate(...keys: string[]): Promise<void> {
   }
 }
 
+// The "my posts" / "my transactions" lists are cached per (page, limit, filter),
+// so their exact keys can't be enumerated for deletion. Instead each user has a
+// monotonic version stamp folded into the cache key; bumping it makes every
+// previously-cached variant unreachable at once (the stale entries then lapse
+// via their own TTL).
+function versionKey(userId: string, scope: string): string {
+  return `profile:${userId}:${scope}:ver`;
+}
+
+export async function getCacheVersion(
+  userId: string,
+  scope: string,
+): Promise<string> {
+  try {
+    return (await redis.get(versionKey(userId, scope))) ?? "0";
+  } catch {
+    return "0";
+  }
+}
+
+export async function bumpCacheVersion(
+  userId: string,
+  scope: string,
+): Promise<void> {
+  try {
+    await redis.incr(versionKey(userId, scope));
+  } catch (err) {
+    console.error(`[cache] bump ${scope} version error:`, err);
+  }
+}
+
+/**
+ * Invalidate everything that changes when a post's state changes, for every
+ * affected user at once: their paginated "my posts" list (via version bump) and
+ * their profile summary (recent posts + counts). Call this from every post
+ * mutation with all affected user ids (author, and collector when bound).
+ */
+export async function invalidatePostLists(
+  ...userIds: (string | null | undefined)[]
+): Promise<void> {
+  const ids = [...new Set(userIds.filter((u): u is string => !!u))];
+  await Promise.all(
+    ids.flatMap((id) => [
+      bumpCacheVersion(id, "posts"),
+      invalidate(CacheKey.profile(id)),
+    ]),
+  );
+}
+
 export const CacheKey = {
   profile: (userId: string) => `profile:${userId}`,
 
-  posts: (userId: string, status: string, page = 0, limit = 0) =>
-    `profile:${userId}:posts:${status}:${page}:${limit}`,
+  posts: (
+    userId: string,
+    status: string,
+    page = 0,
+    limit = 0,
+    version = "0",
+  ) => `profile:${userId}:posts:v${version}:${status}:${page}:${limit}`,
 
   transactions: (userId: string, page: number, limit: number, side: string) =>
     `profile:${userId}:tx:${page}:${limit}:${side}`,

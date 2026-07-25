@@ -15,6 +15,7 @@ if (!REDIS_URL) {
 
 const HEARTBEAT_MS = 25_000;
 const PONG_TIMEOUT_MS = 10_000;
+const MAX_ROOMS_PER_SOCKET = 50;
 
 // ─── Redis ────────────────────────────────────────────────────────────────────
 // Two separate connections: a subscriber in pub/sub mode cannot run commands.
@@ -145,9 +146,15 @@ function handleClientMessage(ws: WebSocket, raw: string) {
   }
 
   const postId = msg.payload?.postId;
-  if (!postId || typeof postId !== "string" || postId.length > 100) return;
+  // Only well-formed post IDs (24-hex Mongo ObjectId) are accepted, and a single
+  // socket may join a bounded number of rooms — this prevents a client from
+  // growing the room registry without limit (memory exhaustion).
+  if (!postId || typeof postId !== "string" || !/^[a-f0-9]{24}$/i.test(postId))
+    return;
 
   if (msg.type === "subscribe_post") {
+    if (!meta.postIds.has(postId) && meta.postIds.size >= MAX_ROOMS_PER_SOCKET)
+      return;
     meta.postIds.add(postId);
     roomAdd(postSockets, postId, ws);
   } else if (msg.type === "unsubscribe_post") {

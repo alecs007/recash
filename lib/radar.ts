@@ -1,6 +1,6 @@
 import { prisma } from "./prisma";
 import { createNotification } from "./notifications";
-import { sendEmail } from "./email";
+import { sendEmail, esc } from "./email";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://recash.ro";
 const LOGO_URL = `https://res.cloudinary.com/dqyq1oiwi/image/upload/v1780763158/recash-header-logo_ebwwid.avif`;
@@ -135,7 +135,7 @@ function buildRadarEmailHtml(opts: {
           <tr>
             <td style="padding:32px 32px 8px;">
               <p style="margin:0 0 16px;font-size:17px;font-weight:700;color:#0f172a;">
-                Bună, ${opts.firstName}! 👋
+                Bună, ${esc(opts.firstName)}! 👋
               </p>
               <p style="margin:0 0 12px;font-size:15px;color:#334155;line-height:1.65;">
                 A apărut un anunț nou în raza ta de <strong style="color:#123424;">${opts.radiusKm} km</strong>.
@@ -145,7 +145,7 @@ function buildRadarEmailHtml(opts: {
                 <tr>
                   <td style="padding:16px 20px;">
                     <p style="margin:0 0 6px;font-size:20px;font-weight:900;color:#14532d;">${opts.bottleCount} sticle</p>
-                    <p style="margin:0 0 6px;font-size:14px;color:#166534;">${opts.locationName}</p>
+                    <p style="margin:0 0 6px;font-size:14px;color:#166534;">${esc(opts.locationName)}</p>
                     <p style="margin:0;font-size:14px;font-weight:700;color:#16a34a;">+${opts.collectorEarning.toFixed(2)} RON pentru tine</p>
                   </td>
                 </tr>

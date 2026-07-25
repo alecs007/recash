@@ -10,6 +10,20 @@ const LOGO_URL = `https://res.cloudinary.com/dqyq1oiwi/image/upload/v1780763158/
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://recash.ro";
 
+/**
+ * User-controlled text is escaped before interpolating into email HTML.
+ * Display names come straight from the profile and may contain HTML/links,
+ * which would otherwise be injected into the recipient's inbox (phishing).
+ */
+export function esc(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 interface SendEmailOptions {
   to: string;
   subject: string;
@@ -107,7 +121,7 @@ function buildEmailHtml({
           <tr>
             <td style="padding:32px 32px 8px;">
               <p style="margin:0 0 16px;font-size:17px;font-weight:700;color:#0f172a;">
-                Bună, ${name}! 👋
+                Bună, ${esc(name)}! 👋
               </p>
               ${bodyHtml}
             </td>
@@ -153,7 +167,7 @@ export async function sendCollectorRequestEmail({
     name: authorName,
     bodyHtml: `
       <p style="margin:0 0 12px;font-size:15px;color:#334155;line-height:1.6;">
-        <strong style="color:#123424;">${collectorName}</strong> dorește să colecteze
+        <strong style="color:#123424;">${esc(collectorName)}</strong> dorește să colecteze
         cele <strong>${bottleCount} sticle</strong> din anunțul tău.
       </p>
       <p style="margin:0 0 12px;font-size:15px;color:#334155;line-height:1.6;">
@@ -190,7 +204,7 @@ export async function sendClaimApprovedEmail({
     bodyHtml: `
       <p style="margin:0 0 12px;font-size:15px;color:#334155;line-height:1.6;">
         Cererea ta a fost <strong style="color:#16a34a;">aprobată</strong> de
-        <strong style="color:#123424;">${posterName}</strong>! 🎉
+        <strong style="color:#123424;">${esc(posterName)}</strong>! 🎉
       </p>
       <p style="margin:0 0 12px;font-size:15px;color:#334155;line-height:1.6;">
         Ai <strong>60 de minute</strong> să ajungi la locație și să colectezi cele
@@ -222,7 +236,7 @@ export async function sendClaimDeniedEmail({
     name: collectorName,
     bodyHtml: `
       <p style="margin:0 0 12px;font-size:15px;color:#334155;line-height:1.6;">
-        Din păcate, <strong style="color:#123424;">${posterName}</strong> a
+        Din păcate, <strong style="color:#123424;">${esc(posterName)}</strong> a
         <strong style="color:#ef4444;">refuzat</strong> cererea ta pentru acest anunț.
       </p>
       <p style="margin:0 0 12px;font-size:15px;color:#334155;line-height:1.6;">

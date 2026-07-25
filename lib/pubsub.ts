@@ -69,9 +69,18 @@ export function publishPostStatus(
     type: "post:status_changed",
     payload,
   };
-  // Post room — detail page
-  publishToPost(payload.postId, event);
-  // User channels — header active indicator
+  // Post room is public (any viewer of the detail page can subscribe), so it
+  // only receives the non-sensitive fields needed to refresh the UI. Collector
+  // identity stays on the participants' private user channels.
+  publishToPost(payload.postId, {
+    type: "post:status_changed",
+    payload: {
+      postId: payload.postId,
+      status: payload.status,
+      pendingRequestCount: payload.pendingRequestCount,
+    },
+  });
+  // User channels — header active indicator, full payload
   for (const uid of affectedUserIds) {
     publishToUser(uid, event);
   }
@@ -95,7 +104,12 @@ export function publishPostCompleted(
     type: "post:completed",
     payload,
   };
-  publishToPost(postId, event);
+  // Earnings/bottle counts are private to the two participants. Public post-room
+  // subscribers only get the completion signal so their view can refresh.
+  publishToPost(postId, {
+    type: "post:completed",
+    payload: { postId },
+  });
   publishToUser(authorId, event);
   publishToUser(collectorId, event);
 }

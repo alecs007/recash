@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { PostStatus } from "@prisma/client";
-import { cached, CacheKey, TTL } from "@/lib/cache";
+import { cached, CacheKey, TTL, getCacheVersion } from "@/lib/cache";
 import { rateLimit, RL } from "@/lib/rate-limit";
 
 const VALID_STATUSES = new Set<PostStatus>([
@@ -58,11 +58,13 @@ export async function GET(req: Request) {
   }
 
   const where = { authorId: session.user.id, ...statusFilter };
+  const version = await getCacheVersion(session.user.id, "posts");
   const cacheKey = CacheKey.posts(
     session.user.id,
     statusParam || "all",
     page || 1,
     limit || 10,
+    version,
   );
 
   try {

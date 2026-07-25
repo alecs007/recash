@@ -65,9 +65,28 @@ export async function rateLimit(
   }
 }
 
+// Number of trusted reverse proxies in front of the app (e.g. 1 for a single
+// nginx, 2 for CDN + nginx). The real client IP is the Nth entry counted from
+// the RIGHT of X-Forwarded-For — everything to the left is client-supplied and
+// spoofable, so we must never trust the leftmost value.
+const TRUSTED_PROXY_HOPS = Math.max(
+  1,
+  parseInt(process.env.TRUSTED_PROXY_HOPS ?? "1", 10) || 1,
+);
+
 export function getClientIp(req: Request): string {
   const xff = req.headers.get("x-forwarded-for");
-  if (xff) return xff.split(",")[0].trim();
+  if (xff) {
+    const parts = xff
+      .split(",")
+      .map((p) => p.trim())
+      .filter(Boolean);
+    if (parts.length > 0) {
+      const idx = Math.max(0, parts.length - TRUSTED_PROXY_HOPS);
+      return parts[idx];
+    }
+  }
+  // x-real-ip is set by the trusted proxy to the actual peer, so it is safe.
   const real = req.headers.get("x-real-ip");
   if (real) return real.trim();
   return "unknown";

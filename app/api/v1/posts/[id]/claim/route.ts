@@ -13,7 +13,7 @@ import {
   countPendingRequests,
   resolvePendingRequests,
 } from "@/lib/claim-requests";
-import { invalidate, CacheKey } from "@/lib/cache";
+import { invalidatePostLists } from "@/lib/cache";
 
 /**
  * POST — send a collect request.
@@ -201,10 +201,7 @@ export async function POST(
       [post.authorId],
     );
 
-    await invalidate(
-      CacheKey.posts(post.authorId, "active"),
-      CacheKey.posts(post.authorId, "all"),
-    );
+    await invalidatePostLists(post.authorId);
 
     maybeEmailCollectorRequest({
       authorId: post.authorId,
@@ -314,10 +311,7 @@ export async function DELETE(
       [post.authorId],
     );
 
-    await invalidate(
-      CacheKey.posts(post.authorId, "active"),
-      CacheKey.posts(post.authorId, "all"),
-    );
+    await invalidatePostLists(post.authorId);
 
     return NextResponse.json({ success: true, status: newStatus });
   } catch (err) {

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit, RL, getClientIp } from "@/lib/rate-limit";
-import { invalidate, CacheKey } from "@/lib/cache";
+import { invalidatePostLists } from "@/lib/cache";
 import { checkPostBadges } from "@/lib/badges";
 import { startExpiryLoop } from "@/lib/expiry";
 import { dispatchRadarNotifications } from "@/lib/radar";
@@ -151,10 +151,7 @@ export async function POST(req: Request) {
       select: { id: true, status: true, createdAt: true },
     });
 
-    await invalidate(
-      CacheKey.posts(session.user.id, "all"),
-      CacheKey.posts(session.user.id, "active"),
-    );
+    await invalidatePostLists(session.user.id);
 
     checkPostBadges(session.user.id).catch((err) =>
       console.error("[posts] badge check error:", err),

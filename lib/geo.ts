@@ -1,7 +1,13 @@
 /**
- * ~50m offset for viewers not entitled to a listing's exact address. Seeded
- * from the coordinates so the pin stays put instead of jittering per request.
+ * Obfuscated pin for viewers not entitled to a listing's exact address. Both
+ * the direction and the distance are seeded from the coordinates so the pin
+ * stays put instead of jittering per request, while placing the true location
+ * somewhere inside a ~150–350m disk — small enough to be useful on the map,
+ * large enough that it does not pinpoint the poster's home.
  */
+const MIN_OFFSET_METERS = 150;
+const MAX_OFFSET_METERS = 350;
+
 export function approximateCoords(
   lat: number,
   lng: number,
@@ -12,7 +18,11 @@ export function approximateCoords(
   h = Math.abs(h);
 
   const angle = (h % 628) / 100;
-  const offsetMeters = 50;
+  // Second seed stream for the radius so distance and direction are independent.
+  const radiusSeed = (Math.imul(h, 2654435761) >>> 0) % 1000;
+  const offsetMeters =
+    MIN_OFFSET_METERS +
+    (radiusSeed / 1000) * (MAX_OFFSET_METERS - MIN_OFFSET_METERS);
 
   return {
     latitude: lat + (offsetMeters / 111320) * Math.sin(angle),

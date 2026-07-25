@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { rateLimit, RL } from "@/lib/rate-limit";
 import { redis } from "@/lib/redis";
 import { prisma } from "@/lib/prisma";
+import { isValidObjectId } from "@/lib/validate";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -26,19 +27,6 @@ export async function POST(req: Request) {
 
   const { optIn, context, postId } = body as Record<string, unknown>;
 
-  const post = await prisma.post.findUnique({
-    where: { id: postId as string },
-    select: { authorId: true, collectorId: true },
-  });
-  if (!post)
-    return NextResponse.json({ error: "Anunț negăsit" }, { status: 404 });
-  if (context === "author" && post.authorId !== session.user.id) {
-    return NextResponse.json({ error: "Acces interzis" }, { status: 403 });
-  }
-  if (context === "collector" && post.collectorId !== session.user.id) {
-    return NextResponse.json({ error: "Acces interzis" }, { status: 403 });
-  }
-
   if (typeof optIn !== "boolean") {
     return NextResponse.json(
       { error: "optIn trebuie să fie boolean" },
@@ -48,12 +36,21 @@ export async function POST(req: Request) {
   if (context !== "author" && context !== "collector") {
     return NextResponse.json({ error: "context invalid" }, { status: 400 });
   }
-  if (
-    typeof postId !== "string" ||
-    postId.length === 0 ||
-    postId.length > 100
-  ) {
+  if (!isValidObjectId(postId)) {
     return NextResponse.json({ error: "postId invalid" }, { status: 400 });
+  }
+
+  const post = await prisma.post.findUnique({
+    where: { id: postId },
+    select: { authorId: true, collectorId: true },
+  });
+  if (!post)
+    return NextResponse.json({ error: "Anunț negăsit" }, { status: 404 });
+  if (context === "author" && post.authorId !== session.user.id) {
+    return NextResponse.json({ error: "Acces interzis" }, { status: 403 });
+  }
+  if (context === "collector" && post.collectorId !== session.user.id) {
+    return NextResponse.json({ error: "Acces interzis" }, { status: 403 });
   }
 
   try {

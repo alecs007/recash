@@ -11,7 +11,7 @@ import {
   resolvePendingRequests,
   resolveCollectorPendingElsewhere,
 } from "@/lib/claim-requests";
-import { invalidate, CacheKey } from "@/lib/cache";
+import { invalidatePostLists } from "@/lib/cache";
 import {
   maybeEmailClaimApproved,
   maybeEmailClaimDenied,
@@ -180,10 +180,7 @@ export async function POST(
         [session.user.id, collectorId],
       );
 
-      await invalidate(
-        CacheKey.posts(post.authorId, "active"),
-        CacheKey.posts(post.authorId, "all"),
-      );
+      await invalidatePostLists(post.authorId, collectorId);
 
       maybeEmailClaimApproved({
         collectorId,
@@ -245,10 +242,7 @@ export async function POST(
         },
       });
 
-      await invalidate(
-        CacheKey.posts(post.authorId, "active"),
-        CacheKey.posts(post.authorId, "all"),
-      );
+      await invalidatePostLists(post.authorId);
 
       maybeEmailClaimDenied({
         collectorId,

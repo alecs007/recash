@@ -47,10 +47,11 @@ export async function GET(
       );
     }
 
-    const isParticipant =
-      post.authorId === session.user.id || post.collectorId === session.user.id;
-
-    if (!isParticipant) {
+    // Only the poster may read the code. It is proof of the physical hand-off:
+    // the poster shows it to the collector in person, who then enters it in
+    // `complete`. Returning it to the collector would let them self-complete a
+    // collection without ever meeting the poster.
+    if (post.authorId !== session.user.id) {
       return NextResponse.json({ error: "Acces interzis" }, { status: 403 });
     }
 
