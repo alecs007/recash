@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { usePostChat, type ChatMessage } from "@/hooks/usePostChat";
 import { useI18n, type Locale } from "@/context/I18nContext";
+import { occupyBottomRight } from "@/lib/ui/launcher-slot";
 
 const MAX_TEXT = 500;
 const MIN_H = 44;
@@ -864,6 +865,8 @@ export function ChatTriggerButton({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
+
+  useEffect(() => occupyBottomRight(), []);
   if (!mounted) return null;
 
   return (

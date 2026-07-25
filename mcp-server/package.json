@@ -1,0 +1,21 @@
+{
+  "name": "recash-mcp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Model Context Protocol server exposing the Recash marketplace to AI assistants",
+  "scripts": {
+    "dev": "tsx watch server.ts",
+    "start": "tsx server.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "dotenv": "^17.4.2",
+    "zod": "^4.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "tsx": "^4.21.0",
+    "typescript": "^5"
+  }
+}

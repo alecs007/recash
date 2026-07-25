@@ -15,6 +15,7 @@ import {
 } from "@/context/I18nContext";
 import { AuthModal } from "./components/Auth/AuthModal";
 import { GoogleOneTap } from "./components/Auth/GoogleOneTap";
+import { AssistantWidget } from "./components/AI/AssistantWidget";
 import { Suspense } from "react";
 import SmoothScroll from "./components/UX/SmoothScroll";
 import { NavigationProgress } from "./components/UX/NavigationProgress";
@@ -103,6 +104,7 @@ export default async function RootLayout({
                   <SmoothScroll>{children}</SmoothScroll>
                   <AuthModal />
                   <GoogleOneTap />
+                  <AssistantWidget />
                 </LoadingProvider>
               </AuthModalProvider>
             </Suspense>
