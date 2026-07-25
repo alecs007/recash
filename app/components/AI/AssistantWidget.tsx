@@ -349,7 +349,7 @@ export function AssistantWidget() {
                   onChange={(e) => setInput(e.target.value)}
                   placeholder={t(COPY.placeholder)}
                   disabled={streaming}
-                  className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-[#123424] focus:bg-white disabled:opacity-50"
+                  className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-[#123424] focus:bg-white disabled:opacity-50"
                   lang={locale}
                 />
                 <motion.button
@@ -357,7 +357,7 @@ export function AssistantWidget() {
                   whileTap={{ scale: 0.92 }}
                   disabled={streaming || !input.trim()}
                   aria-label="Send"
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#123424] text-white transition-colors hover:bg-[#1a4d36] disabled:opacity-40 cursor-pointer"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#123424] text-white transition-colors hover:bg-[#1a4d36] disabled:opacity-40 cursor-pointer"
                 >
                   <Send className="h-4 w-4" />
                 </motion.button>
