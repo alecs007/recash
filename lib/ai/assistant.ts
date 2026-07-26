@@ -37,7 +37,7 @@ Contextul SGR: în România, fiecare recipient SGR are o garanție fixă de 0,5 
 
 Ai la dispoziție unelte read-only pentru a interoga datele reale ale platformei (anunțuri active, detalii anunț, clasament, reputația unui utilizator, estimarea câștigurilor, statistici globale). Folosește uneltele ori de câte ori întrebarea depinde de date curente — nu inventa anunțuri, prețuri sau utilizatori. Pentru întrebări despre un oraș (ex. „câte anunțuri în București"), folosește search_listings cu coordonatele aproximative ale orașului și o rază potrivită (radiusKm ~15–25 km) — nu cere utilizatorului coordonate, le știi tu (ex. București ≈ 44.43, 26.10). Folosește parametrul locationQuery doar când utilizatorul numește un cartier sau o zonă anume. Adresele exacte nu sunt niciodată expuse public; coordonatele returnate sunt aproximate intenționat (~150–350 m), așa că distanțele sunt aproximative.
 
-Răspunde concis, în limba română, prietenos și la obiect. Când listezi anunțuri, menționează numărul de sticle, procentul oferit colectorului și localitatea. Dacă nu ai suficiente date, spune sincer.`;
+Răspunde concis, în limba română, prietenos și la obiect. Formatează cu Markdown când ajută claritatea: liste cu buline pentru mai multe anunțuri sau elemente, **bold** pentru valori importante (număr de sticle, procente, sume). Când listezi anunțuri, menționează numărul de sticle, procentul oferit colectorului și localitatea. Dacă nu ai suficiente date, spune sincer.`;
 
 export interface AssistantLimits {
   /** Per-subject sliding-window burst guard (requests / minute). */
@@ -55,12 +55,14 @@ export interface AssistantLimits {
  * real conversations while still blocking abuse; Claude is paid, so it keeps
  * the tight launch budget that protects spend.
  */
-export function getAssistantLimits(provider: AssistantProvider): AssistantLimits {
+export function getAssistantLimits(
+  provider: AssistantProvider,
+): AssistantLimits {
   if (provider === "gemini") {
     return {
       burstPerMin: 8,
       userPerHour: 40,
-      globalPerMin: 9,
+      globalPerMin: 6,
       globalPerDay: 300,
     };
   }

@@ -1,20 +1,17 @@
 /**
  * Gemini (Google) backend for the in-app assistant — runs on the free tier.
  *
- * Uses the classic `generateContent` REST API (the same endpoint family the
- * bottle-analysis route already uses with the free GEMINI_API_KEY) and drives
- * the shared MCP tool catalog through Gemini function calling. Each round is a
- * plain non-streaming call; the final answer is streamed to the client in one
- * chunk via `send`.
+ * Uses the classic `streamGenerateContent` REST API (SSE) so text reaches the
+ * client progressively, and drives the shared MCP tool catalog through Gemini
+ * function calling. Falls back across models on connection errors and never
+ * finishes with an empty bubble.
  */
 import { z } from "zod";
 import { geminiFunctionDeclarations, findTool } from "./tools";
 import type { StreamAssistantOptions } from "./assistant";
 
-const GEMINI_MODELS = [
-  "models/gemini-2.5-flash",
-  "models/gemini-2.5-flash-lite",
-];
+// Gemini models in priority order — same free-tier set as analyze-bottles.
+const GEMINI_MODELS = ["models/gemini-2.5-flash", "models/gemini-2.5-flash-lite"];
 
 interface GeminiPart {
   text?: string;
@@ -27,23 +24,52 @@ interface GeminiContent {
   parts: GeminiPart[];
 }
 
-interface GeminiResponse {
+interface GeminiChunk {
   candidates?: { content?: { parts?: GeminiPart[] } }[];
 }
 
-async function callGemini(
-  model: string,
+const EMPTY_REPLY =
+  "Momentan nu am putut genera un răspuns. Încearcă să reformulezi întrebarea.";
+
+/**
+ * Open an SSE stream, trying each model until one connects. Returns "quota"
+ * when every model was rate-limited (429) — a free-tier limit, not a real
+ * outage — so the caller can show a friendly message instead of a hard error.
+ */
+async function openStream(
   apiKey: string,
   body: unknown,
-): Promise<Response> {
-  return fetch(
-    `https://generativelanguage.googleapis.com/v1beta/${model}:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    },
-  );
+): Promise<Response | "quota" | null> {
+  let sawQuota = false;
+  for (const model of GEMINI_MODELS) {
+    let res: Response;
+    try {
+      res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/${model}:streamGenerateContent?alt=sse&key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        },
+      );
+    } catch {
+      continue;
+    }
+    if (res.status === 429) {
+      sawQuota = true;
+      continue;
+    }
+    if (res.status === 404 || res.status === 503) continue;
+    if (!res.ok || !res.body) {
+      console.error(
+        `[gemini assistant] ${model} error ${res.status}:`,
+        res.ok ? "no body" : await res.text().catch(() => "unknown"),
+      );
+      continue;
+    }
+    return res;
+  }
+  return sawQuota ? "quota" : null;
 }
 
 export async function streamGeminiAssistant(
@@ -59,6 +85,14 @@ export async function streamGeminiAssistant(
     parts: [{ text: m.content }],
   }));
 
+  let sentAny = false;
+  const send = (text: string) => {
+    if (text) {
+      sentAny = true;
+      opts.send(text);
+    }
+  };
+
   for (let round = 0; round < opts.maxToolRounds; round++) {
     const body = {
       system_instruction: { parts: [{ text: opts.systemPrompt }] },
@@ -67,44 +101,68 @@ export async function streamGeminiAssistant(
       generationConfig: { temperature: 0.3, maxOutputTokens: 1024 },
     };
 
-    // Model fallback: try each model in order until one answers.
-    let data: GeminiResponse | null = null;
-    for (const model of GEMINI_MODELS) {
-      let res: Response;
-      try {
-        res = await callGemini(model, apiKey, body);
-      } catch {
-        continue;
+    const res = await openStream(apiKey, body);
+    if (res === "quota") {
+      opts.send(
+        sentAny
+          ? "\n\n(Serviciul AI a atins limita de trafic gratuit — încearcă din nou în câteva momente.)"
+          : "Serviciul AI este temporar suprasolicitat (limita de trafic gratuit). Încearcă din nou în câteva momente.",
+      );
+      return;
+    }
+    if (!res) throw new Error("Gemini indisponibil");
+
+    // Consume the SSE stream: text parts are streamed to the client as they
+    // arrive; functionCall parts are collected for this round.
+    const functionCalls: GeminiPart[] = [];
+    let roundText = "";
+    const reader = res.body!.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    const handleChunk = (chunk: GeminiChunk) => {
+      const parts = chunk.candidates?.[0]?.content?.parts ?? [];
+      for (const part of parts) {
+        if (typeof part.text === "string" && part.text) {
+          roundText += part.text;
+          send(part.text);
+        } else if (part.functionCall) {
+          functionCalls.push(part);
+        }
       }
-      if (res.status === 404 || res.status === 429 || res.status === 503) {
-        continue;
+    };
+
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let nl: number;
+      while ((nl = buffer.indexOf("\n")) >= 0) {
+        const line = buffer.slice(0, nl).trim();
+        buffer = buffer.slice(nl + 1);
+        if (!line.startsWith("data:")) continue;
+        const payload = line.slice(5).trim();
+        if (!payload || payload === "[DONE]") continue;
+        try {
+          handleChunk(JSON.parse(payload) as GeminiChunk);
+        } catch {
+          // ignore malformed SSE lines
+        }
       }
-      if (!res.ok) {
-        console.error(
-          `[gemini assistant] ${model} error ${res.status}:`,
-          await res.text().catch(() => "unknown"),
-        );
-        continue;
-      }
-      data = (await res.json().catch(() => null)) as GeminiResponse | null;
-      if (data) break;
     }
 
-    if (!data) throw new Error("Gemini indisponibil");
+    if (functionCalls.length === 0) {
+      // Terminal turn. If the model produced nothing, don't leave an empty
+      // bubble — send a graceful fallback.
+      if (!sentAny) opts.send(EMPTY_REPLY);
+      return;
+    }
 
-    const parts = data.candidates?.[0]?.content?.parts ?? [];
-    const functionCalls = parts.filter((p) => p.functionCall);
-    const text = parts
-      .map((p) => p.text)
-      .filter((t): t is string => typeof t === "string")
-      .join("");
-
-    if (text) opts.send(text);
-
-    if (functionCalls.length === 0) return;
-
-    // Echo the model turn (with its functionCall parts) back into the history.
-    contents.push({ role: "model", parts });
+    // Echo the model turn (streamed text + its functionCall parts) into history.
+    const modelParts: GeminiPart[] = [];
+    if (roundText) modelParts.push({ text: roundText });
+    modelParts.push(...functionCalls);
+    contents.push({ role: "model", parts: modelParts });
 
     // Execute each tool and reply with functionResponse parts (role "user").
     const responseParts: GeminiPart[] = [];
@@ -138,8 +196,8 @@ export async function streamGeminiAssistant(
     contents.push({ role: "user", parts: responseParts });
   }
 
-  // Ran out of tool rounds without a final answer.
-  opts.send(
-    "Nu am putut finaliza răspunsul. Încearcă să reformulezi întrebarea.",
-  );
+  // Ran out of tool rounds. Only add a note if we never produced any answer.
+  if (!sentAny) {
+    opts.send("Nu am putut finaliza răspunsul. Încearcă să reformulezi întrebarea.");
+  }
 }

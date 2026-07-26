@@ -11,6 +11,8 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Send, RotateCcw } from "lucide-react";
 import { PiStarFourBold } from "react-icons/pi";
+import Markdown, { type Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useI18n } from "@/context/I18nContext";
 import {
   subscribeBottomRight,
@@ -90,6 +92,61 @@ function TypingDots() {
         />
       ))}
     </span>
+  );
+}
+
+const MD_COMPONENTS: Components = {
+  p: ({ children }) => (
+    <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>
+  ),
+  ul: ({ children }) => (
+    <ul className="mb-2 last:mb-0 list-disc space-y-1 pl-5">{children}</ul>
+  ),
+  ol: ({ children }) => (
+    <ol className="mb-2 last:mb-0 list-decimal space-y-1 pl-5">{children}</ol>
+  ),
+  li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+  strong: ({ children }) => (
+    <strong className="font-semibold text-slate-900">{children}</strong>
+  ),
+  em: ({ children }) => <em className="italic">{children}</em>,
+  a: ({ href, children }) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="font-medium text-lime-700 underline underline-offset-2 hover:text-lime-800"
+    >
+      {children}
+    </a>
+  ),
+  code: ({ children }) => (
+    <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[12px] text-emerald-700">
+      {children}
+    </code>
+  ),
+  pre: ({ children }) => (
+    <pre className="my-2 overflow-x-auto rounded-lg bg-slate-900 p-2.5 font-mono text-[12px] leading-relaxed text-slate-100">
+      {children}
+    </pre>
+  ),
+  h1: ({ children }) => (
+    <p className="mb-1 mt-1 text-sm font-bold text-slate-900">{children}</p>
+  ),
+  h2: ({ children }) => (
+    <p className="mb-1 mt-1 text-sm font-bold text-slate-900">{children}</p>
+  ),
+  h3: ({ children }) => (
+    <p className="mb-1 mt-1 text-sm font-bold text-slate-900">{children}</p>
+  ),
+  hr: () => <hr className="my-2.5 border-slate-200" />,
+};
+
+function AssistantMarkdown({ content }: { content: string }) {
+  return (
+    <Markdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS}>
+      {content}
+    </Markdown>
   );
 }
 
@@ -356,8 +413,12 @@ export function AssistantWidget() {
                       <span className="flex h-7 w-7 p-1 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white ring-1 ring-slate-200">
                         {logo(26)}
                       </span>
-                      <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-bl-sm bg-white px-3.5 py-2.5 text-sm text-slate-700 shadow-sm ring-1 ring-slate-100">
-                        {showTyping ? <TypingDots /> : m.content}
+                      <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-white px-3.5 py-2.5 text-sm text-slate-700 shadow-sm ring-1 ring-slate-100">
+                        {showTyping ? (
+                          <TypingDots />
+                        ) : (
+                          <AssistantMarkdown content={m.content} />
+                        )}
                       </div>
                     </div>
                   );
