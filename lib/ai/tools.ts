@@ -120,6 +120,7 @@ function clampInt(value: number | undefined, fallback: number, max: number) {
 // ─── Tools ────────────────────────────────────────────────────────────────────
 
 const searchListings: RecashTool<{
+  locationQuery: z.ZodOptional<z.ZodString>;
   latitude: z.ZodOptional<z.ZodNumber>;
   longitude: z.ZodOptional<z.ZodNumber>;
   radiusKm: z.ZodOptional<z.ZodNumber>;
@@ -129,12 +130,19 @@ const searchListings: RecashTool<{
   name: "search_listings",
   description:
     "Search active Recash bottle-recycling listings (status OPEN or CLAIMED). " +
-    "Optionally provide a latitude/longitude to rank results by proximity and " +
-    "a radiusKm to keep only nearby listings. Note: exact addresses are never " +
-    "exposed publicly — coordinates are approximated to a ~150–350 m area for " +
-    "privacy, so distances are approximate. Use for questions like 'find " +
-    "listings near me' or 'where can I collect bottles in Cluj'.",
+    "Each listing has a locationName that is a NEIGHBOURHOOD / area / county " +
+    "label (e.g. 'Berceni', 'Mărăști', 'Harghita'), NOT always a city name. " +
+    "To find or count listings in a whole CITY (e.g. 'București', 'Cluj'), pass " +
+    "the city's approximate latitude/longitude together with a radiusKm (~15–25 " +
+    "km covers a city) — do NOT ask the user for coordinates, use the city's " +
+    "well-known coordinates yourself. Use locationQuery instead when the user " +
+    "names a specific neighbourhood or area that would appear in locationName. " +
+    "Called with no arguments it returns all active listings. Exact addresses " +
+    "are never exposed publicly — coordinates are approximated to a ~150–350 m " +
+    "area for privacy, so distances are approximate. Use for 'find listings " +
+    "near me', 'listings in Cluj', or 'how many listings are there in Bucharest'.",
   inputShape: {
+    locationQuery: z.string().min(1).max(120).optional(),
     latitude: z.number().min(-90).max(90).optional(),
     longitude: z.number().min(-180).max(180).optional(),
     radiusKm: z.number().min(0.1).max(500).optional(),
@@ -180,6 +188,12 @@ const searchListings: RecashTool<{
       };
     });
 
+    if (args.locationQuery) {
+      const q = args.locationQuery.trim().toLowerCase();
+      listings = listings.filter((l) =>
+        (l.locationName ?? "").toLowerCase().includes(q),
+      );
+    }
     if (typeof args.minBottles === "number") {
       listings = listings.filter((l) => l.bottleCount >= args.minBottles!);
     }
@@ -359,6 +373,70 @@ export function anthropicToolDefinitions(): AnthropicToolDefinition[] {
     description: tool.description,
     input_schema: toAnthropicSchema(tool),
   }));
+}
+
+// ─── Gemini function-calling adapter ──────────────────────────────────────────
+
+export interface GeminiFunctionDeclaration {
+  name: string;
+  description: string;
+  parameters?: Record<string, unknown>;
+}
+
+// Gemini's function schema is a strict OpenAPI subset — it rejects JSON-Schema
+// keywords like `pattern`, `minimum`, `additionalProperties`, `$schema`, etc.
+// We keep only the structural keys and rely on each tool's own zod `.parse()`
+// (in the assistant loop) for the real validation.
+const GEMINI_SCHEMA_KEYS = new Set([
+  "type",
+  "description",
+  "properties",
+  "required",
+  "items",
+  "enum",
+  "nullable",
+]);
+
+function sanitizeGeminiSchema(
+  schema: unknown,
+): Record<string, unknown> | undefined {
+  if (!schema || typeof schema !== "object") return undefined;
+  const src = schema as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(src)) {
+    if (!GEMINI_SCHEMA_KEYS.has(key)) continue;
+    if (key === "properties" && value && typeof value === "object") {
+      const props: Record<string, unknown> = {};
+      for (const [pk, pv] of Object.entries(value as Record<string, unknown>)) {
+        const cleaned = sanitizeGeminiSchema(pv);
+        if (cleaned) props[pk] = cleaned;
+      }
+      out.properties = props;
+    } else if (key === "items") {
+      const cleaned = sanitizeGeminiSchema(value);
+      if (cleaned) out.items = cleaned;
+    } else {
+      out[key] = value;
+    }
+  }
+  return out;
+}
+
+/** Gemini `function_declarations` array built from the catalog. */
+export function geminiFunctionDeclarations(): GeminiFunctionDeclaration[] {
+  return recashTools.map((tool) => {
+    const params = sanitizeGeminiSchema(toAnthropicSchema(tool));
+    const properties = params?.properties as
+      | Record<string, unknown>
+      | undefined;
+    const hasParams = properties && Object.keys(properties).length > 0;
+    return {
+      name: tool.name,
+      description: tool.description,
+      // Gemini rejects an empty `parameters` object — omit it for no-arg tools.
+      ...(hasParams ? { parameters: params } : {}),
+    };
+  });
 }
 
 /** Look up a tool by name (used by the assistant's tool-use loop). */

@@ -42,6 +42,18 @@ const COPY = {
     ro: "Asistentul AI nu este configurat pe acest server.",
     en: "The AI assistant is not configured on this server.",
   },
+  rateTooFast: {
+    ro: "Trimiți mesaje prea repede. Așteaptă câteva secunde.",
+    en: "You're sending messages too fast. Wait a few seconds.",
+  },
+  rateOverloaded: {
+    ro: "Asistentul e suprasolicitat momentan — prea multe cereri în total. Încearcă din nou în câteva minute.",
+    en: "The assistant is overloaded right now — too many requests overall. Try again in a few minutes.",
+  },
+  rateUserLimit: {
+    ro: "Ai atins limita ta de mesaje pentru moment. Încearcă din nou mai târziu.",
+    en: "You've reached your own message limit for now. Try again later.",
+  },
 };
 
 const SUGGESTIONS = [
@@ -148,8 +160,24 @@ export function AssistantWidget() {
         });
 
         if (!res.ok || !res.body) {
-          const fallback =
-            res.status === 503 ? t(COPY.unconfigured) : t(COPY.error);
+          let fallback = t(COPY.error);
+          if (res.status === 503) {
+            fallback = t(COPY.unconfigured);
+          } else if (res.status === 429) {
+            let code = "";
+            try {
+              const data = await res.json();
+              code = typeof data?.code === "string" ? data.code : "";
+            } catch {
+              // keep the generic overloaded message below
+            }
+            fallback =
+              code === "too_fast"
+                ? t(COPY.rateTooFast)
+                : code === "user_limit"
+                  ? t(COPY.rateUserLimit)
+                  : t(COPY.rateOverloaded);
+          }
           setMessages((prev) => {
             const next = [...prev];
             next[next.length - 1] = { role: "assistant", content: fallback };
@@ -349,7 +377,7 @@ export function AssistantWidget() {
                   onChange={(e) => setInput(e.target.value)}
                   placeholder={t(COPY.placeholder)}
                   disabled={streaming}
-                  className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-[#123424] focus:bg-white disabled:opacity-50"
+                  className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-slate-700 outline-none transition-[border-color,box-shadow] placeholder:text-slate-400 focus:border-lime-400 focus:bg-white focus:ring-2 focus:ring-lime-100/60 disabled:opacity-50"
                   lang={locale}
                 />
                 <motion.button
