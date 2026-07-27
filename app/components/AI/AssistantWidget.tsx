@@ -8,7 +8,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { X, Send, RotateCcw } from "lucide-react";
 import { PiStarFourBold } from "react-icons/pi";
 import Markdown, { type Components } from "react-markdown";
@@ -156,6 +156,7 @@ export function AssistantWidget() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
+  const [isMobile, setIsMobile] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -165,6 +166,58 @@ export function AssistantWidget() {
       getBottomRightSnapshot,
       () => 0,
     ) > 0;
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  useEffect(() => {
+    if (!open || !isMobile) return;
+    const scrollY = window.scrollY;
+    const origHTML = document.documentElement.style.overflow;
+    const origBody = document.body.getAttribute("style") ?? "";
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.cssText += `;overflow:hidden;position:fixed;top:-${scrollY}px;width:100%`;
+    return () => {
+      document.documentElement.style.overflow = origHTML;
+      document.body.setAttribute("style", origBody);
+      window.scrollTo(0, scrollY);
+    };
+  }, [open, isMobile]);
+
+  const panelVariants: Variants = {
+    hidden: isMobile ? { y: "100%" } : { opacity: 0, y: 28, scale: 0.96 },
+    visible: isMobile
+      ? {
+          y: 0,
+          transition: {
+            type: "spring",
+            damping: 32,
+            stiffness: 300,
+            mass: 0.9,
+          },
+        }
+      : {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          transition: { type: "spring", stiffness: 320, damping: 28 },
+        },
+    exit: isMobile
+      ? {
+          y: "100%",
+          transition: { type: "spring", damping: 36, stiffness: 320 },
+        }
+      : {
+          opacity: 0,
+          y: 20,
+          scale: 0.96,
+          transition: { duration: 0.16, ease: [0.4, 0, 1, 1] },
+        },
+  };
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -315,144 +368,143 @@ export function AssistantWidget() {
       {/* Chat panel */}
       <AnimatePresence>
         {open && (
-          <>
-            {/* Mobile backdrop for focus */}
-            <motion.div
-              key="backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setOpen(false)}
-              className="fixed inset-0 z-[9994] bg-black/40 backdrop-blur-[2px] sm:hidden"
-            />
-            <motion.div
-              key="panel"
-              initial={{ opacity: 0, y: 28, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.96 }}
-              transition={{ type: "spring", stiffness: 320, damping: 28 }}
-              className="fixed bottom-0 left-0 right-0 z-[9995] flex h-[85dvh] max-h-[85dvh] flex-col overflow-hidden rounded-t-3xl bg-white shadow ring-1 ring-[#123424]/10 sm:bottom-5 sm:left-auto sm:right-5 sm:h-[600px] sm:max-h-[78vh] sm:w-[420px] sm:rounded-3xl"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-white px-4 py-3">
-                <div className="flex items-center gap-1">
-                  <div className="flex h-11 w-11 p-1 items-center justify-center overflow-hidden">
-                    {logo(40)}
-                  </div>
-                  <p className="text-[15px] font-extrabold leading-tight text-[#123424]">
-                    {t(COPY.title)}
-                  </p>
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-[9994] bg-black/40 backdrop-blur-[2px] sm:hidden"
+          />
+        )}
+        {open && (
+          <motion.div
+            key="panel"
+            variants={panelVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="fixed bottom-0 left-0 right-0 z-[9995] flex h-[85dvh] max-h-[85dvh] flex-col overflow-hidden rounded-t-3xl bg-white shadow ring-1 ring-[#123424]/10 sm:bottom-5 sm:left-auto sm:right-5 sm:h-[600px] sm:max-h-[78vh] sm:w-[420px] sm:rounded-3xl"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-white px-4 py-3">
+              <div className="flex items-center gap-1">
+                <div className="flex h-11 w-11 p-1 items-center justify-center overflow-hidden">
+                  {logo(40)}
                 </div>
-                <div className="flex items-center gap-1">
-                  {messages.length > 0 && (
-                    <button
-                      onClick={reset}
-                      aria-label={t(COPY.reset)}
-                      title={t(COPY.reset)}
-                      className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
-                    >
-                      <RotateCcw className="h-4.5 w-4.5" />
-                    </button>
-                  )}
+                <p className="text-[15px] font-extrabold leading-tight text-[#123424]">
+                  {t(COPY.title)}
+                </p>
+              </div>
+              <div className="flex items-center gap-1">
+                {messages.length > 0 && (
                   <button
-                    onClick={() => setOpen(false)}
-                    aria-label={t(COPY.close)}
-                    title={t(COPY.close)}
+                    onClick={reset}
+                    aria-label={t(COPY.reset)}
+                    title={t(COPY.reset)}
                     className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
                   >
-                    <X className="h-4.5 w-4.5" />
+                    <RotateCcw className="h-4.5 w-4.5" />
                   </button>
-                </div>
+                )}
+                <button
+                  onClick={() => setOpen(false)}
+                  aria-label={t(COPY.close)}
+                  title={t(COPY.close)}
+                  className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
+                >
+                  <X className="h-4.5 w-4.5" />
+                </button>
               </div>
+            </div>
 
-              {/* Messages */}
-              <div
-                ref={scrollRef}
-                className="flex-1 space-y-4 overflow-y-auto bg-slate-50/60 px-4 py-4"
-              >
-                {messages.length === 0 && (
-                  <div className="space-y-4">
-                    <div className="flex items-end gap-2">
-                      <span className="flex h-7 w-7 p-1 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white ring-1 ring-slate-200">
-                        {logo(26)}
-                      </span>
-                      <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-white px-3.5 py-2.5 text-sm text-slate-700 shadow-sm ring-1 ring-slate-100">
-                        {t(COPY.intro)}
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-2 pl-9">
-                      {SUGGESTIONS.map((s, i) => (
-                        <button
-                          key={i}
-                          onClick={() => send(t(s))}
-                          className="group flex items-center gap-2 self-start rounded-full border border-slate-200 bg-white px-3.5 py-2 text-left text-xs font-medium text-slate-600 transition-colors hover:border-[#123424] hover:bg-[#123424] hover:text-white cursor-pointer"
-                        >
-                          <PiStarFourBold className="h-3 w-3 shrink-0 text-lime-500 group-hover:text-lime-400" />
-                          {t(s)}
-                        </button>
-                      ))}
+            {/* Messages */}
+            <div
+              ref={scrollRef}
+              className="flex-1 space-y-4 overflow-y-auto bg-slate-50/60 px-4 py-4"
+            >
+              {messages.length === 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-end gap-2">
+                    <span className="flex h-7 w-7 p-1 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white ring-1 ring-slate-200">
+                      {logo(26)}
+                    </span>
+                    <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-white px-3.5 py-2.5 text-sm text-slate-700 shadow-sm ring-1 ring-slate-100">
+                      {t(COPY.intro)}
                     </div>
                   </div>
-                )}
+                  <div className="flex flex-col gap-2 pl-9">
+                    {SUGGESTIONS.map((s, i) => (
+                      <button
+                        key={i}
+                        onClick={() => send(t(s))}
+                        className="group flex items-center gap-2 self-start rounded-full border border-slate-200 bg-white px-3.5 py-2 text-left text-xs font-medium text-slate-600 transition-colors hover:border-[#123424] hover:bg-[#123424] hover:text-white cursor-pointer"
+                      >
+                        <PiStarFourBold className="h-3 w-3 shrink-0 text-lime-500 group-hover:text-lime-400" />
+                        {t(s)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-                {messages.map((m, i) => {
-                  const isLast = i === messages.length - 1;
-                  const showTyping =
-                    m.role === "assistant" && !m.content && streaming && isLast;
-                  if (m.role === "user") {
-                    return (
-                      <div key={i} className="flex justify-end">
-                        <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-[#123424] px-3.5 py-2.5 text-sm text-white shadow-sm">
-                          {m.content}
-                        </div>
-                      </div>
-                    );
-                  }
+              {messages.map((m, i) => {
+                const isLast = i === messages.length - 1;
+                const showTyping =
+                  m.role === "assistant" && !m.content && streaming && isLast;
+                if (m.role === "user") {
                   return (
-                    <div key={i} className="flex items-end gap-2">
-                      <span className="flex h-7 w-7 p-1 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white ring-1 ring-slate-200">
-                        {logo(26)}
-                      </span>
-                      <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-white px-3.5 py-2.5 text-sm text-slate-700 shadow-sm ring-1 ring-slate-100">
-                        {showTyping ? (
-                          <TypingDots />
-                        ) : (
-                          <AssistantMarkdown content={m.content} />
-                        )}
+                    <div key={i} className="flex justify-end">
+                      <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-[#123424] px-3.5 py-2.5 text-sm text-white shadow-sm">
+                        {m.content}
                       </div>
                     </div>
                   );
-                })}
-              </div>
+                }
+                return (
+                  <div key={i} className="flex items-end gap-2">
+                    <span className="flex h-7 w-7 p-1 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white ring-1 ring-slate-200">
+                      {logo(26)}
+                    </span>
+                    <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-white px-3.5 py-2.5 text-sm text-slate-700 shadow-sm ring-1 ring-slate-100">
+                      {showTyping ? (
+                        <TypingDots />
+                      ) : (
+                        <AssistantMarkdown content={m.content} />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
 
-              {/* Input */}
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  send(input);
-                }}
-                className="flex items-center gap-2 border-t border-slate-100 bg-white p-3"
+            {/* Input */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                send(input);
+              }}
+              className="flex items-center gap-2 border-t border-slate-100 bg-white p-3"
+            >
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder={t(COPY.placeholder)}
+                disabled={streaming}
+                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-slate-700 outline-none transition-[border-color,box-shadow] placeholder:text-slate-400 focus:border-lime-400 focus:bg-white focus:ring-2 focus:ring-lime-100/60 disabled:opacity-50"
+                lang={locale}
+              />
+              <motion.button
+                type="submit"
+                whileTap={{ scale: 0.92 }}
+                disabled={streaming || !input.trim()}
+                aria-label="Send"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#123424] text-white transition-colors hover:bg-[#1a4d36] disabled:opacity-40 cursor-pointer"
               >
-                <input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder={t(COPY.placeholder)}
-                  disabled={streaming}
-                  className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-slate-700 outline-none transition-[border-color,box-shadow] placeholder:text-slate-400 focus:border-lime-400 focus:bg-white focus:ring-2 focus:ring-lime-100/60 disabled:opacity-50"
-                  lang={locale}
-                />
-                <motion.button
-                  type="submit"
-                  whileTap={{ scale: 0.92 }}
-                  disabled={streaming || !input.trim()}
-                  aria-label="Send"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#123424] text-white transition-colors hover:bg-[#1a4d36] disabled:opacity-40 cursor-pointer"
-                >
-                  <Send className="h-4 w-4" />
-                </motion.button>
-              </form>
-            </motion.div>
-          </>
+                <Send className="h-4 w-4" />
+              </motion.button>
+            </form>
+          </motion.div>
         )}
       </AnimatePresence>
     </>

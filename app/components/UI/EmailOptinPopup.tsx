@@ -102,7 +102,7 @@ export function EmailOptinPopup({ context, postId }: EmailOptinPopupProps) {
           exit={{ opacity: 0, y: 16, scale: 0.96 }}
           transition={{ type: "spring", stiffness: 340, damping: 26 }}
           className="
-            fixed bottom-5 left-4 right-4 z-[9000]
+            fixed bottom-5 left-4 right-4 z-[10000]
             sm:left-auto sm:right-5 sm:w-80
             lg:absolute lg:bottom-5 lg:right-5 lg:left-auto lg:w-80 lg:z-20
           "
