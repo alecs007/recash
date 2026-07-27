@@ -410,7 +410,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-white flex flex-col">
       <header
         ref={headerRef}
-        className="fixed inset-x-0 top-0 z-[1001] bg-white"
+        className="fixed inset-x-0 top-0 z-[10001] bg-white"
         style={{ willChange: "transform" }}
       >
         <OverheaderAd headerRef={headerRef} />
@@ -615,7 +615,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-0 z-[1000] bg-slate-900/25 backdrop-blur-[2px]"
+            className="fixed inset-0 z-[10000] bg-slate-900/25 backdrop-blur-[2px]"
             aria-hidden
           />
         )}
