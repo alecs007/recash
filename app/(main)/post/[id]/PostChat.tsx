@@ -552,7 +552,7 @@ export function PostChat({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-[3px] z-[9998] lg:hidden touch-none"
+            className="fixed inset-0 bg-black/40 backdrop-blur-[3px] z-[10004] lg:hidden touch-none"
             onClick={onClose}
           />
 
@@ -565,7 +565,7 @@ export function PostChat({
             exit="exit"
             className={[
               "flex flex-col bg-white shadow-2xl",
-              "fixed bottom-0 left-0 w-full z-[9999]",
+              "fixed bottom-0 left-0 w-full z-[10005]",
               "rounded-t-3xl overflow-hidden h-[92dvh]",
               "lg:absolute lg:inset-0 lg:rounded-none lg:h-auto lg:w-auto lg:z-10",
             ].join(" ")}

@@ -374,7 +374,7 @@ export function AssistantWidget() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setOpen(false)}
-            className="fixed inset-0 z-[9994] bg-black/40 backdrop-blur-[2px] sm:hidden"
+            className="fixed inset-0 z-[10004] bg-black/40 backdrop-blur-[2px] sm:hidden"
           />
         )}
         {open && (
@@ -384,7 +384,7 @@ export function AssistantWidget() {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed bottom-0 left-0 right-0 z-[9995] flex h-[85dvh] max-h-[85dvh] flex-col overflow-hidden rounded-t-3xl bg-white shadow ring-1 ring-[#123424]/10 sm:bottom-5 sm:left-auto sm:right-5 sm:h-[600px] sm:max-h-[78vh] sm:w-[420px] sm:rounded-3xl"
+            className="fixed bottom-0 left-0 right-0 z-[10005] flex h-[85dvh] max-h-[85dvh] flex-col overflow-hidden rounded-t-3xl bg-white shadow ring-1 ring-[#123424]/10 sm:bottom-5 sm:left-auto sm:right-5 sm:h-[600px] sm:max-h-[78vh] sm:w-[420px] sm:rounded-3xl"
           >
             {/* Header */}
             <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-white px-4 py-3">
