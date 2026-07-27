@@ -18,7 +18,7 @@ import { useNotificationBell } from "@/hooks/useNotificationBell";
 import { useActiveCounts, useSetActiveCounts } from "@/hooks/useActiveCounts";
 import type { PendingRequestSummary } from "@/hooks/useActiveCounts";
 import { MAX_PENDING_REQUESTS_PER_COLLECTOR } from "@/lib/constants/posts";
-import { OverheaderAd } from "./OverheaderAd";
+// import { OverheaderAd } from "./OverheaderAd";
 import { LocaleSwitcher, PreferenceSwitcherInline } from "./LocaleSwitcher";
 import { FaRegBell } from "react-icons/fa";
 import { useI18n } from "@/context/I18nContext";
@@ -413,7 +413,7 @@ export default function Header({ children }: { children: React.ReactNode }) {
         className="fixed inset-x-0 top-0 z-[10001] bg-white"
         style={{ willChange: "transform" }}
       >
-        <OverheaderAd headerRef={headerRef} />
+        {/* <OverheaderAd headerRef={headerRef} /> */}
 
         <AnimatePresence>
           {scrimOpen && (
