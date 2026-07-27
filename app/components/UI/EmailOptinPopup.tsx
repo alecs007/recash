@@ -13,10 +13,6 @@ interface EmailOptinPopupProps {
 
 const COPY = {
   author: {
-    heading: {
-      ro: "Notificare pe email?",
-      en: "Email notification?",
-    },
     body: {
       ro: "Vrei să fii anunțat pe email atunci când un colector face o cerere pentru acest anunț?",
       en: "Would you like an email when a collector requests this listing?",
@@ -25,10 +21,6 @@ const COPY = {
     no: { ro: "Nu, mulțumesc", en: "No, thanks" },
   },
   collector: {
-    heading: {
-      ro: "Notificare de confirmare?",
-      en: "Confirmation notification?",
-    },
     body: {
       ro: "Vrei să fii anunțat pe email atunci când autorul aprobă sau refuză cererea ta pentru acest anunț?",
       en: "Would you like an email when the author approves or declines your request for this listing?",
@@ -38,29 +30,44 @@ const COPY = {
   },
 };
 
+const ISLAND_COPY = {
+  title: { ro: "Notificări email", en: "Email notifications" },
+  toggle: {
+    ro: "Comută notificările pe email",
+    en: "Toggle email notifications",
+  },
+};
+
+type Phase = "hidden" | "ask" | "island";
+
 export function EmailOptinPopup({ context, postId }: EmailOptinPopupProps) {
   const { t } = useI18n();
-  const [visible, setVisible] = useState(false);
+  const [phase, setPhase] = useState<Phase>("hidden");
+  const [optedIn, setOptedIn] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [answered, setAnswered] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
     fetch(
       `/api/v1/notifications/email-optin?context=${context}&postId=${encodeURIComponent(postId)}`,
     )
       .then((r) => r.json())
-      .then((data: { answered: boolean }) => {
+      .then((data: { answered: boolean; optedIn: boolean }) => {
         if (cancelled) return;
-        if (!data.answered) {
-          setTimeout(() => {
-            if (!cancelled) setVisible(true);
+        if (data.answered) {
+          setOptedIn(data.optedIn);
+          setPhase("island");
+        } else {
+          timer = setTimeout(() => {
+            if (!cancelled) setPhase("ask");
           }, 1200);
         }
       })
       .catch(() => {});
     return () => {
       cancelled = true;
+      clearTimeout(timer);
     };
   }, [context, postId]);
 
@@ -71,16 +78,13 @@ export function EmailOptinPopup({ context, postId }: EmailOptinPopupProps) {
         await fetch("/api/v1/notifications/email-optin", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-
           body: JSON.stringify({ optIn, context, postId }),
         });
       } catch {
-        // Non-fatal
       } finally {
-        setAnswered(true);
+        setOptedIn(optIn);
+        setPhase("island");
         setLoading(false);
-
-        setTimeout(() => setVisible(false), 200);
       }
     },
     [context, postId],
@@ -89,9 +93,10 @@ export function EmailOptinPopup({ context, postId }: EmailOptinPopupProps) {
   const copy = COPY[context];
 
   return (
-    <AnimatePresence>
-      {visible && !answered && (
+    <AnimatePresence mode="wait">
+      {phase === "ask" && (
         <motion.div
+          key="ask"
           initial={{ opacity: 0, y: 24, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 16, scale: 0.96 }}
@@ -136,6 +141,56 @@ export function EmailOptinPopup({ context, postId }: EmailOptinPopupProps) {
                 {t(copy.yes)}
               </button>
             </div>
+          </div>
+        </motion.div>
+      )}
+
+      {phase === "island" && (
+        <motion.div
+          key="island"
+          initial={{ opacity: 0, y: 18, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 12, scale: 0.95 }}
+          transition={{ type: "spring", stiffness: 340, damping: 28 }}
+          className="
+            fixed bottom-5 left-4 z-[9000]
+            lg:absolute lg:bottom-5 lg:left-auto lg:right-5 lg:z-20
+          "
+        >
+          <div className="flex items-center gap-2.5 rounded-full border border-slate-200 bg-white px-3 py-2">
+            <span
+              className={`grid h-8 w-8 shrink-0 place-items-center rounded-full transition-colors ${
+                optedIn ? "bg-lime-100" : "bg-slate-100"
+              }`}
+            >
+              {optedIn ? (
+                <Bell className="h-4 w-4 text-[#123424]" />
+              ) : (
+                <BellOff className="h-4 w-4 text-slate-400" />
+              )}
+            </span>
+
+            <span className="text-sm font-semibold text-slate-700">
+              {t(ISLAND_COPY.title)}
+            </span>
+
+            <button
+              type="button"
+              role="switch"
+              aria-checked={optedIn}
+              aria-label={t(ISLAND_COPY.toggle)}
+              onClick={() => respond(!optedIn)}
+              disabled={loading}
+              className={`relative w-11 h-6 shrink-0 rounded-full transition-colors duration-300 ease-in-out cursor-pointer focus:outline-none disabled:opacity-50 ${
+                optedIn ? "bg-lime-400" : "bg-slate-200"
+              }`}
+            >
+              <motion.div
+                animate={{ x: optedIn ? 22 : 6 }}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm"
+              />
+            </button>
           </div>
         </motion.div>
       )}

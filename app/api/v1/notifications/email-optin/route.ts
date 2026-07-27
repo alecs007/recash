@@ -49,8 +49,18 @@ export async function POST(req: Request) {
   if (context === "author" && post.authorId !== session.user.id) {
     return NextResponse.json({ error: "Acces interzis" }, { status: 403 });
   }
-  if (context === "collector" && post.collectorId !== session.user.id) {
-    return NextResponse.json({ error: "Acces interzis" }, { status: 403 });
+  if (context === "collector") {
+    let allowed = post.collectorId === session.user.id;
+    if (!allowed) {
+      const request = await prisma.claimRequest.findFirst({
+        where: { postId, collectorId: session.user.id },
+        select: { id: true },
+      });
+      allowed = request !== null;
+    }
+    if (!allowed) {
+      return NextResponse.json({ error: "Acces interzis" }, { status: 403 });
+    }
   }
 
   try {
