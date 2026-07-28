@@ -42,7 +42,7 @@ export function AuthModal() {
     <div
       ref={overlayRef}
       onClick={(e) => e.target === overlayRef.current && close()}
-      className={`fixed inset-0 z-[1002] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-all duration-300 ease-out ${
+      className={`fixed inset-0 z-[10001] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-all duration-300 ease-out ${
         isOpen
           ? "opacity-100 pointer-events-auto"
           : "opacity-0 pointer-events-none"
