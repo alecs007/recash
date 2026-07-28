@@ -91,7 +91,7 @@ export function CollectConfirmModal({
             onClick={(e) => {
               if (e.target === overlayRef.current) onCancel();
             }}
-            className="fixed inset-0 z-[9990] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+            className="fixed inset-0 z-[10001] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
           >
             <motion.div
               key="modal"
@@ -162,7 +162,10 @@ export function CollectConfirmModal({
                     )}
                     {loading
                       ? t({ ro: "Se încarcă...", en: "Loading..." })
-                      : t({ ro: "Am înțeles, colectez!", en: "Got it, let's collect!" })}
+                      : t({
+                          ro: "Am înțeles, colectez!",
+                          en: "Got it, let's collect!",
+                        })}
                   </motion.button>
                 </div>
               </div>
