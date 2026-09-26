@@ -10,7 +10,7 @@
 
 ## 🧩 What the app does
 
-- **Create a listing** — the user enters the number of bottles, the location, and the percentage offered to the collector (with an AI-powered quantity estimate from an image, via Gemini/HuggingFace Vision).
+- **Create a listing** — the user enters the number of bottles, the location, and the percentage offered to the collector (with an AI-powered quantity estimate from an image, via Gemini Vision).
 - **Interactive map (Leaflet + OpenStreetMap)** — collectors see active listings in their area and can filter/search.
 - **Collection flow**: `OPEN → CLAIMED → IN_PROGRESS → COMPLETED` (with `CANCELLED`/`EXPIRED` as terminal states), backed by a unique confirmation code generated on collection.
 - **Live chat** and **real-time notifications** via WebSocket (dedicated server, `ws-server/`).
@@ -27,13 +27,17 @@
 
 ```
 Next.js 16 (App Router, React 19)
- ├─ app/            → pages + API routes (REST, /api/v1/...)
- ├─ components/     → UI/UX (client & server components)
+ ├─ app/            → pages, API routes (REST, /api/v1/...) and components
+ ├─ context/        → React providers (i18n, auth modal, loading overlay)
  ├─ hooks/          → SWR + WebSocket client hooks
  ├─ lib/            → business logic (badges, notifications, radar, email, cache, rate-limit)
  ├─ prisma/         → MongoDB schema + seed script
+ ├─ types/          → shared TypeScript types
  ├─ ws-server/      → standalone WebSocket server (Node/ws) for real-time events
- └─ mcp-server/     → standalone Model Context Protocol server (exposes Recash to AI assistants)
+ ├─ mcp-server/     → standalone Model Context Protocol server (exposes Recash to AI assistants)
+ ├─ tests/          → Vitest unit + integration tests
+ ├─ e2e/, e2e-full/ → Playwright browser tests + the full-lifecycle API flow
+ └─ load/           → k6 load-test scenarios
 
 AI integrations (share one read-only tool catalog, lib/ai/tools.ts):
  ├─ mcp-server/            → MCP server for Claude Desktop / any MCP client (stdio)
@@ -49,7 +53,7 @@ The frontend talks to the Next.js API (REST), while live updates (chat, listing 
 
 ## ⚙️ Requirements
 
-- [Node.js](https://nodejs.org/) 20+
+- [Node.js](https://nodejs.org/) 22+
 - [pnpm](https://www.pnpm.io/) (or another compatible package manager)
 - [MongoDB](https://www.mongodb.com/) (local or cloud) — Prisma uses the `mongodb` provider
 - [Redis](https://redis.io/) (local or e.g. Upstash/Redis Cloud)
@@ -81,37 +85,29 @@ docker run -d --name recash-redis -p 6379:6379 redis:7
 
 ### 4. Configure environment variables
 
-Create a `.env` file in the project root:
+Copy the example file and fill in the values you need:
+
+```bash
+cp .env.example .env
+```
+
+`.env.example` documents every variable the app reads, grouped into what's
+required, the OAuth credentials needed for sign-in, and the optional
+integrations. Only these are needed to boot the app locally:
 
 ```env
-# Database
 RECASH_DATABASE_URI="mongodb://localhost:27017/recash"
 REDIS_URL="redis://localhost:6379"
-
-# Auth
-AUTH_SECRET="generate-with-openssl-rand-base64-32"
-AUTH_GOOGLE_ID=""
-AUTH_GOOGLE_SECRET=""
-AUTH_FACEBOOK_ID=""
-AUTH_FACEBOOK_SECRET=""
-NEXT_PUBLIC_GOOGLE_CLIENT_ID=""
-
-# API / WebSocket
+AUTH_SECRET="<openssl rand -base64 32>"
 NEXT_PUBLIC_API_VERSION="v1"
-NEXT_PUBLIC_WS_URL="ws://localhost:4000"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
-
-# Optional integrations
-GEMINI_API_KEY=""
-HUGGINGFACE_API_KEY=""
-RESEND_API_KEY=""
-RESEND_FROM_EMAIL="Recash <noreply@recash.ro>"
-
-# AI assistant (optional) — without it, the in-app assistant returns a handled 503
-ANTHROPIC_API_KEY=""
-# Base URL the MCP server uses to reach the Recash REST API (defaults to http://localhost:3000)
-RECASH_API_BASE="http://localhost:3000"
+NEXT_PUBLIC_WS_URL="ws://localhost:4001"
 ```
+
+Sign-in needs OAuth credentials (`AUTH_GOOGLE_ID`/`AUTH_GOOGLE_SECRET`,
+`AUTH_FACEBOOK_ID`/`AUTH_FACEBOOK_SECRET`). Every optional integration —
+AI estimation, the in-app assistant, email — degrades gracefully when its key
+is absent, so the app runs without any of them.
 
 ### 5. Sync the Prisma schema with MongoDB
 
@@ -175,12 +171,22 @@ unaffected.
 | WebSocket won't connect (chat/notifications don't update live) | Check `NEXT_PUBLIC_WS_URL` and that `ws-server` has started (it only runs separately from `next dev` if you're not using `pnpm dev`) |
 | Google/Facebook login doesn't work | Fill in `AUTH_GOOGLE_ID/SECRET`, `AUTH_FACEBOOK_ID/SECRET`, and add `http://localhost:3000` as an authorized redirect URI in the Google/Facebook consoles |
 | Errors related to the Prisma schema after changes | Re-run `pnpm prisma:push` (and `pnpm prisma generate` if needed) |
-| AI bottle estimation doesn't work | Optional feature — requires `GEMINI_API_KEY` or `HUGGINGFACE_API_KEY`; without them, the endpoint returns a handled error |
+| AI bottle estimation doesn't work | Optional feature — requires `GEMINI_API_KEY`; without it, the endpoint returns a handled error |
 | Emails aren't being sent | Optional feature — requires `RESEND_API_KEY`; without it, sending is silently skipped (logged to console) |
 | In-app AI assistant returns "not configured" | Optional feature — requires `ANTHROPIC_API_KEY`; without it the assistant endpoint returns a handled 503 |
 | MCP server can't reach the API | Make sure the Recash app is running and `RECASH_API_BASE` points at it (defaults to `http://localhost:3000`) |
-| Ports already in use (3000 / 4000 / 27017 / 6379) | Stop the processes/containers using them, or change the ports in `.env` / Docker configuration |
+| Ports already in use (3000 / 4001 / 27017 / 6379) | Stop the processes/containers using them, or change the ports in `.env` / Docker configuration |
 
 ## 📚 More information
 
 For full documentation, check out the **[Recash Docs](https://docs.recash.ro)** website.
+
+## 🤝 Contributing
+
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for setup, the
+checks CI runs, and pull-request guidelines. For security issues, please follow
+[SECURITY.md](SECURITY.md) instead of opening a public issue.
+
+## 📄 License
+
+Released under the [MIT License](LICENSE).
