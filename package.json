@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
+  "packageManager": "pnpm@11.10.0",
+  "engines": {
+    "node": ">=22"
+  },
   "description": "Peer-to-peer marketplace connecting people recycling SGR bottles with collectors in their area.",
   "repository": {
     "type": "git",
@@ -16,7 +20,8 @@
     "prisma:push": "prisma db push",
     "prisma:seed": "tsx prisma/seed.ts",
     "mcp": "tsx mcp-server/server.ts",
-    "lint": "eslint",
+    "lint": "eslint --max-warnings 0",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:unit": "vitest run tests/unit",

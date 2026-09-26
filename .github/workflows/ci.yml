@@ -5,24 +5,54 @@ on:
     branches: [main]
   pull_request:
 
+# Least privilege: nothing here needs write access to the repository.
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Keep this in step with the Dockerfiles and the `engines` field.
+  NODE_VERSION: "22"
+
 jobs:
-  unit:
-    name: Unit & integration (Vitest)
+  quality:
+    name: Lint & types
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # The Prisma client is generated code that both ESLint and tsc resolve.
+      - run: pnpm prisma generate
+
+      - run: pnpm lint
+
+      - run: pnpm typecheck
+
+  unit:
+    name: Unit & integration (Vitest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
@@ -34,6 +64,7 @@ jobs:
   e2e:
     name: E2E (Playwright)
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     env:
       AUTH_SECRET: ci-not-a-real-secret-0000000000000000
       # This job has no database. Fail the DB connection fast (2s) instead of the
@@ -46,18 +77,25 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm prisma generate
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-playwright-
+
+      # Re-run even on a cache hit: the browser binaries are cached but the OS
+      # packages they link against are not.
       - run: pnpm exec playwright install --with-deps chromium
 
       # Build once; Playwright's webServer serves it with `next start` in CI.
@@ -75,16 +113,15 @@ jobs:
   e2e-full:
     name: E2E full flow (isolated backend)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
@@ -102,3 +139,36 @@ jobs:
           name: playwright-report-full
           path: playwright-report/
           retention-days: 7
+
+  docker:
+    name: Production images
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      # Required by the type=gha build cache below.
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Builds the images Railway deploys, so a broken production build fails
+      # here instead of on deploy.
+      - name: Build Next.js image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.nextjs
+          push: false
+          cache-from: type=gha,scope=nextjs
+          cache-to: type=gha,mode=max,scope=nextjs
+
+      - name: Build WebSocket image
+        uses: docker/build-push-action@v6
+        with:
+          context: ws-server
+          file: ws-server/Dockerfile
+          push: false
+          cache-from: type=gha,scope=ws
+          cache-to: type=gha,mode=max,scope=ws
