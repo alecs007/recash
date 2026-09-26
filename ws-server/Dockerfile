@@ -1,12 +1,12 @@
 # ── Stage 1: deps ─────────────────────────────────────────────────────────────
-FROM node:20-alpine AS deps
+FROM node:22-alpine AS deps
 RUN apk upgrade --no-cache
 WORKDIR /app
 COPY package.json ./
 RUN npm install
 
 # ── Stage 2: compile TypeScript ───────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 RUN apk upgrade --no-cache
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
@@ -14,7 +14,7 @@ COPY . .
 RUN npx tsc
 
 # ── Stage 3: runtime ──────────────────────────────────────────────────────────
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 RUN apk upgrade --no-cache
 WORKDIR /app
 ENV NODE_ENV=production

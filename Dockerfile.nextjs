@@ -1,18 +1,22 @@
 # ── Stage 1: deps ─────────────────────────────────────────────────────────────
-FROM node:20-alpine AS deps
+FROM node:22-alpine AS deps
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
-RUN npm install -g pnpm
+# corepack pins pnpm to the `packageManager` field in package.json.
+RUN corepack enable
 
-COPY package.json pnpm-lock.yaml ./
-COPY prisma ./prisma 
+# pnpm-workspace.yaml carries the allowBuilds allowlist. Without it pnpm refuses
+# to run Prisma's and sharp's install scripts and fails with
+# ERR_PNPM_IGNORED_BUILDS, so it must be copied alongside the lockfile.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY prisma ./prisma
 RUN pnpm install --frozen-lockfile
 
 # ── Stage 2: build ────────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
-RUN npm install -g pnpm
+RUN corepack enable
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
@@ -26,7 +30,7 @@ ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
 RUN pnpm run build
 
 # ── Stage 3: runtime ──────────────────────────────────────────────────────────
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 # OpenSSL here ensures the engine can actually run
 RUN apk add --no-cache openssl
 WORKDIR /app
