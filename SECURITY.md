@@ -5,11 +5,9 @@
 Please **do not report security issues in public GitHub issues, pull requests or
 discussions.**
 
-Instead, report it privately in one of these ways:
-
-- Open a [private security advisory](https://github.com/alecs007/recash/security/advisories/new)
-  on this repository (preferred), or
-- Email **contact@recash.ro**.
+Instead, report it privately by opening a
+[security advisory](https://github.com/alecs007/recash/security/advisories/new)
+on this repository.
 
 Please include:
 
