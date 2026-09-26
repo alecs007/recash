@@ -9,7 +9,7 @@ export const options = {
   thresholds: SLO_THRESHOLDS,
 };
 
-export default function () {
+export default function smoke() {
   hitReadEndpoint();
   sleep(1);
 }

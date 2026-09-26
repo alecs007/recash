@@ -275,16 +275,14 @@ function PostMap({
         (offsetMeters / (111320 * Math.cos((lat * Math.PI) / 180))) *
           Math.cos(angle);
 
-      (L as any)
-        .circle([displayLat, displayLng], {
-          radius: radiusMeters,
-          color: "#64748b",
-          fillColor: "#94a3b8",
-          fillOpacity: 0.15,
-          weight: 1.5,
-          dashArray: "3 5",
-        })
-        .addTo(map);
+      L.circle([displayLat, displayLng], {
+        radius: radiusMeters,
+        color: "#64748b",
+        fillColor: "#94a3b8",
+        fillOpacity: 0.15,
+        weight: 1.5,
+        dashArray: "3 5",
+      }).addTo(map);
 
       L.marker([displayLat, displayLng], { icon })
         .addTo(map)
@@ -314,6 +312,10 @@ function PostMap({
       map.remove();
       mapRef.current = null;
     };
+    // `showExact` is omitted because the parent keys this component on it, so a
+    // change remounts and rebuilds the map. `t` is omitted because re-running
+    // would tear the map down and lose the viewer's pan/zoom on locale change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, lat, lng, locationName]);
 
   return (
@@ -1399,7 +1401,7 @@ function DetailPanel({
 
   const renderFormattedPrice = (
     amount: number,
-    fmtFn: (value: number, ...args: any[]) => string,
+    fmtFn: (value: number) => string,
     options?: RenderOptions,
   ): React.ReactNode => {
     const formattedString = fmtFn(amount);

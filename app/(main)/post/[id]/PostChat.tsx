@@ -317,6 +317,8 @@ export function PostChat({
 
   useEffect(() => {
     if (!isOpen) {
+      // Clears transient view state on the open -> closed edge only.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setContentVisible(false);
       initialScrollDoneRef.current = false;
       initialLoadDoneRef.current = false;
@@ -487,6 +489,9 @@ export function PostChat({
 
   useEffect(() => {
     if (isPartnerTyping) {
+      // Edge-triggered: the bubble shows immediately and lingers 140ms after
+      // typing stops (cleared by the timer below).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLingeringTyping(true);
       lingeringTypingRef.current = true;
       if (lingerTimerRef.current) clearTimeout(lingerTimerRef.current);

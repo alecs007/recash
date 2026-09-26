@@ -2,7 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useSyncExternalStore,
+} from "react";
 import { X } from "lucide-react";
 import { FaWineBottle } from "react-icons/fa6";
 import { useI18n } from "@/context/I18nContext";
@@ -17,6 +23,29 @@ export interface OverheaderAdConfig {
 
 const DISMISS_PREFIX = "overheader-ad-dismissed:";
 
+const subscribeNever = () => () => {};
+
+/**
+ * `false` on the server and for the hydrating render, `true` from the first
+ * client render onward. Lets us defer browser-only reads (sessionStorage) to the
+ * client without setting state from an effect.
+ */
+function useHydrated() {
+  return useSyncExternalStore(
+    subscribeNever,
+    () => true,
+    () => false,
+  );
+}
+
+function readDismissed(key: string) {
+  try {
+    return sessionStorage.getItem(key) !== null;
+  } catch {
+    return false;
+  }
+}
+
 export function OverheaderAd({
   ad,
   headerRef,
@@ -25,22 +54,15 @@ export function OverheaderAd({
   headerRef: React.RefObject<HTMLElement | null>;
 }) {
   const { t } = useI18n();
-  const [mounted, setMounted] = useState(false);
-  const [closed, setClosed] = useState(false);
+  const hydrated = useHydrated();
+  const [dismissedNow, setDismissedNow] = useState(false);
   const adRef = useRef<HTMLDivElement>(null);
-  const progress = useRef(0);
 
   const dismissKey = `${DISMISS_PREFIX}${ad?.id ?? "default"}`;
 
-  useEffect(() => {
-    setMounted(true);
-    try {
-      const val = sessionStorage.getItem(dismissKey);
-      setClosed(!!val);
-    } catch {
-      setClosed(false);
-    }
-  }, [dismissKey]);
+  // Derived rather than stored: the stored flag is only readable once hydrated,
+  // and `dismissedNow` covers a dismissal in this render pass.
+  const closed = dismissedNow || (hydrated && readDismissed(dismissKey));
 
   useEffect(() => {
     if (closed || !adRef.current || !headerRef.current) return;
@@ -100,10 +122,10 @@ export function OverheaderAd({
       window.removeEventListener("touchmove", onTouchMove);
       headerEl.style.transform = "";
     };
-  }, [closed, headerRef, mounted]);
+  }, [closed, headerRef, hydrated]);
 
   const handleClose = useCallback(() => {
-    setClosed(true);
+    setDismissedNow(true);
     try {
       sessionStorage.setItem(dismissKey, "1");
     } catch {}
@@ -114,7 +136,7 @@ export function OverheaderAd({
   return (
     <div
       ref={adRef}
-      className={`bg-slate-50 border-b border-slate-100 ${!mounted ? "invisible" : ""}`}
+      className={`bg-slate-50 border-b border-slate-100 ${!hydrated ? "invisible" : ""}`}
     >
       <div className="max-w-7xl mx-auto px-3 sm:px-4 flex items-center gap-2 h-9 sm:h-10">
         <button

@@ -129,7 +129,7 @@ export function LocaleSwitcher({
 }: {
   onOpenChange?: (open: boolean) => void;
 } = {}) {
-  const { locale, currency, t } = useI18n();
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 

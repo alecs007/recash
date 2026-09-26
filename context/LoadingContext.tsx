@@ -5,8 +5,6 @@ import {
   useContext,
   useState,
   useCallback,
-  useEffect,
-  useRef,
   type ReactNode,
 } from "react";
 import { useI18n } from "@/context/I18nContext";
@@ -57,23 +55,6 @@ function LoadingScreen({
   visible: boolean;
   message: string;
 }) {
-  const [rendered, setRendered] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    if (visible) {
-      setRendered(true);
-    } else {
-      timerRef.current = setTimeout(() => setRendered(false), 400);
-    }
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [visible]);
-
-  if (!rendered) return null;
-
   return (
     <>
       <style>{`

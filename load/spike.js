@@ -27,7 +27,7 @@ export const options = {
   },
 };
 
-export default function () {
+export default function spike() {
   hitReadEndpoint();
   sleep(0.5);
 }

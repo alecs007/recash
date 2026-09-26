@@ -7,6 +7,8 @@ import type { Post } from "@/types";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
+// Parked: used by the commented-out `isActive` derivation below.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const LIVE_STATUSES = new Set(["CLAIMED", "IN_PROGRESS"]);
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL;
 

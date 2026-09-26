@@ -11,7 +11,6 @@ import {
   Calendar,
   Trophy,
   Star,
-  ShieldCheck,
   ChevronDown,
 } from "lucide-react";
 import { FaBan } from "react-icons/fa";

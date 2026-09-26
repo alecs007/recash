@@ -1665,6 +1665,8 @@ function ActivePostGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Parked: rendered from a commented-out block in PostCreationPage's JSX below.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function OnboardingSheet({ onDismiss }: { onDismiss: () => void }) {
   const { t } = useI18n();
   useEffect(() => {
@@ -1818,6 +1820,8 @@ export default function PostCreationClient({
   const [originalPhone] = useState(userPhone);
   const setActiveCounts = useSetActiveCounts();
 
+  // Parked alongside <OnboardingSheet /> (commented out in the JSX below).
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {

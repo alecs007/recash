@@ -118,10 +118,6 @@ function rand(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function randFloat(min: number, max: number, decimals = 2) {
-  return parseFloat((Math.random() * (max - min) + min).toFixed(decimals));
-}
-
 function generatePerson(index: number): { name: string; gender: Gender } {
   const gender: Gender = index % 2 === 0 ? "female" : "male";
   const firstName =

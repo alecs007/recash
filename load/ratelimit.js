@@ -29,7 +29,7 @@ export const options = {
   },
 };
 
-export default function () {
+export default function ratelimit() {
   const res = http.get(
     `${BASE_URL}/api/v1/posts?limit=100`,
     singleClientHeaders(),

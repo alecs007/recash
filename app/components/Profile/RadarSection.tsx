@@ -102,6 +102,9 @@ export function RadarSection() {
     if (syncedRef.current || isLoading || data === undefined) return;
     syncedRef.current = true;
     if (!radar) return;
+    // Seeds the form from the fetched radar exactly once (guarded by
+    // `syncedRef`), so this cannot cascade.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLat(radar.latitude);
     setLng(radar.longitude);
     setLocationName(radar.locationName ?? "");
@@ -452,7 +455,7 @@ export function RadarSection() {
       activeRef.current = !next;
     }
     setToggling(false);
-  }, [radar, active, mutate]);
+  }, [radar, active, mutate, t]);
 
   // ── Skeleton ───────────────────────────────────────────────────────────
   if (isLoading) {

@@ -135,6 +135,8 @@ function CardContent({ userId }: { userId: string }) {
     { month: "long", year: "numeric" },
   );
 
+  // Parked: the stats row that consumes this is commented out in the JSX below.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const stats = [
     {
       icon: <FaWineBottle className="w-3 h-3 text-[#7EC3E5]" />,

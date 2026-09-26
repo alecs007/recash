@@ -32,7 +32,7 @@ export const options = {
   },
 };
 
-export default function () {
+export default function stress() {
   hitReadEndpoint();
   sleep(0.5);
 }

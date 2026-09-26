@@ -24,7 +24,7 @@ export const options = {
   thresholds: SLO_THRESHOLDS,
 };
 
-export default function () {
+export default function load() {
   hitReadEndpoint();
   sleep(Math.random() * 1 + 0.5); // 0.5–1.5s think time per user
 }

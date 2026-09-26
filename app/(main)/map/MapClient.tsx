@@ -87,6 +87,7 @@ type LeafletMap = {
   panTo: (latlng: [number, number], opts?: object) => void;
   invalidateSize: (opts?: object) => void;
   on: (event: string, handler: (e: LeafletEvent) => void) => void;
+  once: (event: string, handler: () => void) => void;
 };
 
 type LeafletMarker = {
@@ -102,6 +103,21 @@ type LeafletIcon = object;
 
 type LeafletEvent = {
   latlng: { lat: number; lng: number };
+};
+
+type LeafletCircleStyle = {
+  opacity?: number;
+  fillOpacity?: number;
+  color?: string;
+  fillColor?: string;
+  weight?: number;
+  dashArray?: string;
+};
+
+type LeafletCircle = {
+  setStyle: (style: LeafletCircleStyle) => void;
+  remove: () => void;
+  addTo: (map: LeafletMap) => LeafletCircle;
 };
 
 type LeafletLayer = {
@@ -122,6 +138,10 @@ type LeafletLib = {
     on: (event: string, handler: () => void) => void;
   };
   marker: (latlng: [number, number], opts: object) => LeafletMarker;
+  circle: (
+    latlng: [number, number],
+    opts: LeafletCircleStyle & { radius: number },
+  ) => LeafletCircle;
   divIcon: (opts: object) => LeafletIcon;
   markerClusterGroup?: (opts?: object) => LeafletLayer;
   control: {
@@ -739,7 +759,7 @@ function PostMap({
   const markersRef = useRef<Map<string, LeafletMarker>>(new Map());
   const userMarkerRef = useRef<LeafletMarker | null>(null);
   const onSelectRef = useRef(onSelectPost);
-  const circlesRef = useRef<Map<string, any>>(new Map());
+  const circlesRef = useRef<Map<string, LeafletCircle>>(new Map());
   const leafletReady = useLeaflet();
   const [mapReady, setMapReady] = useState(false);
 
@@ -778,7 +798,7 @@ function PostMap({
     map.on("zoomend", () => {
       const zoom = (map as unknown as { getZoom: () => number }).getZoom();
       const visible = zoom >= CIRCLE_MIN_ZOOM;
-      circlesRef.current.forEach((c: any) =>
+      circlesRef.current.forEach((c) =>
         c.setStyle({
           opacity: visible ? 1 : 0,
           fillOpacity: visible ? 0.15 : 0,
@@ -813,7 +833,7 @@ function PostMap({
       mapRef.current = null;
       clusterGroupRef.current = null;
       capturedMarkers.clear();
-      capturedCircles.forEach((c: any) => c.remove());
+      capturedCircles.forEach((c) => c.remove());
       capturedCircles.clear();
       userMarkerRef.current = null;
     };
@@ -844,6 +864,10 @@ function PostMap({
     }
 
     mapRef.current.setView(userLocation, 13, { animate: true });
+    // `t` is intentionally omitted: it only supplies the popup label, and
+    // re-running this effect would call setView and snap the map back to the
+    // user's location on every locale change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userLocation]);
 
   useEffect(() => {
@@ -929,7 +953,7 @@ function PostMap({
         ).getZoom();
         const visible = currentZoom >= CIRCLE_MIN_ZOOM;
 
-        const circle = (L as any)
+        const circle = L
           .circle([displayLat, displayLng], {
             radius: radiusMeters,
             color: "#64748b",
@@ -982,13 +1006,13 @@ function PostMap({
 
       leafletMap.stop();
 
-      circlesRef.current.forEach((c: any) =>
+      circlesRef.current.forEach((c) =>
         c.setStyle({ opacity: 0, fillOpacity: 0 }),
       );
-      (map as any).once("moveend", () => {
+      map.once("moveend", () => {
         const zoom = (map as unknown as { getZoom: () => number }).getZoom();
         const visible = zoom >= CIRCLE_MIN_ZOOM;
-        circlesRef.current.forEach((c: any) =>
+        circlesRef.current.forEach((c) =>
           c.setStyle({
             opacity: visible ? 1 : 0,
             fillOpacity: visible ? 0.15 : 0,
